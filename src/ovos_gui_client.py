@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Mapping, Dict, List, Optional, Union, Any
-from flet import Page
+from flet import Page  # TODO: remove me
 from enum import Enum
 from threading import Thread
 from websocket import WebSocket, create_connection
@@ -92,12 +92,6 @@ class OVOSGuiClient:
                 data={"framework": "py-flet"}
             )
             self._ws.send(message.model_dump_json(exclude_none=True))
-
-    def register(self: OVOSGuiClient, flet_page: Page) -> None:
-        self.renderer.register(flet_page)
-
-    def deregister(self: OVOSGuiClient, flet_page: Page) -> None:
-        self.renderer.deregister(flet_page)
 
     def listen(self: OVOSGuiClient) -> Thread:
         if self._ws:
