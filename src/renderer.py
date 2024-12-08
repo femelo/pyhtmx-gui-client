@@ -1,41 +1,154 @@
 from __future__ import annotations
-from typing import Optional, List, Dict, Any
-from copy import deepcopy
-from flet import Page, View
+from typing import Union, Optional, List, Dict, Callable, Any
+from secrets import token_hex
+from enum import Enum
+from pydantic import BaseModel, ConfigDict
+from pyhtmx import Div
+from pyhtmx.html_tag import HTMLTag
+from event_sender import EventSender, global_sender
+
+
+class ContextType(Enum, str):
+    LOCAL = "local"
+    GLOBAL = "global"
+
+
+class Callback(BaseModel):
+    model_config = ConfigDict(strict=False, populate_by_name=False)
+    context: ContextType
+    event_name: str
+    event_id: str
+    fn: Callable
+    source: HTMLTag
+    target: Optional[HTMLTag] = None
+
+
+class SessionParameter(BaseModel):
+    model_config = ConfigDict(strict=False, populate_by_name=False)
+    parameter_name: str
+    parameter_id: str
+    target: HTMLTag
 
 
 class Renderer:
-    def __init__(self: Renderer):
-        self._routes: List[str] = []
-        self._master_pages: List[Optional[View]] = []
-        self._flet_pages: List[Page] = []
+    event_sender: EventSender = global_sender
 
-    def find_component(self: Renderer, component: Any, key: str) -> Any:
-        if "key" in dir(component) and component.key == key:
-            return component
-        for child in component._get_children():
-            returned_component = self.find_component(child, key)
-            if returned_component is not None:
-                return returned_component
-        return None
+    def __init__(self: Renderer):
+        self._root: HTMLTag = Div(
+            _id="root",
+            _class="grow",
+            hx_ext="sse",
+            sse_connect="/event-source",
+            sse_swap="root",
+        )
+        self._routes: List[str] = []
+        self._master_pages: List[HTMLTag] = []
+        self._global_callbacks: Dict[str, Callback] = {}
+        self._local_callbacks: Dict[str, Callback] = {}
+        self._session_parameters: Dict[str, SessionParameter] = {}
+
+    def register_session_parameter(
+        self: Renderer,
+        route: str,
+        parameter: str,
+        target: HTMLTag,
+    ) -> None:
+        # Set new id
+        _id: str = token_hex(4)
+        parameter_id = f"{parameter}-{_id}"
+        target.attributes.update(
+            {
+                "hx-ext": "sse",
+                "sse-connect": "/event-source",
+                "sse-swap": parameter_id,
+            }
+        )
+        self._session_parameters[f"{route}/{parameter}"] = SessionParameter(
+            parameter_name=parameter,
+            parameter_id=parameter_id,
+            target=target,
+        )
+
+    def register_callback(
+        self: Renderer,
+        context: Union[str, ContextType],
+        event: str,
+        fn: Callable,
+        source: HTMLTag,
+        target: Optional[HTMLTag] = None,
+    ) -> None:
+        # Set root container if target was not specified
+        target = target if target is not None else self._root
+        # Set new id
+        _id: str = token_hex(4)
+        event_id = '-'.join([*event.split(), _id])
+        if context == ContextType.LOCAL:
+            # Add necessary attributes to elements for local action
+            if "id" not in target.attributes:
+                target_id = f"target-{_id}"
+                target.attributes.update(
+                    {
+                        "id": target_id,
+                    }
+                )
+            source.attributes.update(
+                {
+                    "hx-get": f"/events/{event_id}",
+                    "hx-trigger": event,
+                    "hx-target": target.attributes["id"],
+                    "hx-swap": "innerHTML",
+                }
+            )
+            callback_mapping = self._local_callbacks
+        elif context == ContextType.GLOBAL:
+            # Add necessary attributes to elements for global action
+            target.attributes.update(
+                {
+                    "hx-ext": "sse",
+                    "sse-connect": "/event-source",
+                    "sse-swap": event_id,
+                }
+            )
+            source.attributes.update(
+                {
+                    "hx-post": f"/events/{event_id}",
+                    "hx-trigger": event,
+                    "hx-target": target.attributes["id"] if target is not None else "#root",
+                    "hx-swap": "none",
+                }
+            )
+            callback_mapping = self._global_callbacks
+        else:
+            print("Unknown context type. Callback not registered.")
+            return
+        # Register callback
+        callback_mapping[event_id] = Callback(
+            context=context,
+            event_name=event,
+            event_id=event_id,
+            fn=fn,
+            source=source,
+            target=target,
+        )
+
 
     def update_attributes(
         self: Renderer,
         route: str,
-        key: str,
         attributes: Dict[str, Any],
     ) -> None:
         if route not in self._routes:
             return
-        for flet_page in self._flet_pages:
-            component = self.find_component(flet_page, key)
-            if component is None:
-                break
-            print(f"Component to update: {component}.")
-            for attr_name, value in attributes.items():
-                setattr(component, attr_name, value)
-            component.update()
-            print(f"Updated component  : {component}.")
+        for attr_name, value in attributes.items():
+            key = f"{route}/{attr_name}"
+            parameter_id = self._session_parameters[key].parameter_id
+            component = self._session_parameters[key].target
+            component.attributes.update({attr_name: value})
+            # TODO: move all this to a method 'send'
+            msg: str = self.format_sse(str(value), parameter_id)
+            self.global_sender.send(msg)
+            tag = component.tag
+            print(f"Updated parameter: {route}/{component} -> {attr_name}")
 
     def close_component(
         self: Renderer,
@@ -44,41 +157,28 @@ class Renderer:
     ) -> None:
         if route != self._routes[-1]:
             return
-        for flet_page in self._flet_pages:
-            if isinstance(component, str):
-                component_object = getattr(flet_page.views[-1], component)
-                if component_object is None:
-                    break
-                print(f"Found component to close: {component_object}.")
-                component_object.open = False
-            else:
-                flet_page.close(component)
-        self.update()
+        # Implement me
 
     def open_component(
         self: Renderer,
         route: str,
-        component: Any,
+        component: HTMLTag,
     ) -> None:
         if route != self._routes[-1]:
             return
-        for flet_page in self._flet_pages:
-            if isinstance(component, str):
-                component_object = getattr(flet_page.views[-1], component)
-                if component_object is None:
-                    break
-                print(f"Found component to open: {component_object}.")
-                component_object.open = True
-            else:
-                flet_page.open(component)
-        self.update()
+        # Implement me
 
     def update(self: Renderer) -> None:
-        for flet_page in self._flet_pages:
-            flet_page.update()
+        page = self._master_pages[-1]
+        msg: str = self.format_sse(page.to_string(), event="root")
+        self.global_sender.send(msg)
 
-    def show(self: Renderer, page: View) -> None:
-        if page.route in self._routes and page.route != self._routes[-1]:
+    def show(
+        self: Renderer,
+        route: str,
+        page: HTMLTag,
+    ) -> None:
+        if route in self._routes and route != self._routes[-1]:
             index = self._routes.index(page.route)
             # Move route
             route = self._routes.pop(index)
@@ -86,29 +186,18 @@ class Renderer:
             # Move root page
             _master_page = self._master_pages.pop(index)
             self._master_pages.append(_master_page)
-            # Move shown pages
-            for flet_page in self._flet_pages:
-                _ = flet_page.views.pop(index)
-                _page = deepcopy(_master_page)
-                flet_page.views.append(_page)
-        elif page.route not in self._routes:
+        elif route not in self._routes:
             self._routes.append(page.route)
             self._master_pages.append(page)
-            for flet_page in self._flet_pages:
-                _page = deepcopy(page)
-                flet_page.views.append(_page)
-                print(f"View {id(_page)} added.")
-            print(f"Page added to renderer: {page.route}.")
+            print(f"Page added to renderer: {route}.")
         else:
-            print(f"Page already exists: {page.route}.")
+            print(f"Page already exists: {route}.")
             pass
         self.update()
 
     def close(self: Renderer) -> None:
-        del self._routes[-1]
-        del self._master_pages[-1]
-        for flet_page in self._flet_pages:
-            del flet_page.views[-1]
+        _ = self._routes.pop()
+        _ = self._master_pages.pop()
         print(f"Removed last page from renderer.")
         self.update()
 
@@ -123,10 +212,6 @@ class Renderer:
         _master_page = self._master_pages.pop(index)
         self._master_pages.append(_master_page)
         # Move shown pages
-        for flet_page in self._flet_pages:
-            _ = flet_page.views.pop(index)
-            _page = deepcopy(_master_page)
-            flet_page.views.append(_page)
         print(f"Routed to page: {route}.")
         self.update()
 
@@ -137,34 +222,18 @@ class Renderer:
         # Move root page
         _master_page = self._master_pages.pop(level - 1)
         self._master_pages.append(_master_page)
-        # Move shown pages
-        for flet_page in self._flet_pages:
-            _ = flet_page.views.pop(level - 1)
-            _page = deepcopy(_master_page)
-            flet_page.views.append(_page)
         print(f"Routed back to page: {route}.")
         self.update()
 
-    def register(self: Renderer, flet_page: Page) -> None:
-        root_page = flet_page.views[0]
-        print(f"Root page: {root_page.route}.")
-        if root_page.route is not None and root_page.route not in self._routes:
-            self._routes.append(root_page.route)
-            self._master_pages.append(None)
-        for master_page in self._master_pages:
-            if master_page is None:
-                continue
-            _page = deepcopy(master_page)
-            flet_page.views.append(_page)
-            print(f"View {id(_page)} added.")
-        self._flet_pages.append(flet_page)
-        print(f"Number of flet pages in registry: {len(self._flet_pages)}")
-        flet_page.update()
+    def format_sse(
+        self: Renderer,
+        data: str,
+        event: Optional[str] = None,
+    ) -> str:
+        msg = f"data: {data}\n\n"
+        if event is not None:
+            msg = f"event: {event}\n{msg}"
+        return msg
 
-    def deregister(self: Renderer, flet_page: Page) -> None:
-        if flet_page in self._flet_pages:
-            self._flet_pages.remove(flet_page)
-        print(f"Number of flet pages in registry: {len(self._flet_pages)}")
-
-
+# Instantiate global renderer
 global_renderer: Renderer = Renderer()
