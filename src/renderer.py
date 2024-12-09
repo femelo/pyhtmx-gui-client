@@ -21,6 +21,7 @@ class Callback(BaseModel):
     fn: Callable
     source: HTMLTag
     target: Optional[HTMLTag] = None
+    target_level: str = "innerHTML"
 
 
 class SessionParameter(BaseModel):
@@ -78,6 +79,7 @@ class Renderer:
         fn: Callable,
         source: HTMLTag,
         target: Optional[HTMLTag] = None,
+        target_level: str = "innerHTML",
     ) -> None:
         # Set root container if target was not specified
         target = target if target is not None else self._root
@@ -98,7 +100,7 @@ class Renderer:
                     "hx-get": f"/events/{event_id}",
                     "hx-trigger": event,
                     "hx-target": target.attributes["id"],
-                    "hx-swap": "innerHTML",
+                    "hx-swap": target_level,
                 }
             )
             callback_mapping = self._local_callbacks
@@ -131,24 +133,29 @@ class Renderer:
             fn=fn,
             source=source,
             target=target,
+            target_level=target_level,
         )
 
 
     def update_attributes(
         self: Renderer,
         route: str,
-        attributes: Dict[str, Any],
+        parameter: str,
+        attribute: Dict[str, Any],
     ) -> None:
         if route not in self._routes or route not in self._session_parameters:
             return
-        for parameter, value in attributes.items():
-            if parameter not in self._session_parameters[route]:
-                continue
-            session_parameters = self._session_parameters[route]
-            parameter_id = session_parameters[parameter].parameter_id
-            component = session_parameters[parameter].target
-            component.attributes.update({parameter: value})
-            self.update(value, event=parameter_id)
+        if parameter not in self._session_parameters[route]:
+            return
+        session_parameter = self._session_parameters[route][parameter]
+        for attr_name, attr_value in attribute.items():
+            parameter_id = session_parameter.parameter_id
+            component = session_parameter.target
+            if attr_name == "content":
+                component.text = attr_value
+            else:
+                component.attributes.update({attr_name: attr_value})
+            self.update(attr_value, event=parameter_id)
             tag = component.tag
             print(f"Updated parameter: {route}:{component} -> {parameter}")
 
