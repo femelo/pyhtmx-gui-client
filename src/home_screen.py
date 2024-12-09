@@ -9,7 +9,7 @@ from pyhtmx import Div, Span
 
 
 # Background image
-WALLPAPER = "https://cdn.pixabay.com/photo/2016/06/02/02/33/triangles-1430105_1280.png?text=Achtergrond+1"
+WALLPAPER = "https://cdn.pixabay.com/photo/2016/06/02/02/33/triangles-1430105_1280.png"
 
 
 class Clock:
