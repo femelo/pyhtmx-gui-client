@@ -1,11 +1,9 @@
 from __future__ import annotations
 from typing import Mapping, Dict, List, Optional, Union, Any
-from flet import Page  # TODO: remove me
 from enum import Enum
 from threading import Thread
 from websocket import WebSocket, create_connection
 from pydantic import BaseModel, ConfigDict, Field
-from renderer import Renderer, global_renderer
 from gui_management import GuiList
 
 
@@ -43,32 +41,14 @@ class Message(BaseModel):
 class OVOSGuiClient:
     id : str = "ovos-gui-flet-client"
     server_url : str = "ws://localhost:18181/gui"
-    renderer: Renderer = global_renderer
 
     def __init__(self: OVOSGuiClient):
         self._ws: Optional[WebSocket] = OVOSGuiClient.connect()
-        self._component_map: Mapping[str, Any] = {}
         self._thread: Optional[Thread] = self.listen()
         self._session: Dict[str, Any] = {}
         self._active_skills: List[str] = []
         self._gui_list: Dict[str, List[Dict[str, str]]] = {}
         self.announce()
-
-    @property
-    def page(self: OVOSGuiClient) -> Page:
-        return self._page
-
-    @page.setter
-    def page(self: OVOSGuiClient, value: Page) -> None:
-        self._page = value
-
-    @property
-    def component_map(self: OVOSGuiClient) -> Mapping[str, Any]:
-        return self._component_map
-
-    @component_map.setter
-    def component_map(self: OVOSGuiClient, value: Mapping[str, Any]) -> None:
-        self._component_map = value
 
     # Connect to OVOS-GUI WebSocket
     @staticmethod
@@ -88,8 +68,8 @@ class OVOSGuiClient:
                 gui_id=OVOSGuiClient.id,
                 # TODO: force framework in the message root,
                 # though the bus code must be changed.
-                framework="py-flet",
-                data={"framework": "py-flet"}
+                framework="py-htmx",
+                data={"framework": "py-htmx"}
             )
             self._ws.send(message.model_dump_json(exclude_none=True))
 
@@ -250,10 +230,6 @@ class OVOSGuiClient:
             print(f"Focus shifted to view {page_index}")
             if namespace in self._gui_list:
                 self._gui_list[namespace].show(page_index)
-                # self.send_focus_event(
-                #     namespace=namespace,
-                #     index=page_index,
-                # )
 
     def handle_session_set(
         self: OVOSGuiClient,
@@ -273,6 +249,7 @@ class OVOSGuiClient:
     ) -> None:
         if (namespace in self._session) and (property in self._session[namespace]):
             del self._session[namespace][property]
+            # TODO: handle session parameter delete in the renderer
 
     def handle_session_list_insert(
         self: OVOSGuiClient,
@@ -295,6 +272,7 @@ class OVOSGuiClient:
                 self._session[namespace][property] = [None for _ in range(position)]
             for item in reversed(values):
                 self._session[namespace][property].insert(position, item)
+            # TODO: handle session parameter insert in the renderer
 
 
     def handle_session_list_update(self: OVOSGuiClient) -> None:
@@ -333,22 +311,5 @@ class OVOSGuiClient:
             )
             self._ws.send(message.model_dump_json())
 
-    # Function to show the Home screen
-    # TODO: example, remove this.
-    def show_home(self: OVOSGuiClient):
-        namespace = "homescreen"
-        position = 0
-        values = [{"url": "home_screen.py", "page": "home_screen"}]
-        self.handle_gui_list_insert(
-            namespace=namespace,
-            position=position,
-            data=None,
-            values=values,
-        )
-        self.handle_event_triggered(
-            namespace=namespace,
-            event_name="page_gained_focus",
-            parameters={"number": 0},
-        )
 
 global_client = OVOSGuiClient()
