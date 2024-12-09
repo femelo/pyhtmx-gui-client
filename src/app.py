@@ -1,15 +1,16 @@
 from __future__ import annotations
 from typing import AsyncIterator
-from fastapi import FastAPI, Response
+from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.responses import FileResponse
+from starlette.responses import HTMLResponse
 import json, uvicorn
+from renderer import global_renderer
 from event_sender import global_sender
 from ovos_gui_client import global_client
 
 
-app = FastAPI("PyHTMX GUI Client")
+app = FastAPI()
 
 
 app.add_middleware(
@@ -37,4 +38,4 @@ async def event_source() -> StreamingResponse:
 
 @app.get("/")
 async def root():
-    return FileResponse('index.html')
+    return HTMLResponse(global_renderer.document)

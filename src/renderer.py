@@ -1,20 +1,25 @@
 from __future__ import annotations
 from typing import Union, Optional, List, Dict, Callable, Any
 from secrets import token_hex
-from enum import Enum
+from enum import StrEnum
 from pydantic import BaseModel, ConfigDict
-from pyhtmx import Div
+from pyhtmx import Html, Div
 from pyhtmx.html_tag import HTMLTag
+from master import MASTER_DOCUMENT
 from event_sender import EventSender, global_sender
 
 
-class ContextType(Enum, str):
+class ContextType(StrEnum):
     LOCAL = "local"
     GLOBAL = "global"
 
 
 class Callback(BaseModel):
-    model_config = ConfigDict(strict=False, populate_by_name=False)
+    model_config = ConfigDict(
+        strict=False,
+        arbitrary_types_allowed=True,
+        populate_by_name=False
+    )
     context: ContextType
     event_name: str
     event_id: str
@@ -25,7 +30,11 @@ class Callback(BaseModel):
 
 
 class SessionParameter(BaseModel):
-    model_config = ConfigDict(strict=False, populate_by_name=False)
+    model_config = ConfigDict(
+        strict=False,
+        arbitrary_types_allowed=True,
+        populate_by_name=False
+    )
     parameter_name: str
     parameter_id: str
     target: HTMLTag
@@ -35,18 +44,25 @@ class Renderer:
     event_sender: EventSender = global_sender
 
     def __init__(self: Renderer):
-        self._root: HTMLTag = Div(
+        self._root: Div = Div(
             _id="root",
             _class="grow",
             hx_ext="sse",
             sse_connect="/event-source",
             sse_swap="root",
         )
+        self._master: Html = MASTER_DOCUMENT
+        body, = self._master.find_elements_by_tag(tag="body")
+        body.add_child(self._root)
         self._routes: List[str] = []
         self._pages: List[HTMLTag] = []
         self._global_callbacks: Dict[str, Callback] = {}
         self._local_callbacks: Dict[str, Callback] = {}
         self._session_parameters: Dict[str, Dict[str, SessionParameter]] = {}
+
+    @property
+    def document(self: Renderer) -> str:
+        return self._master.to_string()
 
     def register_session_parameter(
         self: Renderer,
@@ -151,7 +167,7 @@ class Renderer:
         for attr_name, attr_value in attribute.items():
             parameter_id = session_parameter.parameter_id
             component = session_parameter.target
-            if attr_name == "content":
+            if attr_name == "inner_content":
                 component.text = attr_value
             else:
                 component.attributes.update({attr_name: attr_value})
@@ -198,6 +214,8 @@ class Renderer:
             print(f"Page already exists: {route}.")
             pass
         _page = self._pages[-1]
+        self._root.text = None
+        self._root.add_child(_page)
         self.update(_page.to_string(), event_id="root")
 
     def close(self: Renderer) -> None:

@@ -102,7 +102,7 @@ class HomeScreen:
 
         self._session_objects["clock-time"] = SessionData(
             parameter="clock-time",
-            attribute="content",
+            attribute="inner_content",
             component=clock_text,
         )
         self._session_objects["wallpaper"] = SessionData(
@@ -149,7 +149,7 @@ class HomeScreen:
                 renderer.update_attributes(
                     route="/home",
                     parameter="clock-time",
-                    attribute={"content": HomeScreen._clock.time},
+                    attribute={"inner_content": HomeScreen._clock.time},
                 )
         # Start thread
         Thread(target=update_time, daemon=True).start()
