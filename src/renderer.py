@@ -42,10 +42,10 @@ class Renderer:
             sse_swap="root",
         )
         self._routes: List[str] = []
-        self._master_pages: List[HTMLTag] = []
+        self._pages: List[HTMLTag] = []
         self._global_callbacks: Dict[str, Callback] = {}
         self._local_callbacks: Dict[str, Callback] = {}
-        self._session_parameters: Dict[str, SessionParameter] = {}
+        self._session_parameters: Dict[str, Dict[str, SessionParameter]] = {}
 
     def register_session_parameter(
         self: Renderer,
@@ -63,7 +63,9 @@ class Renderer:
                 "sse-swap": parameter_id,
             }
         )
-        self._session_parameters[f"{route}/{parameter}"] = SessionParameter(
+        if route not in self._session_parameters:
+            self._session_parameters[route] = {}
+        self._session_parameters[route][parameter] = SessionParameter(
             parameter_name=parameter,
             parameter_id=parameter_id,
             target=target,
@@ -137,18 +139,18 @@ class Renderer:
         route: str,
         attributes: Dict[str, Any],
     ) -> None:
-        if route not in self._routes:
+        if route not in self._routes or route not in self._session_parameters:
             return
-        for attr_name, value in attributes.items():
-            key = f"{route}/{attr_name}"
-            parameter_id = self._session_parameters[key].parameter_id
-            component = self._session_parameters[key].target
-            component.attributes.update({attr_name: value})
-            # TODO: move all this to a method 'send'
-            msg: str = self.format_sse(str(value), parameter_id)
-            self.global_sender.send(msg)
+        for parameter, value in attributes.items():
+            if parameter not in self._session_parameters[route]:
+                continue
+            session_parameters = self._session_parameters[route]
+            parameter_id = session_parameters[parameter].parameter_id
+            component = session_parameters[parameter].target
+            component.attributes.update({parameter: value})
+            self.update(value, event=parameter_id)
             tag = component.tag
-            print(f"Updated parameter: {route}/{component} -> {attr_name}")
+            print(f"Updated parameter: {route}:{component} -> {parameter}")
 
     def close_component(
         self: Renderer,
@@ -168,11 +170,6 @@ class Renderer:
             return
         # Implement me
 
-    def update(self: Renderer) -> None:
-        page = self._master_pages[-1]
-        msg: str = self.format_sse(page.to_string(), event="root")
-        self.global_sender.send(msg)
-
     def show(
         self: Renderer,
         route: str,
@@ -184,20 +181,21 @@ class Renderer:
             route = self._routes.pop(index)
             self._routes.append(route)
             # Move root page
-            _master_page = self._master_pages.pop(index)
-            self._master_pages.append(_master_page)
+            _page = self._pages.pop(index)
+            self._pages.append(_page)
         elif route not in self._routes:
-            self._routes.append(page.route)
-            self._master_pages.append(page)
+            self._routes.append(route)
+            self._pages.append(page)
             print(f"Page added to renderer: {route}.")
         else:
             print(f"Page already exists: {route}.")
             pass
-        self.update()
+        _page = self._pages[-1]
+        self.update(_page.to_string(), event_id="root")
 
     def close(self: Renderer) -> None:
         _ = self._routes.pop()
-        _ = self._master_pages.pop()
+        _ = self._pages.pop()
         print(f"Removed last page from renderer.")
         self.update()
 
@@ -209,31 +207,32 @@ class Renderer:
         route = self._routes.pop(index)
         self._routes.append(route)
         # Move root page
-        _master_page = self._master_pages.pop(index)
-        self._master_pages.append(_master_page)
+        _page = self._pages.pop(index)
+        self._pages.append(_page)
         # Move shown pages
         print(f"Routed to page: {route}.")
-        self.update()
+        self.update(_page.to_string(), event_id="root")
 
     def go_back(self: Renderer, level: int = -1) -> None:
         # Move route
         route = self._routes.pop(level - 1)
         self._routes.append(route)
         # Move root page
-        _master_page = self._master_pages.pop(level - 1)
-        self._master_pages.append(_master_page)
+        _page = self._pages.pop(level - 1)
+        self._pages.append(_page)
         print(f"Routed back to page: {route}.")
-        self.update()
+        self.update(_page.to_string(), event_id="root")
 
-    def format_sse(
+    def update(
         self: Renderer,
         data: str,
-        event: Optional[str] = None,
-    ) -> str:
-        msg = f"data: {data}\n\n"
-        if event is not None:
-            msg = f"event: {event}\n{msg}"
-        return msg
+        event_id: Optional[str] = None,
+    ) -> None:
+        # Format SSE message
+        msg: str = f"data: {data}\n\n"
+        if event_id is not None:
+            msg = f"event: {event_id}\n{msg}"
+        self.event_sender.send(msg)
 
 # Instantiate global renderer
 global_renderer: Renderer = Renderer()

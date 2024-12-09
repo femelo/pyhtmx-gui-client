@@ -7,6 +7,12 @@
     <script src="./assets/js/tailwind-play-cdn.js"></script>
     <script src="./assets/js/htmx.min.js"></script>
     <script src="./assets/js/sse.js"></script>
+    <script>
+        htmx.on(
+            "htmx:load",
+            function(event) { htmx.process(event.detail.elt); },
+        );
+    </script>
     <title>PyHTMX GUI Client</title>
 </head>
 <body>

@@ -2,7 +2,7 @@ from __future__ import annotations
 from queue import Queue, Full
 
 class EventSender:
-    def __init__(self: EventSender, max_size: int = 100):
+    def __init__(self: EventSender, max_size: int = 10):
         self._max_size: int = max_size
         self._listeners: list[Queue] = []
 
