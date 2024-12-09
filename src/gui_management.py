@@ -1,8 +1,8 @@
 from __future__ import annotations
 # import sys
-from typing import Any, Optional, List, Dict
+from typing import Any, Union, Optional, List, Dict
 from pydantic import BaseModel, ConfigDict
-from flet import View
+from pyhtmx.html_tag import HTMLTag
 from renderer import Renderer
 import secrets
 import inspect
@@ -18,8 +18,17 @@ class PageLoader(BaseModel):
     _page_object: Optional[Any] = None
 
     @property
-    def page(self: PageLoader) -> Any:
+    def page_object(self: PageLoader) -> Any:
         return self._page_object
+
+    @property
+    def page(self: PageLoader) -> Union[HTMLTag, None]:
+        if isinstance(self._page_object, HTMLTag):
+            return self._page_object
+        elif "_page" in dir(self._page_object):
+            return self._page_object._page
+        else:
+            return None
 
     def build(self: PageLoader) -> None:
         # Load module
@@ -40,11 +49,11 @@ class PageLoader(BaseModel):
         # Save just views or wrappers with class attribute '_is_page'
         for obj_name in object_names:
             obj = getattr(module, obj_name)
-            if isinstance(obj, View):
+            if isinstance(obj, HTMLTag):
                 objects.append(obj)
-            elif inspect.isclass(obj) and View in obj.__bases__:
+            elif inspect.isclass(obj) and HTMLTag in obj.__bases__:
                 objects.append(obj)
-            elif inspect.isclass(obj) and "_is_page" in dir(obj) and obj._is_page:
+            elif inspect.isclass(obj) and "_page" in dir(obj):
                 objects.append(obj)
             else:
                 pass
@@ -68,8 +77,8 @@ class PageLoader(BaseModel):
             else:
                 self._page_object = page_object
             print(f"Object {self._page_object} built.")
-            if "set" in dir(page_object):
-                self._page_object.set(self.renderer)
+            if "set_up" in dir(page_object):
+                self._page_object.set_up(self.renderer)
 
     def update(self: PageLoader, session_data: Dict[str, Any]) -> None:
         self.session_data.update(session_data)
@@ -79,15 +88,7 @@ class PageLoader(BaseModel):
     def show(self: PageLoader) -> None:
         if self._page_object is None:
             self.build()
-        if isinstance(self._page_object, View):
-            page = self._page_object
-        else:
-            for attr_name in filter(lambda name: not name.startswith("__"), dir(self._page_object)):
-                attribute = getattr(self._page_object, attr_name)
-                if isinstance(attribute, View):
-                    page = attribute
-                    break
-        self.renderer.show(page)
+        self.renderer.show(self.page)
 
 
 class GuiList(BaseModel):
@@ -154,16 +155,16 @@ class GuiList(BaseModel):
         if self._shown_page > len(self._pages):
             print("Last shown page out of range.")
             return
-        page = self._pages[self._shown_page].page
-        if page is None:
+        page_object = self._pages[self._shown_page].page_object
+        if page_object is None:
             print("Unable update a page that has not been built.")
             return
         valid_session_data = {}
         for key in session_data.keys():
-            if key in page._session_data:
+            if key in page_object._session_data:
                 valid_session_data[key] = session_data[key]
         if valid_session_data:
-            page.update_session_data(
+            page_object.update_session_data(
                 session_data=valid_session_data,
                 renderer=self.renderer,
             )
