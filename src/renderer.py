@@ -47,7 +47,7 @@ class Renderer:
         self._clients = []
         self._root: Div = Div(
             _id="root",
-            _class="flex grow items-stretch",
+            _class="flex flex-col",
             hx_ext="sse",
             sse_connect="/updates",
             sse_swap="root",
