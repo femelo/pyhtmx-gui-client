@@ -47,9 +47,9 @@ class Renderer:
         self._clients = []
         self._root: Div = Div(
             _id="root",
-            _class="flex grow",
+            _class="flex grow items-stretch",
             hx_ext="sse",
-            sse_connect="/event-source",
+            sse_connect="/updates",
             sse_swap="root",
         )
         self._master: Html = MASTER_DOCUMENT
@@ -82,10 +82,8 @@ class Renderer:
         # Set new id
         _id: str = token_hex(4)
         parameter_id = f"{parameter}-{_id}"
-        target.attributes.update(
-            {
-                "hx-ext": "sse",
-                "sse-connect": "/event-source",
+        target.update_attributes(
+            attributes={
                 "sse-swap": parameter_id,
             }
         )
@@ -115,13 +113,13 @@ class Renderer:
             # Add necessary attributes to elements for local action
             if "id" not in target.attributes:
                 target_id = f"target-{_id}"
-                target.attributes.update(
-                    {
+                target.update_attributes(
+                    attributes={
                         "id": target_id,
                     }
                 )
-            source.attributes.update(
-                {
+            source.update_attributes(
+                attributes={
                     "hx-get": f"/events/{event_id}",
                     "hx-trigger": event,
                     "hx-target": target.attributes["id"],
@@ -131,15 +129,13 @@ class Renderer:
             callback_mapping = self._local_callbacks
         elif context == ContextType.GLOBAL:
             # Add necessary attributes to elements for global action
-            target.attributes.update(
-                {
-                    "hx-ext": "sse",
-                    "sse-connect": "/event-source",
+            target.update_attributes(
+                attributes={
                     "sse-swap": event_id,
                 }
             )
-            source.attributes.update(
-                {
+            source.update_attributes(
+                attributes={
                     "hx-post": f"/events/{event_id}",
                     "hx-trigger": event,
                     "hx-target": target.attributes["id"] if target is not None else "#root",
@@ -161,7 +157,6 @@ class Renderer:
             target_level=target_level,
         )
 
-
     def update_attributes(
         self: Renderer,
         route: str,
@@ -177,9 +172,9 @@ class Renderer:
             parameter_id = session_parameter.parameter_id
             component = session_parameter.target
             if attr_name == "inner_content":
-                component.text = attr_value
+                component.update_attributes(text_content=attr_value)
             else:
-                component.attributes.update({attr_name: attr_value})
+                component.update_attributes(attributes={attr_name: attr_value})
             self.update(attr_value, event_id=parameter_id)
             tag = component.tag
             # print(f"Updated parameter: {route}:{component} -> {parameter}")
@@ -222,17 +217,13 @@ class Renderer:
         else:
             print(f"Page already exists: {route}.")
             pass
-        _page = self._pages[-1]
-        self._root.text = None
-        self._root.add_child(_page)
-        self.update(_page.to_string(), event_id="root")
+        self.update_root()
 
     def close(self: Renderer) -> None:
         _ = self._routes.pop()
         _ = self._pages.pop()
         print(f"Removed last page from renderer.")
-        _page = self._pages[-1]
-        self.update(_page.to_string(), event_id="root")
+        self.update_root()
 
     def go_to(self: Renderer, route: str) -> None:
         if route not in self._routes:
@@ -246,7 +237,7 @@ class Renderer:
         self._pages.append(_page)
         # Move shown pages
         print(f"Routed to page: {route}.")
-        self.update(_page.to_string(), event_id="root")
+        self.update_root()
 
     def go_back(self: Renderer, level: int = -1) -> None:
         # Move route
@@ -256,6 +247,12 @@ class Renderer:
         _page = self._pages.pop(level - 1)
         self._pages.append(_page)
         print(f"Routed back to page: {route}.")
+        self.update_root()
+
+    def update_root(self: Renderer) -> None:
+        _page = self._pages[-1]
+        self._root.text = None
+        self._root.add_child(_page)
         self.update(_page.to_string(), event_id="root")
 
     def update(

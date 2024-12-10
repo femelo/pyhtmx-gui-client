@@ -1,10 +1,10 @@
 from __future__ import annotations
-from typing import AsyncIterator
+from typing import Iterator
 from fastapi import FastAPI
-from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.responses import HTMLResponse
-import json, uvicorn
+from starlette.responses import HTMLResponse, StreamingResponse
+# import json, uvicorn
 from renderer import global_renderer
 from event_sender import global_sender
 from ovos_gui_client import global_client
@@ -12,6 +12,7 @@ from ovos_gui_client import global_client
 
 app = FastAPI()
 
+app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,13 +23,14 @@ app.add_middleware(
 )
 
 
-@app.get('/event-source')
-async def event_source() -> StreamingResponse:
+@app.get('/updates')
+async def updates() -> StreamingResponse:
     # Define message streaming generator
-    async def stream() -> AsyncIterator[str]:
+    def stream() -> Iterator[str]:
         messages = global_sender.listen()  # returns a queue.Queue
         while True:
             msg = messages.get()  # blocks until a new message arrives
+            print(f"Sending message:\n{msg}")
             yield msg
     return StreamingResponse(
         stream(),

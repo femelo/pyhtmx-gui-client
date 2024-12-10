@@ -104,7 +104,7 @@ class HomeScreen:
                     "grow",
                     "flex-col",
                     "justify-start",
-                    "content-end",
+                    "items-end",
                     f"bg-[url({wallpaper})]" if wallpaper else "",
                 ]
             )
@@ -126,7 +126,7 @@ class HomeScreen:
         self._page: Div = Div(
             overlay,
             _id="home",
-            _class="flex grow",
+            _class="flex grow items-stretch",
         )
 
     @property

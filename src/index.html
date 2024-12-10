@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="./assets/css/daisyui-full.min.css" rel="stylesheet" type="text/css" />
-    <script src="./assets/js/tailwind-play-cdn.js"></script>
-    <script src="./assets/js/htmx.min.js"></script>
-    <script src="./assets/js/sse.js"></script>
-    <script src="./assets/js/htmx-process.js"></script>
+    <script src="./assets/js/tailwind-play-cdn.js" defer></script>
+    <script src="./assets/js/htmx.min.js" defer></script>
+    <script src="./assets/js/sse.js" defer></script>
+    <script src="./assets/js/htmx-process.js" defer></script>
     <title>PyHTMX GUI Client</title>
 </head>
 <body>
-    <div id="root" class="flex grow" hx-ext="sse" sse-connect="/event-source" sse-swap="root"></div>
+    <div id="root" class="flex grow" hx-ext="sse" sse-connect="/updates" sse-swap="root"></div>
 </body>
 </html>
