@@ -29,7 +29,7 @@ MASTER_DOCUMENT: Html = Html(
                 Title("PyHTMX GUI Client"),
             ]
         ),
-        Body("Hi there"),
+        Body(),
     ],
     lang="en",
 )

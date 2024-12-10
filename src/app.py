@@ -38,4 +38,5 @@ async def event_source() -> StreamingResponse:
 
 @app.get("/")
 async def root():
+    global_client.register("1")
     return HTMLResponse(global_renderer.document)

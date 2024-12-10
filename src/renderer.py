@@ -44,9 +44,10 @@ class Renderer:
     event_sender: EventSender = global_sender
 
     def __init__(self: Renderer):
+        self._clients = []
         self._root: Div = Div(
             _id="root",
-            _class="grow",
+            _class="flex grow",
             hx_ext="sse",
             sse_connect="/event-source",
             sse_swap="root",
@@ -63,6 +64,14 @@ class Renderer:
     @property
     def document(self: Renderer) -> str:
         return self._master.to_string()
+
+    def register_client(self: Renderer, client_id: str) -> None:
+        self._clients.append(client_id)
+        print(f"Number of clients in registry: {len(self._clients)}")
+
+    def deregister(self: Renderer, client_id: str) -> None:
+        self._clients.remove(client_id)
+        print(f"Number of clients in registry: {len(self._clients)}")
 
     def register_session_parameter(
         self: Renderer,
@@ -173,7 +182,7 @@ class Renderer:
                 component.attributes.update({attr_name: attr_value})
             self.update(attr_value, event_id=parameter_id)
             tag = component.tag
-            print(f"Updated parameter: {route}:{component} -> {parameter}")
+            # print(f"Updated parameter: {route}:{component} -> {parameter}")
 
     def close_component(
         self: Renderer,
@@ -254,6 +263,9 @@ class Renderer:
         data: str,
         event_id: Optional[str] = None,
     ) -> None:
+        # Don't send message without clients
+        if not self._clients:
+            return
         # Format SSE message
         msg: str = f"data: {data}\n\n"
         if event_id is not None:

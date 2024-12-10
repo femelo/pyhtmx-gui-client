@@ -76,20 +76,24 @@ class HomeScreen:
         session_data: Optional[Dict[str, Any]],
     ):
         self._route = "/home"
+        self._session_data: Dict[str, Any] = {
+            "wallpaper": WALLPAPER,
+        }
+        if session_data:
+            self._session_data.update(session_data)
+
         self._session_objects: Dict[str, Optional[SessionData]] = {
             "clock-time": None,
             "wallpaper": None,
         }
         # Clock text
         clock_text: Div = Div(
-            Span(
-                content=session_data.get("clock-time"),
-                _id="clock-time",
-                _class="text-9xl text-white font-bold",
-            ),
+            inner_content=session_data.get("clock-time"),
+            _id="clock-time",
+            _class="text-9xl text-white font-bold",
         )
         # Overlay container
-        wallpaper = session_data.get("wallpaper") 
+        wallpaper = self._session_data.get("wallpaper") 
         overlay: Div = Div(
             clock_text,
             _id="wallpaper",
@@ -131,15 +135,22 @@ class HomeScreen:
 
     def update_session_data(
         self: HomeScreen,
-        parameter: str,
-        attribute: Dict[str, Any],
+        session_data: Dict[str, Any],
         renderer: Any
     ) -> None:
-        renderer.update_attributes(
-            route="/home",
-            parameter=parameter,
-            attribute=attribute,
-        )
+        for parameter, value in session_data.items():
+            if parameter in self._session_objects:
+                session_object = self._session_objects[parameter]
+                attr_name = session_object.attribute
+                attr_value = (
+                    session_object.value_format.format(value)
+                    if session_object.value_format else value
+                )
+                renderer.update_attributes(
+                    route="/home",
+                    parameter=parameter,
+                    attribute={attr_name: attr_value},
+                )
 
     def set_up(self: HomeScreen, renderer: Any) -> None:
         # Register session parameters

@@ -75,6 +75,12 @@ class OVOSGuiClient:
             )
             self._ws.send(message.model_dump_json(exclude_none=True))
 
+    def register(self: OVOSGuiClient, client_id: str) -> None:
+        self.renderer.register_client(client_id)
+
+    def deregister(self: OVOSGuiClient, client_id: str) -> None:
+        self.renderer.deregister(client_id)
+
     def listen(self: OVOSGuiClient) -> Thread:
         if self._ws:
             thread = Thread(target=self.receive_message, daemon=True)

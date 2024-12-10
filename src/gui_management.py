@@ -50,7 +50,7 @@ class PageLoader(BaseModel):
         object_names = filter(
             lambda name: (
                 not name.startswith("__")
-                and "__module__" in dir(getattr(module, name))
+                and hasattr(getattr(module, name), "__module__")
                 and getattr(module, name).__module__ == self.name
             ),
             dir(module),
@@ -62,7 +62,7 @@ class PageLoader(BaseModel):
                 objects.append(obj)
             elif inspect.isclass(obj) and HTMLTag in obj.__bases__:
                 objects.append(obj)
-            elif inspect.isclass(obj) and "_is_page" in dir(obj) and obj._is_page:
+            elif inspect.isclass(obj) and hasattr(obj, "_is_page") and obj._is_page:
                 objects.append(obj)
             else:
                 pass
@@ -86,13 +86,13 @@ class PageLoader(BaseModel):
             else:
                 self._page_object = page_object
             print(f"Object {self._page_object} built.")
-            if "set_up" in dir(page_object):
+            if hasattr(page_object, "set_up"):
                 self._page_object.set_up(self.renderer)
 
     def update(self: PageLoader, session_data: Dict[str, Any]) -> None:
         self.session_data.update(session_data)
         # NOTE: this method is assumed as implemented
-        self._page_object.update_session_data(session_data)
+        self._page_object.update_session_data(session_data, self.renderer)
 
     def show(self: PageLoader) -> None:
         if self._page_object is None:
