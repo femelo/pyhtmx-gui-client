@@ -97,18 +97,16 @@ class HomeScreen:
         overlay: Div = Div(
             clock_text,
             _id="wallpaper",
-            _class=' '.join(
-                [
-                    "p-[20px]",
-                    "flex",
-                    "grow",
-                    "flex-col",
-                    "justify-start",
-                    "items-end",
-                    "bg-cover",
-                    f"bg-[url({wallpaper})]" if wallpaper else "",
-                ]
-            )
+            _class=[
+                "p-[20px]",
+                "flex",
+                "grow",
+                "flex-col",
+                "justify-start",
+                "items-end",
+                "bg-cover",
+                f"bg-[url({wallpaper})]" if wallpaper else "",
+            ],
         )
 
         self._session_objects["clock-time"] = SessionData(
@@ -148,7 +146,7 @@ class HomeScreen:
                     if session_object.value_format else value
                 )
                 renderer.update_attributes(
-                    route="/home",
+                    route=self._route,
                     parameter=parameter,
                     attribute={attr_name: attr_value},
                 )
@@ -159,13 +157,13 @@ class HomeScreen:
             renderer.register_session_parameter(
                 route=self._route,
                 parameter=parameter,
-                target=session_object.component
+                target=session_object.component,
             )
         # Update time
         def update_time():
             while HomeScreen._clock.wait():
                 renderer.update_attributes(
-                    route="/home",
+                    route=self._route,
                     parameter="clock-time",
                     attribute={"inner_content": HomeScreen._clock.time},
                 )
