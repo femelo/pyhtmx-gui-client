@@ -6,6 +6,7 @@ from pyhtmx import (
     Script,
     Title,
     Body,
+    Div,
 )
 
 MASTER_DOCUMENT: Html = Html(
@@ -29,7 +30,15 @@ MASTER_DOCUMENT: Html = Html(
                 Title("PyHTMX GUI Client"),
             ]
         ),
-        Body(Script("0"), style="visibility: hidden;"),
+        Body(
+            Div(
+                _id="session-id",
+                style="display: none;",
+                hx_post="/ping",
+                hx_trigger="every 2s",
+            ),  # hidden element to register session id
+            style="visibility: hidden;"
+        ),
     ],
     lang="en",
 )

@@ -62,8 +62,8 @@ class Renderer:
         self._session_parameters: Dict[str, Dict[str, SessionParameter]] = {}
 
     @property
-    def document(self: Renderer) -> str:
-        return self._master.to_string()
+    def document(self: Renderer) -> Html:
+        return self._master
 
     def register_client(self: Renderer, client_id: str) -> None:
         self._clients.append(client_id)
