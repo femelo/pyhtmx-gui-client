@@ -75,7 +75,7 @@ class HomeScreen:
         self: HomeScreen,
         session_data: Optional[Dict[str, Any]],
     ):
-        self._route = "/home"
+        self._route: str = "/home"
         self._session_data: Dict[str, Any] = {
             "wallpaper": WALLPAPER,
         }
