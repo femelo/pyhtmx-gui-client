@@ -4,6 +4,7 @@ from enum import Enum
 from threading import Thread
 from websocket import WebSocket, create_connection
 from pydantic import BaseModel, ConfigDict, Field
+from renderer import Renderer, global_renderer
 from gui_management import GuiList
 
 
@@ -41,6 +42,7 @@ class Message(BaseModel):
 class OVOSGuiClient:
     id : str = "ovos-gui-flet-client"
     server_url : str = "ws://localhost:18181/gui"
+    renderer: Renderer = global_renderer
 
     def __init__(self: OVOSGuiClient):
         self._ws: Optional[WebSocket] = OVOSGuiClient.connect()
@@ -84,14 +86,14 @@ class OVOSGuiClient:
     # Receive message from GUI web socket
     def receive_message(self: OVOSGuiClient):
         while True:
-            try:
-                response = self._ws.recv()  # Receive messages from the WebSocket
-                if response:
-                    print("Received message: ", response)
-                    message = Message.model_validate_json(response)
-                    self.process_message(message)
-            except Exception as e:
-               print(f"Error receiving message: {e}")
+            #try:
+            response = self._ws.recv()  # Receive messages from the WebSocket
+            if response:
+                print("Received message: ", response)
+                message = Message.model_validate_json(response)
+                self.process_message(message)
+            #except Exception as e:
+            #   print(f"Error receiving message: {e}")
 
     # General processing of GUI messages
     def process_message(self: OVOSGuiClient, message: Message) -> None:

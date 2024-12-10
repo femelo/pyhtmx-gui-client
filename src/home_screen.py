@@ -1,5 +1,4 @@
 from __future__ import annotations
-from dataclasses import dataclass
 from typing import Any, Optional, Dict
 from threading import Thread, Condition
 from datetime import datetime
@@ -54,15 +53,22 @@ global_clock = Clock()
 
 
 # TODO: move this to 'types.py'
-@dataclass
 class SessionData:
-    parameter: str
-    attribute: str
-    component: HTMLTag
-    value_format: Optional[str] = None
+    def __init__(
+        self: SessionData,
+        parameter: str,
+        attribute: str,
+        component: HTMLTag,
+        value_format: Optional[str] = None,
+    ):
+        self.parameter = parameter
+        self.attribute = attribute
+        self.component = component
+        self.value_format = value_format
 
 
 class HomeScreen:
+    _is_page: bool = True
     _clock: Clock = global_clock
 
     def __init__(
@@ -137,7 +143,7 @@ class HomeScreen:
 
     def set_up(self: HomeScreen, renderer: Any) -> None:
         # Register session parameters
-        for parameter, session_object in self._session_objects.keys():
+        for parameter, session_object in self._session_objects.items():
             renderer.register_session_parameter(
                 route=self._route,
                 parameter=parameter,

@@ -171,7 +171,7 @@ class Renderer:
                 component.text = attr_value
             else:
                 component.attributes.update({attr_name: attr_value})
-            self.update(attr_value, event=parameter_id)
+            self.update(attr_value, event_id=parameter_id)
             tag = component.tag
             print(f"Updated parameter: {route}:{component} -> {parameter}")
 
@@ -222,7 +222,8 @@ class Renderer:
         _ = self._routes.pop()
         _ = self._pages.pop()
         print(f"Removed last page from renderer.")
-        self.update()
+        _page = self._pages[-1]
+        self.update(_page.to_string(), event_id="root")
 
     def go_to(self: Renderer, route: str) -> None:
         if route not in self._routes:

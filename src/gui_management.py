@@ -22,10 +22,19 @@ class PageLoader(BaseModel):
         return self._page_object
 
     @property
+    def route(self: PageLoader) -> Union[HTMLTag, None]:
+        if isinstance(self._page_object, HTMLTag):
+            return f"/{secrets.token_hex(4)}"
+        elif hasattr(self._page_object, "_route"):
+            return self._page_object._route
+        else:
+            return f"/{secrets.token_hex(4)}"
+
+    @property
     def page(self: PageLoader) -> Union[HTMLTag, None]:
         if isinstance(self._page_object, HTMLTag):
             return self._page_object
-        elif "_page" in dir(self._page_object):
+        elif hasattr(self._page_object, "_page"):
             return self._page_object._page
         else:
             return None
@@ -53,7 +62,7 @@ class PageLoader(BaseModel):
                 objects.append(obj)
             elif inspect.isclass(obj) and HTMLTag in obj.__bases__:
                 objects.append(obj)
-            elif inspect.isclass(obj) and "_page" in dir(obj):
+            elif inspect.isclass(obj) and "_is_page" in dir(obj) and obj._is_page:
                 objects.append(obj)
             else:
                 pass
@@ -88,7 +97,10 @@ class PageLoader(BaseModel):
     def show(self: PageLoader) -> None:
         if self._page_object is None:
             self.build()
-        self.renderer.show(self.page)
+        self.renderer.show(
+            self.route,
+            self.page,
+        )
 
 
 class GuiList(BaseModel):
