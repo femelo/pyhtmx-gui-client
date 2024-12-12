@@ -35,7 +35,7 @@ def check_disconnected() -> None:
         now = time()
         disconnected = []
         for session_id, last_update in sessions.items():
-            if now - last_update > 3:
+            if now - last_update > 6:
                 global_client.deregister(session_id)
                 disconnected.append(session_id)
                 print(f"Session closed: {session_id}")
@@ -64,9 +64,8 @@ async def updates() -> StreamingResponse:
     )
 
 
-@app.post("/ping")
-async def ping(payload: Any = Body(None)) -> Response:
-    _, session_id = payload.decode().split("=")
+@app.post("/ping/{session_id}")
+async def ping(session_id: str) -> Response:
     # print(f"Received a ping from: {session_id}")
     now = time()
     with session_lock:
@@ -83,7 +82,7 @@ async def root():
         session_element.update_attributes(
             text_content=session_id,
             attributes={
-                "hx-vals": f"{{\"session-id\": \"{session_id}\"}}"
+                "hx-post": f"/ping/{session_id}"
             },
         )
     global_client.register(session_id)
