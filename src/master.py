@@ -35,7 +35,7 @@ MASTER_DOCUMENT: Html = Html(
                 _id="session-id",
                 style="display: none;",
                 hx_post="/ping",
-                hx_trigger="every 2s",
+                hx_trigger="every 5s",
             ),  # hidden element to register session id
             style="visibility: hidden;"
         ),
