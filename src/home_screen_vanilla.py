@@ -52,6 +52,189 @@ class SessionData:
         self.format_value = format_value
 
 
+class Widget:
+    def __init__(
+        self: DateTimeWidget,
+        session_data: Optional[Dict[str, Any]],
+    ):
+        self._session_data: Dict[str, Any] = {}
+
+    def init_session_data(self: Widget, session_data) -> None:
+        if session_data:
+            self._session_data.update(
+                {
+                    k: v for k, v in session_data.items()
+                    if k in self._session_data
+                }
+            )
+
+
+class DateTimeWidget:
+    def __init(
+        self: DateTimeWidget,
+        session_data: Optional[Dict[str, Any]],
+    ):
+        # Session data
+        self._session_data: Dict[str, Any] = {
+            "time_string": "",
+            "weekday_string": "",
+            "day_string": "",
+            "month_string": "",
+            "year_string": "",
+        }
+        if session_data:
+            self._session_data.update(
+                {
+                    k: v for k, v in session_data.items()
+                    if k in self._session_data
+                }
+            )
+        # Session objects
+        self._session_objects: Dict[str, Optional[SessionData]] = {
+            "time_string": None,
+            "weekday_string": None,
+            "month_string": None,
+            "day_string": None,           
+            "year_string": None,
+        }
+
+        # Time text
+        time_text: Div = Div(
+            inner_content=session_data.get("time_string"),
+            _id="time",
+            _class="text-[200px] text-white font-bold",
+        )
+        self._session_objects["time_string"] = SessionData(
+            parameter="time",
+            attribute="inner_content",
+            component=time_text,
+        )
+        # Full date text
+        date_text: Div = Div(
+            inner_content=self.format_date(),
+            _id="date",
+            _class="text-[200px] text-white font-bold",
+        )
+        date_session_object = SessionData(
+            parameter="date",
+            attribute="inner_content",
+            component=date_text,
+            format_value=self.format_date,
+        )
+        for parameter in ["weekday_string", "month_string", "day_string", "year_string"]:
+            self._session_objects[parameter] = date_session_object
+
+        # Time and date container
+        self._widget: Div = Div(
+            [
+                time_text,
+                date_text,
+            ],
+            _class=[
+                "p-[20px]",
+                "flex",
+                "flex-col",
+                "justify-start",
+                "items-start",
+            ],
+        )
+
+    @property
+    def widget(self: DateTimeWidget) -> Div:
+        return self._widget
+
+    @property
+    def session_objects(self: DateTimeWidget) -> Dict[str, Optional[SessionData]]:
+        return self._session_objects
+
+    def format_date(self: DateTimeWidget) -> str:
+        weekday = self._session_data["weekday_string"]
+        month = self._session_data["month_string"]
+        day = self._session_data["day_string"]
+        year = self._session_data["year_string"]
+        return f"{weekday} {month} {day}, {year}"
+
+
+
+class WeatherWidget:
+    def __init(
+        self: WeatherWidget,
+        session_data: Optional[Dict[str, Any]],
+    ):
+        # Session data
+        self._session_data: Dict[str, Any] = {
+            "weather_code": "",
+            "weather_temp": "",
+        }
+        if session_data:
+            self._session_data.update(
+                {
+                    k: v for k, v in session_data.items()
+                    if k in self._session_data
+                }
+            )
+        # Session objects
+        self._session_objects: Dict[str, Optional[SessionData]] = {
+            "weather_code": None,
+            "weather_temp": None,
+        }
+        # Weather icon
+        formatted_weather_icon_src = self.weather_icon_src(
+            self._session_data.get("weather_code")
+        )
+        weather_icon: Img = Img(
+            _id="weather_code",
+            src=formatted_weather_icon_src,
+            width="100",
+            height="100",
+        )
+        self._session_objects["weather_code"] = SessionData(
+            parameter="weather_code",
+            attribute="src",
+            component=weather_icon,
+            format_value=self.weather_icon_src,
+        )
+        # Weather temperature text
+        formatted_temperature_value = self.weather_temperature(
+            self._session_data.get("weather_temp")
+        )
+        weather_temp_text: Div = Div(
+            formatted_temperature_value,
+            _id="weather_temp",
+            _class="text-[50px] text-white font-bold",
+        )
+        self._session_objects["weather_temp"] = SessionData(
+            parameter="weather_temp",
+            attribute="inner_content",
+            component=weather_temp_text,
+            format_value=self.weather_temperature,
+        )
+        # Weather container
+        self._widget: Div = Div(
+            Div(
+                [
+                    weather_icon,
+                    weather_temp_text,
+                ],
+                _class=[
+                    "p-[20px]",
+                    "flex",
+                    "gap-[10px]",
+                    "justify-end",
+                    "items-center",
+                ],
+            ),
+            _class="flex grow",
+        )
+
+    @property
+    def widget(self: DateTimeWidget) -> Div:
+        return self._widget
+
+    @property
+    def session_objects(self: DateTimeWidget) -> Dict[str, Optional[SessionData]]:
+        return self._session_objects
+
 class HomeScreen:
     _is_page: bool = True  # required class attribute for correct loading
 
@@ -96,110 +279,7 @@ class HomeScreen:
             "weather_temp": None,
         }
 
-        # Time text
-        time_text: Div = Div(
-            inner_content=session_data.get("time_string"),
-            _id="time_string",
-            _class="text-[200px] text-white font-bold",
-        )
-        self._session_objects["time_string"] = SessionData(
-            parameter="time_string",
-            attribute="inner_content",
-            component=time_text,
-        )
-        # Weekday, month, day and year
-        for parameter in [
-            "weekday_string",
-            "month_string",
-            "day_string",
-            "year_string",
-        ]:
-            component: Span = Span(
-                inner_content=session_data.get(parameter),
-                _id=parameter,
-                _class="text-[60px] text-white font-bold",
-            )
-            self._session_objects[parameter] = SessionData(
-                parameter=parameter,
-                attribute="inner_content",
-                component=component,
-            )
         
-        # Date container
-        date_container: Div = Div(
-            [
-                self._session_objects["weekday_string"].component,
-                " ",
-                self._session_objects["month_string"].component,
-                " ",
-                self._session_objects["day_string"].component,
-                ", ",
-                self._session_objects["year_string"].component,
-            ],
-        )
-        # Time and date container
-        time_and_date: Div = Div(
-            [
-                time_text,
-                date_container,
-            ],
-            _class=[
-                "p-[20px]",
-                "flex",
-                "flex-col",
-                "justify-start",
-                "items-start",
-            ],
-        )
-
-        # Weather icon
-        formatted_weather_icon_src = self.weather_icon_src(
-            self._session_data.get("weather_code")
-        )
-        weather_icon: Img = Img(
-            _id="weather_code",
-            src=formatted_weather_icon_src,
-            width="100",
-            height="100",
-        )
-        self._session_objects["weather_code"] = SessionData(
-            parameter="weather_code",
-            attribute="src",
-            component=weather_icon,
-            format_value=self.weather_icon_src,
-        )
-        # Weather temperature text
-        formatted_temperature_value = self.weather_temperature(
-            self._session_data.get("weather_temp")
-        )
-        weather_temp_text: Div = Div(
-            formatted_temperature_value,
-            key="weather_temp",
-            _class="text-[50px] text-white font-bold",
-        )
-        self._session_objects["weather_temp"] = SessionData(
-            parameter="weather_temp",
-            attribute="inner_content",
-            component=weather_temp_text,
-            format_value=self.weather_temperature,
-        )
-        # Weather container
-        weather_container: Div = Div(
-            Div(
-                [
-                    weather_icon,
-                    weather_temp_text,
-                ],
-                _class=[
-                    "p-[20px]",
-                    "flex",
-                    "gap-[10px]",
-                    "justify-end",
-                    "items-center",
-                ],
-            ),
-            _class="flex grow",
-        )
 
         # Background container
         formatted_wallpaper_uri = self.wallpaper_uri(
