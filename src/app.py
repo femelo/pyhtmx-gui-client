@@ -8,7 +8,7 @@ from copy import deepcopy
 from time import time, sleep
 from threading import Lock, Thread
 from secrets import token_hex
-from renderer import global_renderer
+from renderer import ContextType, global_renderer
 from event_sender import global_sender
 from ovos_gui_client import global_client
 
@@ -64,13 +64,35 @@ async def updates() -> StreamingResponse:
     )
 
 
+@app.get("/local-event/{event_id}")
+async def local_event(event_id: str) -> HTMLResponse:
+    print(f"Triggered: {event_id}")
+    # Run callback
+    component = global_renderer.trigger_callback(
+        context=ContextType.LOCAL,
+        event_id=event_id,
+    )
+    return HTMLResponse(component.to_string())
+
+
+@app.post("/global-event/{event_id}")
+async def global_event(event_id: str) -> Response:
+    print(f"Triggered: {event_id}")
+    # Run callback
+    global_renderer.trigger_callback(
+        context=ContextType.GLOBAL,
+        event_id=event_id,
+    )
+    return Response(status_code=204)
+
+
 @app.post("/ping/{session_id}")
 async def ping(session_id: str) -> Response:
     # print(f"Received a ping from: {session_id}")
     now = time()
     with session_lock:
         sessions[session_id] = now
-    return Response()
+    return Response(status_code=204)
 
 
 @app.get("/")

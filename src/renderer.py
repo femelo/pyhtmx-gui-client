@@ -78,6 +78,7 @@ class Renderer:
         route: str,
         parameter: str,
         target: HTMLTag,
+        target_level: Optional[str] = "innerHTML",
     ) -> None:
         # Set new id
         _id: str = token_hex(4)
@@ -85,6 +86,7 @@ class Renderer:
         target.update_attributes(
             attributes={
                 "sse-swap": parameter_id,
+                "hx-swap": target_level,
             }
         )
         if route not in self._session_parameters:
@@ -120,7 +122,7 @@ class Renderer:
                 )
             source.update_attributes(
                 attributes={
-                    "hx-get": f"/events/{event_id}",
+                    "hx-get": f"/local-event/{event_id}",
                     "hx-trigger": event,
                     "hx-target": target.attributes["id"],
                     "hx-swap": target_level,
@@ -136,10 +138,10 @@ class Renderer:
             )
             source.update_attributes(
                 attributes={
-                    "hx-post": f"/events/{event_id}",
+                    "hx-post": f"/global-event/{event_id}",
                     "hx-trigger": event,
-                    "hx-target": target.attributes["id"] if target is not None else "#root",
-                    "hx-swap": "none",
+                    # "hx-target": target.attributes["id"] if target is not None else "none",
+                    # "hx-swap": "none",
                 }
             )
             callback_mapping = self._global_callbacks
@@ -173,9 +175,10 @@ class Renderer:
             component = session_parameter.target
             if attr_name == "inner_content":
                 component.update_attributes(text_content=attr_value)
+                self.update(attr_value, event_id=parameter_id)
             else:
                 component.update_attributes(attributes={attr_name: attr_value})
-            self.update(attr_value, event_id=parameter_id)
+                self.update(component.to_string(), event_id=parameter_id)
             tag = component.tag
             # print(f"Updated parameter: {route}:{component} -> {parameter}")
 
@@ -203,7 +206,7 @@ class Renderer:
         page: HTMLTag,
     ) -> None:
         if route in self._routes and route != self._routes[-1]:
-            index = self._routes.index(page.route)
+            index = self._routes.index(route)
             # Move route
             route = self._routes.pop(index)
             self._routes.append(route)
@@ -252,6 +255,7 @@ class Renderer:
     def update_root(self: Renderer) -> None:
         _page = self._pages[-1]
         self._root.text = None
+        _ = self._root.detach_children()
         self._root.add_child(_page)
         self.update(_page.to_string(), event_id="root")
 
@@ -264,10 +268,26 @@ class Renderer:
         if not self._clients:
             return
         # Format SSE message
+        data = data.replace('\n', '')
         msg: str = f"data: {data}\n\n"
         if event_id is not None:
             msg = f"event: {event_id}\n{msg}"
         self.event_sender.send(msg)
+
+    def trigger_callback(
+        self: Renderer,
+        context: ContextType,
+        event_id: str
+    ) -> Optional[Union[HTMLTag, str]]:
+        if context == ContextType.LOCAL:
+            callback_mapping = self._local_callbacks
+        else:
+            callback_mapping = self._global_callbacks
+        content: Optional[Union[HTMLTag, str]] = None
+        if event_id in callback_mapping:
+            # Call
+            content = callback_mapping[event_id].fn()
+        return content
 
 # Instantiate global renderer
 global_renderer: Renderer = Renderer()

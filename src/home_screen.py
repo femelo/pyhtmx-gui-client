@@ -3,7 +3,7 @@ import shutil
 import os
 from typing import Any, Optional, List, Dict, Tuple, Callable
 from pyhtmx.html_tag import HTMLTag
-from pyhtmx import Div, Span, Img
+from pyhtmx import Div, Img
 
 # Background image
 WALLPAPER = "https://cdn.pixabay.com/photo/2016/06/02/02/33/triangles-1430105_1280.png"
@@ -45,11 +45,13 @@ class SessionData:
         attribute: str,
         component: HTMLTag,
         format_value: Optional[Callable] = None,
+        target_level: Optional[str] = "innerHTML",
     ):
         self.parameter = parameter
         self.attribute = attribute
         self.component = component
         self.format_value = format_value
+        self.target_level = target_level
 
 
 class Widget:
@@ -69,7 +71,7 @@ class Widget:
         self.init_session_data(session_data)
 
     @property
-    def widget(self: Widget) -> Div:
+    def widget(self: Widget) -> Optional[HTMLTag]:
         return self._widget
 
     @property
@@ -175,6 +177,7 @@ class WeatherWidget(Widget):
             attribute="src",
             component=weather_icon,
             format_value=self.weather_icon_src,
+            target_level="outerHTML",
         )
         # Weather temperature text
         weather_temp_text: Div = Div(
@@ -209,7 +212,7 @@ class WeatherWidget(Widget):
         weather_code = self._session_data["weather_code"]
         if weather_code is not None and weather_code in WEATHER_ICONS:
             return WEATHER_ICONS[weather_code]
-        return os.path.join("assets", "icons", "default.svg")
+        return os.path.join("assets", "icons", "no-internet.svg")
 
     def weather_temperature(self: WeatherWidget, *args: Any, **kwargs: Any) -> str:
         weather_temp = self._session_data["weather_temp"]
@@ -244,9 +247,7 @@ class BackgroundContainer(Widget):
                 "bg-cover",
                 "bg-no-repeat",
             ],
-            style={
-                "background-image": self.wallpaper_url(),
-            }
+            style=self.wallpaper_url(),
         )
         self._session_objects["wallpaper_path"] = SessionData(
             parameter="wallpaper",
@@ -332,7 +333,7 @@ class HomeScreen:
         # Register session parameters
         registered = []
         for widget in self._widgets:
-            for parameter, session_object in widget.session_objects.items():
+            for _, session_object in widget.session_objects.items():
                 # Prevent objects from being registered twice
                 if id(session_object) in registered:
                     continue
@@ -340,5 +341,6 @@ class HomeScreen:
                     route=self._route,
                     parameter=session_object.parameter,
                     target=session_object.component,
+                    target_level=session_object.target_level,
                 )
                 registered.append(id(session_object))

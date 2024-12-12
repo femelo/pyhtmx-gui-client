@@ -1,10 +1,10 @@
 from __future__ import annotations
-from typing import Any, Optional, Dict
+from typing import Any, Optional, Dict, Callable
 from threading import Thread, Condition
 from datetime import datetime
 import time
 from pyhtmx.html_tag import HTMLTag
-from pyhtmx import Div, Span
+from pyhtmx import Div
 
 
 # Background image
@@ -59,12 +59,14 @@ class SessionData:
         parameter: str,
         attribute: str,
         component: HTMLTag,
-        value_format: Optional[str] = None,
+        format_value: Optional[Callable] = None,
+        target_level: Optional[str] = "innerHTML",
     ):
         self.parameter = parameter
         self.attribute = attribute
         self.component = component
-        self.value_format = value_format
+        self.format_value = format_value
+        self.target_level = target_level
 
 
 class HomeScreen:
@@ -118,7 +120,7 @@ class HomeScreen:
             parameter="wallpaper",
             attribute="_class",
             component=overlay,
-            value_format="bg-[url({})]",
+            format_value=lambda x: f"bg-[url({x})]",
         )
 
         # Main view
@@ -142,8 +144,8 @@ class HomeScreen:
                 session_object = self._session_objects[parameter]
                 attr_name = session_object.attribute
                 attr_value = (
-                    session_object.value_format.format(value)
-                    if session_object.value_format else value
+                    session_object.format_value(value)
+                    if session_object.format_value else value
                 )
                 renderer.update_attributes(
                     route=self._route,
@@ -158,6 +160,7 @@ class HomeScreen:
                 route=self._route,
                 parameter=parameter,
                 target=session_object.component,
+                target_level=session_object.target_level,
             )
         # Update time
         def update_time():
