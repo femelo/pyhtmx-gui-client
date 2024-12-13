@@ -1,11 +1,15 @@
 from __future__ import annotations
 from typing import Mapping, Dict, List, Optional, Union, Any
 from enum import Enum
-from threading import Thread
+from threading import Thread, Event
 from websocket import WebSocket, create_connection
 from pydantic import BaseModel, ConfigDict, Field
 from renderer import Renderer, global_renderer
 from gui_management import GuiList
+
+
+# Termination event
+termination_event: Event = Event()
 
 
 class MessageType(str, Enum):
@@ -91,7 +95,7 @@ class OVOSGuiClient:
 
     # Receive message from GUI web socket
     def receive_message(self: OVOSGuiClient):
-        while True:
+        while not termination_event.is_set():
             #try:
             response = self._ws.recv()  # Receive messages from the WebSocket
             if response:
@@ -100,6 +104,7 @@ class OVOSGuiClient:
                 self.process_message(message)
             #except Exception as e:
             #   print(f"Error receiving message: {e}")
+        self._ws.close()
 
     # General processing of GUI messages
     def process_message(self: OVOSGuiClient, message: Message) -> None:

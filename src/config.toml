@@ -1,0 +1,3 @@
+connection-check-wait = 0.5
+ping-period = 5.0
+assets-directory = "assets"
