@@ -5,6 +5,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict
 from pyhtmx import Html, Div
 from pyhtmx.html_tag import HTMLTag
+from logger import logger
 from master import MASTER_DOCUMENT
 from event_sender import EventSender, global_sender
 
@@ -67,11 +68,11 @@ class Renderer:
 
     def register_client(self: Renderer, client_id: str) -> None:
         self._clients.append(client_id)
-        print(f"Number of clients in registry: {len(self._clients)}")
+        logger.info(f"Number of clients in registry: {len(self._clients)}")
 
     def deregister(self: Renderer, client_id: str) -> None:
         self._clients.remove(client_id)
-        print(f"Number of clients in registry: {len(self._clients)}")
+        logger.info(f"Number of clients in registry: {len(self._clients)}")
 
     def register_session_parameter(
         self: Renderer,
@@ -146,7 +147,7 @@ class Renderer:
             )
             callback_mapping = self._global_callbacks
         else:
-            print("Unknown context type. Callback not registered.")
+            logger.warning("Unknown context type. Callback not registered.")
             return
         # Register callback
         callback_mapping[event_id] = Callback(
@@ -180,7 +181,7 @@ class Renderer:
                 component.update_attributes(attributes={attr_name: attr_value})
                 self.update(component.to_string(), event_id=parameter_id)
             tag = component.tag
-            # print(f"Updated parameter: {route}:{component} -> {parameter}")
+            # logger.debug(f"Updated parameter: {route}:{component} -> {parameter}")
 
     def close_component(
         self: Renderer,
@@ -213,19 +214,32 @@ class Renderer:
             # Move root page
             _page = self._pages.pop(index)
             self._pages.append(_page)
+            logger.info(
+                f"Retrieved page in history: {route}. "
+                "Page ready to be displayed."
+            )
         elif route not in self._routes:
             self._routes.append(route)
             self._pages.append(page)
-            print(f"Page added to renderer: {route}.")
+            logger.info(
+                f"Page added to renderer: {route}. "
+                "Page ready to be displayed."
+            )
         else:
-            print(f"Page already exists: {route}.")
+            logger.info(
+                f"Page already exists: {route}. "
+                "Page ready to be displayed."
+            )
             pass
         self.update_root()
 
     def close(self: Renderer) -> None:
-        _ = self._routes.pop()
+        route = self._routes.pop()
         _ = self._pages.pop()
-        print(f"Removed last page from renderer.")
+        logger.info(
+            f"Removed page {route} from renderer. "
+            "Previous page in history ready to be shown."
+        )
         self.update_root()
 
     def go_to(self: Renderer, route: str) -> None:
@@ -239,7 +253,10 @@ class Renderer:
         _page = self._pages.pop(index)
         self._pages.append(_page)
         # Move shown pages
-        print(f"Routed to page: {route}.")
+        logger.info(
+            f"Routed to page: {route}. "
+            "Page ready to be displayed."
+        )
         self.update_root()
 
     def go_back(self: Renderer, level: int = -1) -> None:
@@ -249,7 +266,10 @@ class Renderer:
         # Move root page
         _page = self._pages.pop(level - 1)
         self._pages.append(_page)
-        print(f"Routed back to page: {route}.")
+        logger.info(
+            f"Routed back to page: {route}. "
+            "Page ready to be displayed."
+        )
         self.update_root()
 
     def update_root(self: Renderer) -> None:
