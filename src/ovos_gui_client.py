@@ -40,7 +40,7 @@ class Message(BaseModel):
 
 
 class OVOSGuiClient:
-    id : str = "ovos-gui-flet-client"
+    id : str = "ovos-pyhtmx-gui-client"
     server_url : str = "ws://localhost:18181/gui"
     renderer: Renderer = global_renderer
 
