@@ -163,6 +163,7 @@ class OVOSGuiClient:
         else:
             logger.warning(f"No handler defined for this message: {message}")
 
+
     def handle_gui_list_insert(
         self: OVOSGuiClient,
         namespace: str,
@@ -170,39 +171,34 @@ class OVOSGuiClient:
         data: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
         values: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
-        if namespace == "skill-ovos-date-time.openvoiceos":  # ovos-date-time
-            # TODO: implement me
-            pass
-        else:
-            if namespace == "skill-ovos-homescreen.openvoiceos":
-                # Force local home screen
-                # TODO: change actual homescreen skill
-                data = [{"url": "home_screen.py", "page": "home_screen"}]
-
-            show = len(self._gui_list) == 0
-
-            if namespace not in self._gui_list:
-                self._gui_list[namespace] = GuiList(
-                    namespace=namespace,
-                    renderer=OVOSGuiClient.renderer,
-                )
-
-            if position is None:
-                position = 0
-
-            if namespace in self._session:
-                session_data = self._session[namespace]
-            else:
-                session_data = {}
-
-            self._gui_list[namespace].insert(
-                position=position,
-                values=values if values is not None else data,
-                session_data=session_data,
+        if namespace == "skill-ovos-homescreen.openvoiceos":
+            # Force local home screen
+            # TODO: change actual homescreen skill
+            data = [{"url": "home_screen.py", "page": "home_screen"}]
+    
+        show = len(self._gui_list) == 0
+    
+        if namespace not in self._gui_list:
+            self._gui_list[namespace] = GuiList(
+                namespace=namespace,
+                renderer=OVOSGuiClient.renderer,
             )
-            if show:
-                self._gui_list[namespace].show(position)
-
+    
+        if position is None:
+            position = 0
+    
+        if namespace in self._session:
+            session_data = self._session[namespace]
+        else:
+            session_data = {}
+    
+        self._gui_list[namespace].insert(
+            position=position,
+            values=values if values is not None else data,
+            session_data=session_data,
+        )
+        if show:
+            self._gui_list[namespace].show(position)
     def handle_gui_list_move(
         self: OVOSGuiClient,
         namespace: str,
