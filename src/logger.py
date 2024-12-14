@@ -1,6 +1,7 @@
 import logging
 from typing import Union
 from colorlog import ColoredFormatter
+from config import config_data
 
 
 def init_logger(
@@ -37,4 +38,4 @@ def init_logger(
 
     return logger
 
-logger = init_logger("PYHTMX GUI", level=logging.DEBUG)
+logger = init_logger("PYHTMX GUI", level=config_data["log-level"].upper())

@@ -106,7 +106,8 @@ class OVOSGuiClient:
     def receive_message(self: OVOSGuiClient):
         while not termination_event.is_set():
             try:
-                response = self._ws.recv()  # Receive messages from the WebSocket
+                if self._ws:
+                    response = self._ws.recv()  # Receive messages from the WebSocket
                 if response:
                     logger.debug(f"Received message: {response}")
                     message = Message.model_validate_json(response)

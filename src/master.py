@@ -8,6 +8,10 @@ from pyhtmx import (
     Body,
     Div,
 )
+from config import config_data
+
+
+ping_period: int = round(config_data["ping-period"])
 
 MASTER_DOCUMENT: Html = Html(
     [
@@ -35,7 +39,7 @@ MASTER_DOCUMENT: Html = Html(
                 _id="session-id",
                 style="display: none;",
                 hx_post="/ping",
-                hx_trigger="every 5s",
+                hx_trigger=f"every {ping_period}s",
             ),  # hidden element to register session id
             style="visibility: hidden;"
         ),

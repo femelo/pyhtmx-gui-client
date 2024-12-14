@@ -1,14 +1,16 @@
 from __future__ import annotations
+import os
 from typing import Iterator, Dict, Any
-from fastapi import Body, FastAPI
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import Response, HTMLResponse, StreamingResponse
 from copy import deepcopy
-from time import time, sleep
+from time import time
 from threading import Lock, Thread
 from secrets import token_hex
-from signal import signal, SIGINT, SIG_DFL
+from signal import signal, SIGINT, SIGTERM
 from config import config_data
 import uvicorn
 from renderer import ContextType, global_renderer
@@ -17,10 +19,18 @@ from event_sender import global_sender
 from ovos_gui_client import global_client, termination_event
 
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # After start
+    logger.info("PyHTMX GUI started...")
+    yield
+    # Before finishing
+    logger.info("PyHTMX GUI shutting down...")
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.mount("/assets", StaticFiles(directory=config_data["assets-directory"]), name="assets")
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -31,9 +41,12 @@ app.add_middleware(
 
 # Termination handler
 def termination_handler(*args: Any) -> None:
-    logger.info("Terminating gently...")
-    termination_event.set()
-    global_client.close()
+    if not termination_event.is_set():
+        logger.info("Terminating gently...")
+        termination_event.set()
+        global_client.close()
+    else:
+        os.kill(os.getpid(), SIGTERM)
 
 # Set signal
 signal(SIGINT, termination_handler)
@@ -72,8 +85,6 @@ async def updates() -> StreamingResponse:
             msg = messages.get()  # blocks until a new message arrives
             # logger.debug(f"Sending message:\n{msg}")
             yield msg
-            if "event: root" in msg:
-                logger.info("Displaying last queued page.")
     return StreamingResponse(
         stream(),
         media_type="text/event-stream"
@@ -128,10 +139,11 @@ async def root():
     return HTMLResponse(document.to_string())
 
 
-# Launch app
-uvicorn.run(
-    app,
-    host="127.0.0.1",
-    port=8000,
-    log_level="warning",  # set log level to critical
-)
+if __name__ == "__main__":
+    # Launch app
+    uvicorn.run(
+        app,
+        host=config_data["server-host"],
+        port=config_data["server-port"],
+        log_level="warning",  # set log level to critical
+    )
