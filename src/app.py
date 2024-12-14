@@ -30,9 +30,9 @@ app.add_middleware(
 
 # Termination handler
 def termination_handler(*args: Any) -> None:
+    print("Terminating gently...")
     termination_event.set()
-    sys.exit(0)
-
+    global_client.close()
 
 # Set signal
 signal(SIGINT, termination_handler)
