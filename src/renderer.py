@@ -71,7 +71,8 @@ class Renderer:
         logger.info(f"Number of clients in registry: {len(self._clients)}")
 
     def deregister(self: Renderer, client_id: str) -> None:
-        self._clients.remove(client_id)
+        if client_id in self._clients:
+            self._clients.remove(client_id)
         logger.info(f"Number of clients in registry: {len(self._clients)}")
 
     def register_session_parameter(

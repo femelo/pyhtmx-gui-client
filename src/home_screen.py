@@ -111,6 +111,7 @@ class DateTimeWidget(Widget):
             inner_content=session_data.get("time_string"),
             _id="time",
             _class="text-[10vw] text-white font-bold",
+            style={"text-shadow": "#272727 0.5vw 0.5vh 1vw"},
         )
         self._session_objects["time_string"] = SessionData(
             parameter="time",
@@ -122,6 +123,7 @@ class DateTimeWidget(Widget):
             inner_content=self.format_date(),
             _id="date",
             _class="text-[6vw] text-white font-bold",
+            style={"text-shadow": "#272727 0.5vw 0.5vh 1vw"},
         )
         date_session_object = SessionData(
             parameter="date",
