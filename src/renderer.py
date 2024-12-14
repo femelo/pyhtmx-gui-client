@@ -235,8 +235,14 @@ class Renderer:
             pass
         self.update_root()
 
-    def close(self: Renderer) -> None:
-        route = self._routes.pop()
+    def close(self: Renderer, route: Optional[str] = None) -> None:
+        if route is None:
+            route = self._routes[-1]
+        if not self._routes or route != self._routes[-1]:
+            logger.warning(f"Page {route} is not active, nothing to close.")
+            return
+
+        _ = self._routes.pop()
         _ = self._pages.pop()
         logger.info(
             f"Removed page {route} from renderer. "

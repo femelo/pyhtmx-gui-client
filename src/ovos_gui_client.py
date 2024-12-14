@@ -24,7 +24,7 @@ class MessageType(str, Enum):
     SESSION_SET = "mycroft.session.set"
     SESSION_DELETE = "mycroft.session.delete"
     SESSION_LIST_INSERT = "mycroft.session.list.insert"
-    SESSION_LIST_UPDATE = "mycroft.session.list.insert"
+    SESSION_LIST_UPDATE = "mycroft.session.list.update"
     SESSION_LIST_MOVE = "mycroft.session.list.move"
     SESSION_LIST_REMOVE = "mycroft.session.list.remove"
 
@@ -170,6 +170,7 @@ class OVOSGuiClient:
             self.handle_session_list_remove(
                 message.namespace,
                 message.position,
+                message.property,
                 message.items_number,
             )
         else:
@@ -291,7 +292,8 @@ class OVOSGuiClient:
                 self._session[namespace][property] = [None for _ in range(position)]
             for item in reversed(values):
                 self._session[namespace][property].insert(position, item)
-            # TODO: handle session parameter insert in the renderer
+            if namespace in self._gui_list:
+                self._gui_list[namespace].update(self._session[namespace])
 
 
     def handle_session_list_update(self: OVOSGuiClient) -> None:
@@ -305,15 +307,22 @@ class OVOSGuiClient:
     def handle_session_list_remove(
         self: OVOSGuiClient,
         namespace: str,
-        position: int,
-        items_number: int,
+        position: Optional[int],
+        property: Optional[str],
+        items_number: Optional[int],
     ) -> None:
+        if position is None:
+            position = 0
         if namespace == "mycroft.system.active_skills":
             if position < len(self._active_skills):
-                del self._active_skills[position]
+                skill_id = self._active_skills.pop(position)
+                if skill_id in self._gui_list:
+                    self._gui_list[skill_id].close(position)
         else:
-            # TODO: what should go here?
-            pass
+            if namespace not in self._session:
+                self._session[namespace] = {}
+            if property is not None and property in self._session[namespace]:
+                del self._session[namespace][property]
 
     # Send an event to OVOS-GUI
     def send_focus_event(

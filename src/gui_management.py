@@ -103,6 +103,12 @@ class PageLoader(BaseModel):
             self.page,
         )
 
+    def close(self: PageLoader) -> None:
+        if self._page_object:
+            self.renderer.close(
+                self.route,
+            )
+
 
 class GuiList(BaseModel):
     model_config = ConfigDict(strict=False, arbitrary_types_allowed=True)
@@ -153,6 +159,11 @@ class GuiList(BaseModel):
             if position < len(self._pages):
                 del self._pages[position]
 
+    def get_page(self: GuiList, position: int) -> Optional[PageLoader]:
+        if 0 <= position < len(self._pages):
+            return self._pages[position]
+        return None
+
     def show(
         self: GuiList,
         position: int,
@@ -160,6 +171,14 @@ class GuiList(BaseModel):
         if 0 <= position < len(self._pages):
             self._pages[position].show()
             self._shown_page = position
+
+    def close(
+        self: GuiList,
+        position: int,
+    ) -> None:
+        if 0 <= position < len(self._pages):
+            self._pages[position].close()
+            self._shown_page = -1  # TODO: think about this logic
 
     def update(
         self: GuiList,
