@@ -22,10 +22,10 @@ def init_logger(
         reset=True,
         log_colors={
             'DEBUG':    'cyan',
-            'INFO':     'green',
+            'INFO':     'light_green',
             'WARNING':  'yellow',
-            'ERROR':    'red',
-            'CRITICAL': 'red,bg_white',
+            'ERROR':    'light_red',
+            'CRITICAL': 'red',
         },
     )
 
