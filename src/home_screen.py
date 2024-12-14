@@ -3,7 +3,7 @@ import shutil
 import os
 from typing import Any, Optional, List, Dict, Tuple, Callable
 from pyhtmx.html_tag import HTMLTag
-from pyhtmx import Div, Img
+from pyhtmx import Div, Img, A, Input, Label, Ul, Li
 
 # Background image
 WALLPAPER = "https://cdn.pixabay.com/photo/2016/06/02/02/33/triangles-1430105_1280.png"
@@ -231,6 +231,85 @@ class WeatherWidget(Widget):
         return ''
 
 
+class Drawer(Widget):
+    def __init__(
+        self: Drawer,
+        session_data: Optional[Dict[str, Any]] = None,
+    ):
+        super().__init__(session_data=session_data)
+
+        settings_item: A = A("Settings")
+        about_item: A = A("About")
+
+        self.button = Label(
+            "Open drawer",
+            _for="drawer-input",
+            _class=[
+                "btn",
+                "btn-neutral",
+                "rounded-none",
+                "text-start",
+                "animation-none",
+                # "drawer-button",
+                "w-full",
+            ],
+        )
+
+        self.container: Div = Div(
+            _class=[
+                "drawer-content",
+                "flex",
+                "flex-col",
+                "grow",
+            ],
+        )
+
+        self._widget: Div = Div(
+            [
+                Input(
+                    id="drawer-input",
+                    _type="checkbox",
+                    _class="drawer-toggle"
+                ),
+                self.container,
+                Div(
+                    [
+                        Label(
+                            _for="drawer-input",
+                            aria_label="close sidebar",
+                            _class="drawer-overlay",
+                        ),
+                        Ul(
+                            [
+                                Li(settings_item),
+                                Li(about_item),
+                            ],
+                            _class=[
+                                "menu",
+                                "bg-base-200",
+                                "text-base-content",
+                                "min-h-full",
+                                "w-[20vw]",
+                                "p-4",
+                            ],
+                        ),
+                    ],
+                    _class="drawer-side",
+                ),
+            ],
+            _class=[
+                "drawer",
+                "flex",
+                "flex-col",
+                "grow",
+            ],
+        )
+
+
+class BottomBar(Widget):
+    pass
+
+
 class BackgroundContainer(Widget):
     _parameters = (
         "wallpaper_path",
@@ -300,8 +379,11 @@ class HomeScreen:
         background = BackgroundContainer(session_data=session_data)
         background.widget.add_child(weather.widget)
         background.widget.add_child(date_and_time.widget)
+        drawer = Drawer(session_data=session_data)
+        drawer.container.add_child(background.widget)
+        drawer.container.add_child(drawer.button)
 
-        self._widgets: List[Widget] = [date_and_time, weather, background]
+        self._widgets: List[Widget] = [date_and_time, weather, background, drawer]
 
         self._session_data: Dict[str, Any] = {
             k: v for widget in self._widgets
@@ -310,7 +392,7 @@ class HomeScreen:
 
         # Main view
         self._page: Div = Div(
-            background.widget,
+            drawer.widget,
             _id="home",
             _class="flex flex-col",
             style={"width": "100vw", "height": "100vh"},
