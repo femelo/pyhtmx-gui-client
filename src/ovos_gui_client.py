@@ -100,7 +100,7 @@ class OVOSGuiClient:
         if self._ws:
             sleep(0.1)
             self._ws.close()
-        print("Closed connection with ovos-gui websocket.")
+        logger.info("Closed connection with ovos-gui websocket.")
 
     # Receive message from GUI web socket
     def receive_message(self: OVOSGuiClient):

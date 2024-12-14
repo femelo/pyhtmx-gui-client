@@ -1,5 +1,4 @@
 from __future__ import annotations
-import sys
 from typing import Iterator, Dict, Any
 from fastapi import Body, FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -7,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import Response, HTMLResponse, StreamingResponse
 from copy import deepcopy
 from time import time, sleep
-from threading import Lock, Thread, Event
+from threading import Lock, Thread
 from secrets import token_hex
 from signal import signal, SIGINT, SIG_DFL
 from config import config_data
@@ -32,7 +31,7 @@ app.add_middleware(
 
 # Termination handler
 def termination_handler(*args: Any) -> None:
-    print("Terminating gently...")
+    logger.info("Terminating gently...")
     termination_event.set()
     global_client.close()
 
@@ -72,9 +71,9 @@ async def updates() -> StreamingResponse:
         while True:
             msg = messages.get()  # blocks until a new message arrives
             # logger.debug(f"Sending message:\n{msg}")
+            yield msg
             if "event: root" in msg:
                 logger.info("Displaying last queued page.")
-            yield msg
     return StreamingResponse(
         stream(),
         media_type="text/event-stream"
