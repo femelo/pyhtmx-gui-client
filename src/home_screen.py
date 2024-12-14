@@ -175,6 +175,7 @@ class WeatherWidget(Widget):
             src=self.weather_icon_src(),
             width="auto",
             height="auto",
+            style={"filter": "drop-shadow(0.5vw 0.5vh 1vw #272727)"},
         )
         # Wrap img in a div to control size dynamically
         weather_icon_container: Div = Div(
@@ -193,6 +194,7 @@ class WeatherWidget(Widget):
             inner_content=self.weather_temperature(),
             _id="weather_temp",
             _class="text-[4vw] leading-[8vw] text-white font-bold",
+            style={"text-shadow": "#272727 0.5vw 0.5vh 1vw"},
         )
         self._session_objects["weather_temp"] = SessionData(
             parameter="weather_temp",
