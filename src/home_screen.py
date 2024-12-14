@@ -231,6 +231,66 @@ class WeatherWidget(Widget):
         return ''
 
 
+class BottomBar(Widget):
+    def __init__(
+        self: BottomBar,
+        session_data: Optional[Dict[str, Any]] = None,
+    ):
+        super().__init__(session_data=session_data)
+
+        self.button: Label = Label(
+            Img(
+                src="assets/icons/bars-solid.svg",
+                width="auto",
+                height="auto",
+                style="filter: invert(100%);"
+            ),
+            _for="drawer-input",
+            _class=[
+                "btn",
+                "btn-neutral",
+                "text-start",
+                "animation-none",
+                "drawer-button",
+                "bg-[#272727]",
+                "hover:bg-[#575757]",
+                "py-[5px]",
+                "px-[10px]",
+                "w-[50px]",
+            ],
+        )
+
+        self.text_input: Input = Input(
+            _type="text",
+            placeholder="Ask anything",
+            _class=[
+                "input",
+                "input-bordered",
+                "focus:border-sky-500",
+                "focus:ring-sky-500",
+                "focus:ring-1",
+                "w-full",
+                "h-[40px]",
+                "grow",
+            ],
+        )
+
+        self._widget: Div = Div(
+            [
+                self.button,
+                self.text_input,
+            ],
+            _class=[
+                "flex",
+                "p-[5px]",
+                "gap-[10px]",
+                "justify-start",
+                "items-center",
+                "bg-[#272727]",
+            ],
+        )
+
+
 class Drawer(Widget):
     def __init__(
         self: Drawer,
@@ -240,20 +300,6 @@ class Drawer(Widget):
 
         settings_item: A = A("Settings")
         about_item: A = A("About")
-
-        self.button = Label(
-            "Open drawer",
-            _for="drawer-input",
-            _class=[
-                "btn",
-                "btn-neutral",
-                "rounded-none",
-                "text-start",
-                "animation-none",
-                # "drawer-button",
-                "w-full",
-            ],
-        )
 
         self.container: Div = Div(
             _class=[
@@ -281,16 +327,20 @@ class Drawer(Widget):
                         ),
                         Ul(
                             [
-                                Li(settings_item),
-                                Li(about_item),
+                                Li(settings_item, _class="text-[20px] font-bold hover:bg-[#777777] p-[8px]"),
+                                Li(about_item, _class="text-[20px] font-bold hover:bg-[#777777] p-[8px]"),
                             ],
                             _class=[
                                 "menu",
                                 "bg-base-200",
                                 "text-base-content",
                                 "min-h-full",
-                                "w-[20vw]",
-                                "p-4",
+                                "w-[300px]",
+                                "py-[16px]",
+                                "px-[2px]",
+                                "text-white",
+                                "bg-[#171717]",
+                                "bg-opacity-80",
                             ],
                         ),
                     ],
@@ -304,10 +354,6 @@ class Drawer(Widget):
                 "grow",
             ],
         )
-
-
-class BottomBar(Widget):
-    pass
 
 
 class BackgroundContainer(Widget):
@@ -380,10 +426,12 @@ class HomeScreen:
         background.widget.add_child(weather.widget)
         background.widget.add_child(date_and_time.widget)
         drawer = Drawer(session_data=session_data)
+        bar = BottomBar(session_data=session_data)
         drawer.container.add_child(background.widget)
-        drawer.container.add_child(drawer.button)
+        drawer.container.add_child(bar.widget)
 
-        self._widgets: List[Widget] = [date_and_time, weather, background, drawer]
+
+        self._widgets: List[Widget] = [date_and_time, weather, background, drawer, bar]
 
         self._session_data: Dict[str, Any] = {
             k: v for widget in self._widgets
