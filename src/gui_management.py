@@ -7,6 +7,7 @@ from renderer import Renderer
 import secrets
 import inspect
 import importlib.util
+from logger import logger
 
 
 class PageLoader(BaseModel):
@@ -76,7 +77,7 @@ class PageLoader(BaseModel):
             )
         else:    
             if len(objects) > 1:
-                print(
+                logger.warning(
                     f"Multiple page views defined on {self.uri}. "
                     "Using the first object found."
                 )
@@ -85,7 +86,7 @@ class PageLoader(BaseModel):
                 self._page_object = page_object(session_data=self.session_data)
             else:
                 self._page_object = page_object
-            print(f"Object {self._page_object} built.")
+            logger.debug(f"Object {self._page_object} built.")
             if hasattr(page_object, "set_up"):
                 self._page_object.set_up(self.renderer)
 
@@ -165,11 +166,11 @@ class GuiList(BaseModel):
         session_data: Dict[str, Any],
     ) -> None:
         if self._shown_page > len(self._pages):
-            print("Last shown page out of range.")
+            logger.warning("Last shown page out of range.")
             return
         page_object = self._pages[self._shown_page].page_object
         if page_object is None:
-            print("Unable update a page that has not been built.")
+            logger.warning("Unable to update a page that has not been built.")
             return
         valid_session_data = {}
         for key in session_data.keys():
