@@ -3,8 +3,10 @@ from typing import Mapping, Dict, List, Optional, Union, Any
 from enum import Enum
 from threading import Thread, Event
 from time import sleep
+import traceback
 from websocket import WebSocket, create_connection
 from pydantic import BaseModel, ConfigDict, Field
+from logger import logger
 from renderer import Renderer, global_renderer
 from gui_management import GuiList
 
@@ -45,7 +47,7 @@ class Message(BaseModel):
 
 
 class OVOSGuiClient:
-    id : str = "ovos-gui-flet-client"
+    id : str = "ovos-pyhtmx-gui-client"
     server_url : str = "ws://localhost:18181/gui"
     renderer: Renderer = global_renderer
 
@@ -62,10 +64,10 @@ class OVOSGuiClient:
     def connect() -> Optional[WebSocket]:
         try:
             ws = create_connection(OVOSGuiClient.server_url)  # Use the correct host, port, and route
-            print("Connected to ovos-gui websocket")
+            logger.info("Connected to ovos-gui websocket")
             return ws
         except Exception as e:
-            print(f"Error connecting to ovos-gui: {e}")
+            logger.error(f"Error connecting to ovos-gui: {e}")
             return None
 
     def announce(self: OVOSGuiClient) -> None:
@@ -103,14 +105,15 @@ class OVOSGuiClient:
     # Receive message from GUI web socket
     def receive_message(self: OVOSGuiClient):
         while not termination_event.is_set():
-            #try:
-            response = self._ws.recv()  # Receive messages from the WebSocket
-            if response:
-                print("Received message: ", response)
-                message = Message.model_validate_json(response)
-                self.process_message(message)
-            #except Exception as e:
-            #   print(f"Error receiving message: {e}")
+            try:
+                response = self._ws.recv()  # Receive messages from the WebSocket
+                if response:
+                    logger.debug(f"Received message: {response}")
+                    message = Message.model_validate_json(response)
+                    self.process_message(message)
+            except Exception:
+                exception_data = traceback.format_exc(limit=1)
+                logger.error(f"Error processing message:\n{exception_data}")
 
     # General processing of GUI messages
     def process_message(self: OVOSGuiClient, message: Message) -> None:
@@ -169,7 +172,7 @@ class OVOSGuiClient:
                 message.items_number,
             )
         else:
-            print(f"No handler defined for this message: {message}")
+            logger.warning(f"No handler defined for this message: {message}")
 
     def handle_gui_list_insert(
         self: OVOSGuiClient,
@@ -178,38 +181,34 @@ class OVOSGuiClient:
         data: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
         values: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
-        if namespace == "skill-ovos-date-time.openvoiceos":  # ovos-date-time
-            # TODO: implement me
-            pass
-        else:
-            if namespace == "skill-ovos-homescreen.openvoiceos":
-                # Force local home screen
-                # TODO: change actual homescreen skill
-                data = [{"url": "home_screen.py", "page": "home_screen"}]
-
-            show = len(self._gui_list) == 0
-
-            if namespace not in self._gui_list:
-                self._gui_list[namespace] = GuiList(
-                    namespace=namespace,
-                    renderer=OVOSGuiClient.renderer,
-                )
-
-            if position is None:
-                position = 0
-
-            if namespace in self._session:
-                session_data = self._session[namespace]
-            else:
-                session_data = {}
-
-            self._gui_list[namespace].insert(
-                position=position,
-                values=values if values is not None else data,
-                session_data=session_data,
+        if namespace == "skill-ovos-homescreen.openvoiceos":
+            # Force local home screen
+            # TODO: change actual homescreen skill
+            data = [{"url": "home_screen.py", "page": "home_screen"}]
+    
+        show = len(self._gui_list) == 0
+    
+        if namespace not in self._gui_list:
+            self._gui_list[namespace] = GuiList(
+                namespace=namespace,
+                renderer=OVOSGuiClient.renderer,
             )
-            if show:
-                self._gui_list[namespace].show(position)
+    
+        if position is None:
+            position = 0
+    
+        if namespace in self._session:
+            session_data = self._session[namespace]
+        else:
+            session_data = {}
+    
+        self._gui_list[namespace].insert(
+            position=position,
+            values=values if values is not None else data,
+            session_data=session_data,
+        )
+        if show:
+            self._gui_list[namespace].show(position)
 
     def handle_gui_list_move(
         self: OVOSGuiClient,
@@ -246,7 +245,7 @@ class OVOSGuiClient:
         # General event handlers can be added here
         if event_name == "page_gained_focus":
             page_index = parameters.get("number", 0)
-            print(f"Focus shifted to view {page_index}")
+            logger.info(f"Focus shifted to view {page_index}")
             if namespace in self._gui_list:
                 self._gui_list[namespace].show(page_index)
 

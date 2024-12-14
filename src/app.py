@@ -11,7 +11,9 @@ from threading import Lock, Thread, Event
 from secrets import token_hex
 from signal import signal, SIGINT, SIG_DFL
 from config import config_data
+import uvicorn
 from renderer import ContextType, global_renderer
+from logger import logger
 from event_sender import global_sender
 from ovos_gui_client import global_client, termination_event
 
@@ -53,7 +55,7 @@ def check_disconnected() -> None:
             if now - last_update > ping_period + 2 * wait_time:
                 global_client.deregister(session_id)
                 disconnected.append(session_id)
-                print(f"Session closed: {session_id}")
+                logger.info(f"Session closed: {session_id}")
         if disconnected:
             with session_lock:
                 for session_id in disconnected:
@@ -69,7 +71,9 @@ async def updates() -> StreamingResponse:
         messages = global_sender.listen()  # returns a queue.Queue
         while True:
             msg = messages.get()  # blocks until a new message arrives
-            # print(f"Sending message:\n{msg}")
+            # logger.debug(f"Sending message:\n{msg}")
+            if "event: root" in msg:
+                logger.info("Displaying last queued page.")
             yield msg
     return StreamingResponse(
         stream(),
@@ -79,7 +83,7 @@ async def updates() -> StreamingResponse:
 
 @app.get("/local-event/{event_id}")
 async def local_event(event_id: str) -> HTMLResponse:
-    print(f"Triggered: {event_id}")
+    logger.debug(f"Local event triggered: {event_id}")
     # Run callback
     component = global_renderer.trigger_callback(
         context=ContextType.LOCAL,
@@ -90,7 +94,7 @@ async def local_event(event_id: str) -> HTMLResponse:
 
 @app.post("/global-event/{event_id}")
 async def global_event(event_id: str) -> Response:
-    print(f"Triggered: {event_id}")
+    logger.debug(f"Global event triggered: {event_id}")
     # Run callback
     global_renderer.trigger_callback(
         context=ContextType.GLOBAL,
@@ -101,7 +105,7 @@ async def global_event(event_id: str) -> Response:
 
 @app.post("/ping/{session_id}")
 async def ping(session_id: str) -> Response:
-    # print(f"Received a ping from: {session_id}")
+    # logger.debug(f"Received a ping from: {session_id}")
     now = time()
     with session_lock:
         sessions[session_id] = now
@@ -121,5 +125,14 @@ async def root():
             },
         )
     global_client.register(session_id)
-    print(f"Session opened: {session_id}")
+    logger.info(f"Session opened: {session_id}. Displaying page.")
     return HTMLResponse(document.to_string())
+
+
+# Launch app
+uvicorn.run(
+    app,
+    host="127.0.0.1",
+    port=8000,
+    log_level="warning",  # set log level to critical
+)
