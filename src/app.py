@@ -145,5 +145,5 @@ if __name__ == "__main__":
         app,
         host=config_data["server-host"],
         port=config_data["server-port"],
-        log_level="warning",  # set log level to critical
+        log_level="warning",  # set log level to warning
     )
