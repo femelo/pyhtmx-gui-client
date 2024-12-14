@@ -67,7 +67,8 @@ class Renderer:
         return self._master
 
     def register_client(self: Renderer, client_id: str) -> None:
-        self._clients.append(client_id)
+        if client_id not in self._clients:
+            self._clients.append(client_id)
         logger.info(f"Number of clients in registry: {len(self._clients)}")
 
     def deregister(self: Renderer, client_id: str) -> None:
