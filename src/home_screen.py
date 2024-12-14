@@ -129,6 +129,8 @@ class DateTimeWidget(Widget):
             component=date_text,
             format_value=self.format_date,
         )
+        # Same object for all date parameters:
+        # whenever one of them changes, the object state changes
         for parameter in ["weekday_string", "month_string", "day_string", "year_string"]:
             self._session_objects[parameter] = date_session_object
 
@@ -172,6 +174,11 @@ class WeatherWidget(Widget):
             width="auto",
             height="auto",
         )
+        # Wrap img in a div to control size dynamically
+        weather_icon_container: Div = Div(
+            weather_icon,
+            _class="w-[8vw] h-[8vw]",
+        )
         self._session_objects["weather_code"] = SessionData(
             parameter="weather_code",
             attribute="src",
@@ -195,7 +202,7 @@ class WeatherWidget(Widget):
         self._widget: Div = Div(
             Div(
                 [
-                    Div(weather_icon, _class="w-[8vw] h-[8vw]"),
+                    weather_icon_container,
                     weather_temp_text,
                 ],
                 _class=[
@@ -249,13 +256,16 @@ class BackgroundContainer(Widget):
             ],
             style=self.wallpaper_url(),
         )
-        self._session_objects["wallpaper_path"] = SessionData(
+        wallpaper_session_object = SessionData(
             parameter="wallpaper",
             attribute="style",
             component=background_container,
             format_value=self.wallpaper_url,
         )
-        self._session_objects["selected_wallpaper"] = self._session_objects["wallpaper_path"]
+        # Same object for both wallpaper parameters:
+        # whenever one of them changes, the object state changes
+        self._session_objects["wallpaper_path"] = wallpaper_session_object
+        self._session_objects["selected_wallpaper"] = wallpaper_session_object
 
 
         # Time and date container
@@ -315,8 +325,11 @@ class HomeScreen:
     ) -> None:
         for parameter, value in session_data.items():
             for widget in self._widgets:
+                # Check whether the session parameter pertains to the widget
                 if widget.has(parameter):
+                    # If so, update the session data
                     widget._session_data[parameter] = value
+                    # And update the corresponding attribute
                     session_object = widget.session_objects[parameter]
                     attr_name = session_object.attribute
                     attr_value = (
