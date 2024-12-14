@@ -1,13 +1,18 @@
 from __future__ import annotations
 from typing import Mapping, Dict, List, Optional, Union, Any
 from enum import Enum
-from threading import Thread
+from threading import Thread, Event
+from time import sleep
 import traceback
 from websocket import WebSocket, create_connection
 from pydantic import BaseModel, ConfigDict, Field
 from logger import logger
 from renderer import Renderer, global_renderer
 from gui_management import GuiList
+
+
+# Termination event
+termination_event: Event = Event()
 
 
 class MessageType(str, Enum):
@@ -91,11 +96,18 @@ class OVOSGuiClient:
         else:
             return None
 
+    def close(self: OVOSGuiClient) -> Thread:
+        if self._ws:
+            sleep(0.1)
+            self._ws.close()
+        logger.info("Closed connection with ovos-gui websocket.")
+
     # Receive message from GUI web socket
     def receive_message(self: OVOSGuiClient):
-        while True:
+        while not termination_event.is_set():
             try:
-                response = self._ws.recv()  # Receive messages from the WebSocket
+                if self._ws:
+                    response = self._ws.recv()  # Receive messages from the WebSocket
                 if response:
                     logger.debug(f"Received message: {response}")
                     message = Message.model_validate_json(response)
@@ -163,7 +175,6 @@ class OVOSGuiClient:
         else:
             logger.warning(f"No handler defined for this message: {message}")
 
-
     def handle_gui_list_insert(
         self: OVOSGuiClient,
         namespace: str,
@@ -199,6 +210,7 @@ class OVOSGuiClient:
         )
         if show:
             self._gui_list[namespace].show(position)
+
     def handle_gui_list_move(
         self: OVOSGuiClient,
         namespace: str,

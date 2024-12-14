@@ -1,24 +1,36 @@
 from __future__ import annotations
+import os
 from typing import Iterator, Dict, Any
-from fastapi import Body, FastAPI
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import Response, HTMLResponse, StreamingResponse
 from copy import deepcopy
-from time import time, sleep
+from time import time
 from threading import Lock, Thread
 from secrets import token_hex
+from signal import signal, SIGINT, SIGTERM
+from config import config_data
 import uvicorn
 from renderer import ContextType, global_renderer
 from logger import logger
 from event_sender import global_sender
-from ovos_gui_client import global_client
+from ovos_gui_client import global_client, termination_event
 
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # After start
+    logger.info("PyHTMX GUI started...")
+    yield
+    # Before finishing
+    logger.info("PyHTMX GUI shutting down...")
 
-app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 
+app = FastAPI(lifespan=lifespan)
+
+app.mount("/assets", StaticFiles(directory=config_data["assets-directory"]), name="assets")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -27,17 +39,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Termination handler
+def termination_handler(*args: Any) -> None:
+    if not termination_event.is_set():
+        logger.info("Terminating gently...")
+        termination_event.set()
+        global_client.close()
+    else:
+        os.kill(os.getpid(), SIGTERM)
+
+# Set signal
+signal(SIGINT, termination_handler)
+
+
 # TODO: move this ping check somewhere else
 sessions: Dict[str, int] = {}
 session_lock = Lock()
 
 
 def check_disconnected() -> None:
-    while True:
+    wait_time: float = config_data["connection-check-wait"]
+    ping_period: float = config_data["ping-period"]
+    while not termination_event.wait(timeout=wait_time):
         now = time()
         disconnected = []
         for session_id, last_update in sessions.items():
-            if now - last_update > 6:
+            if now - last_update > ping_period + 2 * wait_time:
                 global_client.deregister(session_id)
                 disconnected.append(session_id)
                 logger.info(f"Session closed: {session_id}")
@@ -45,8 +72,6 @@ def check_disconnected() -> None:
             with session_lock:
                 for session_id in disconnected:
                     del sessions[session_id]
-        sleep(0.5)
-
 
 Thread(target=check_disconnected, daemon=True).start()
 
@@ -59,8 +84,6 @@ async def updates() -> StreamingResponse:
         while True:
             msg = messages.get()  # blocks until a new message arrives
             # logger.debug(f"Sending message:\n{msg}")
-            if "event: root" in msg:
-                logger.info("Displaying last queued page.")
             yield msg
     return StreamingResponse(
         stream(),
@@ -116,10 +139,11 @@ async def root():
     return HTMLResponse(document.to_string())
 
 
-# Launch app
-uvicorn.run(
-    app,
-    host="127.0.0.1",
-    port=8000,
-    log_level="warning",  # set log level to critical
-)
+if __name__ == "__main__":
+    # Launch app
+    uvicorn.run(
+        app,
+        host=config_data["server-host"],
+        port=config_data["server-port"],
+        log_level="warning",  # set log level to warning
+    )
