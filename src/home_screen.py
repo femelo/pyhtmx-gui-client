@@ -241,8 +241,9 @@ class BottomBar(Widget):
         self.button: Label = Label(
             Img(
                 src="assets/icons/bars-solid.svg",
-                width="auto",
-                height="auto",
+                width="25",
+                height="25",
+                _class="p-0",
                 style="filter: invert(100%);"
             ),
             _for="drawer-input",
@@ -307,12 +308,28 @@ class Drawer(Widget):
                     style="filter: invert(100%);",
                     _class="bg-transparent hover:bg-transparent p-0",
                 ),
-                Span(
+                Div(
                     "Settings",
-                    _class="bg-transparent hover:bg-transparent",
+                    _class="bg-transparent hover:bg-transparent select-none",
                 ),
             ],
-            _class="flex-row items-stretch text-[20px] font-bold bg-transparent hover:bg-[#777777] px-[24px] py-[16px] rounded"
+            _class=[
+                "flex",
+                "flex-row",
+                "gap-[24px]",
+                "items-stretch",
+                "text-[20px]",
+                "font-bold",
+                "bg-transparent",
+                "hover:bg-[#777777]",
+                "px-[24px]",
+                "py-[16px]",
+                "rounded",
+                "cursor-pointer",
+                "active:bg-[#575757]",
+                "hover:transition-all",
+                "duration-700",
+            ],
         )
         about_item: Li = Li(
             [
@@ -323,12 +340,28 @@ class Drawer(Widget):
                     style="filter: invert(100%);",
                     _class="bg-transparent hover:bg-transparent p-0",
                 ),
-                Span(
+                Div(
                     "About",
-                    _class="bg-transparent hover:bg-transparent",
+                    _class="bg-transparent hover:bg-transparent select-none",
                 ),
             ],
-            _class="flex-row items-stretch text-[20px] font-bold bg-transparent hover:bg-[#777777] px-[24px] py-[16px] rounded"
+            _class=[
+                "flex",
+                "flex-row",
+                "gap-[24px]",
+                "items-stretch",
+                "text-[20px]",
+                "font-bold",
+                "bg-transparent",
+                "hover:bg-[#777777]",
+                "px-[24px]",
+                "py-[16px]",
+                "rounded",
+                "cursor-pointer",
+                "active:bg-[#575757]",
+                "hover:transition-all",
+                "duration-700",
+            ],
         )
 
         self.container: Div = Div(
@@ -361,7 +394,9 @@ class Drawer(Widget):
                                 about_item,
                             ],
                             _class=[
-                                "menu",
+                                "flex",
+                                "flex-col",
+                                "leading-10",
                                 "text-base-content",
                                 "min-h-full",
                                 "w-[400px]",
