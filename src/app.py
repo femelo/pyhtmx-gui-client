@@ -123,7 +123,7 @@ async def ping(session_id: str) -> Response:
 
 
 @app.get("/")
-async def root():
+async def root() -> HTMLResponse:
     session_id = token_hex(4)
     document = deepcopy(global_renderer.document)
     session_element = document.find_element_by_id("session-id")

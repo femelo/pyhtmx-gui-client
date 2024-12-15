@@ -3,7 +3,7 @@ import shutil
 import os
 from typing import Any, Optional, List, Dict, Tuple, Callable
 from pyhtmx.html_tag import HTMLTag
-from pyhtmx import Div, Img, A, Input, Label, Ul, Li
+from pyhtmx import Div, Img, Input, Label, Ul, Li, Span
 
 # Background image
 WALLPAPER = "https://cdn.pixabay.com/photo/2016/06/02/02/33/triangles-1430105_1280.png"
@@ -298,8 +298,38 @@ class Drawer(Widget):
     ):
         super().__init__(session_data=session_data)
 
-        settings_item: A = A("Settings")
-        about_item: A = A("About")
+        settings_item: Li = Li(
+            [
+                Img(
+                    src="./assets/icons/gear-solid.svg",
+                    width=25,
+                    height=25,
+                    style="filter: invert(100%);",
+                    _class="bg-transparent hover:bg-transparent p-0",
+                ),
+                Span(
+                    "Settings",
+                    _class="bg-transparent hover:bg-transparent",
+                ),
+            ],
+            _class="flex-row items-stretch text-[20px] font-bold bg-transparent hover:bg-[#777777] px-[24px] py-[16px] rounded"
+        )
+        about_item: Li = Li(
+            [
+                Img(
+                    src="./assets/icons/circle-info-solid.svg",
+                    width=25,
+                    height=25,
+                    style="filter: invert(100%);",
+                    _class="bg-transparent hover:bg-transparent p-0",
+                ),
+                Span(
+                    "About",
+                    _class="bg-transparent hover:bg-transparent",
+                ),
+            ],
+            _class="flex-row items-stretch text-[20px] font-bold bg-transparent hover:bg-[#777777] px-[24px] py-[16px] rounded"
+        )
 
         self.container: Div = Div(
             _class=[
@@ -327,16 +357,15 @@ class Drawer(Widget):
                         ),
                         Ul(
                             [
-                                Li(settings_item, _class="text-[20px] font-bold hover:bg-[#777777] p-[8px]"),
-                                Li(about_item, _class="text-[20px] font-bold hover:bg-[#777777] p-[8px]"),
+                                settings_item,
+                                about_item,
                             ],
                             _class=[
                                 "menu",
-                                "bg-base-200",
                                 "text-base-content",
                                 "min-h-full",
-                                "w-[300px]",
-                                "py-[16px]",
+                                "w-[400px]",
+                                "py-[2px]",
                                 "px-[2px]",
                                 "text-white",
                                 "bg-[#171717]",
