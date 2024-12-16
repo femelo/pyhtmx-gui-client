@@ -7,6 +7,7 @@ from pyhtmx import (
     Title,
     Body,
     Div,
+    Dialog,
 )
 
 DUMMY_DOCUMENT: Html = Html(
@@ -36,10 +37,16 @@ DUMMY_DOCUMENT: Html = Html(
             ]
         ),
         Body(
-            Div(
-                _id="root",
-                _class="flex flex-col",
-            ),
+            [
+                Div(
+                    _id="root",
+                    _class="flex flex-col",
+                ),
+                Dialog(
+                    _id="dialog",
+                    _class="modal",
+                ),
+            ],
         ),
     ],
     lang="en",

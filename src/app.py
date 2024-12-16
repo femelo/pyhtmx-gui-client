@@ -19,6 +19,13 @@ from event_sender import global_sender
 from ovos_gui_client import global_client, termination_event
 
 
+APP_DIR = os.path.abspath(os.path.dirname(__file__))
+ASSETS_DIR = (
+    config_data.get("assets-directory") or
+    os.path.join(APP_DIR, "assets")
+)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # After start
@@ -28,9 +35,10 @@ async def lifespan(app: FastAPI):
     logger.info("PyHTMX GUI shutting down...")
 
 
+# Instantiate application
 app = FastAPI(lifespan=lifespan)
 
-app.mount("/assets", StaticFiles(directory=config_data["assets-directory"]), name="assets")
+app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

@@ -46,6 +46,8 @@ MASTER_DOCUMENT: Html = Html(
                 hx_post="/ping",
                 hx_trigger=f"every {ping_period}s",
             ),  # hidden element to register session id
+            hx_ext="sse",
+            sse_connect="/updates",
             style="visibility: hidden;"
         ),
     ],

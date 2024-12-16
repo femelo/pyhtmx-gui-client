@@ -208,7 +208,7 @@ class HelloWorldPage:
                     route=self._route,
                     parameter=session_object.parameter,
                     target=session_object.component,
-                    target_level=session_object.component,
+                    target_level=session_object.target_level,
                 )
                 registered.append(id(session_object))
             # Register callbacks

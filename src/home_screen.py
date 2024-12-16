@@ -1,28 +1,37 @@
 from __future__ import annotations
 import shutil
 import os
+from secrets import token_hex
 from typing import Any, Optional, List, Dict, Tuple, Callable
+from enum import Enum
+from functools import partial
 from pyhtmx.html_tag import HTMLTag
-from pyhtmx import Div, Img, Input, Label, Ul, Li, Span
+from pyhtmx import Div, Img, Input, Label, Ul, Li, A, Br, H1, P, Button
+
 
 # Background image
 WALLPAPER = "https://cdn.pixabay.com/photo/2016/06/02/02/33/triangles-1430105_1280.png"
 # Version text
-VERSION_TEXT = """
-OpenVoiceOS - PyHTMX GUI Version: 1.0.0
-"""
+VERSION_TEXT = "OpenVoiceOS - PyHTMX GUI Version: 1.0.0"
 # License text
 LICENSE_URL = "https://www.apache.org/licenses/LICENSE-2.0"
-LICENSE_TEXT = (
-    "\nLicensed under the Apache License, Version 2.0 (the 'License'); "
-    "you may not use this file except in compliance with the License.\n"
-    f"You may obtain a copy of the License at {LICENSE_URL}.\n\n"
+LICENSE_P1 = (
+    "Licensed under the Apache License, Version 2.0 (the 'License'); "
+    "you may not use this file except in compliance with the License."
+)
+LICENSE_P2 = (
+    "You may obtain a copy of the License at "
+)
+LICENSE_P3 = (
     "Unless required by applicable law or agreed to in writing, software distributed under "
     "the License is distributed on an 'AS IS' BASIS, WITHOUT WARRANTIES OR CONDITIONS OF "
-    "ANY KIND, either express or implied.\n\n"
-    "See the License for the specific language governing permissions and limitations under "
-    "the License.\n\n"
+    "ANY KIND, either express or implied."
 )
+LICENSE_P4 = (
+    "See the License for the specific language governing permissions and limitations under "
+    "the License."
+)
+
 
 # Weather icon mapping
 WEATHER_ICONS = {
@@ -54,21 +63,56 @@ class SessionData:
         self.target_level = target_level
 
 
+class Control:
+    def __init__(
+        self: Control,
+        context: str,
+        event: str,
+        callback: Callable,
+        source: HTMLTag,
+        target: Optional[HTMLTag] = None,
+        target_level: str = "innerHTML",
+    ):
+        self.context = context
+        self.event = event
+        self.callback = callback
+        self.source = source
+        self.target = target
+        self.target_level = target_level
+
+
+class WidgetType(str, Enum):
+    COMPONENT = "component"
+    DIALOG = "dialog"
+
+
 class Widget:
     _parameters: Tuple[str] = ()
 
     def __init__(
         self: Widget,
+        type: WidgetType = WidgetType.COMPONENT,
         session_data: Optional[Dict[str, Any]] = None,
     ):
+        self._id: str = token_hex(8)
+        self._type: WidgetType = type
         self._session_data: Dict[str, Any] = {
             parameter: '' for parameter in self._parameters
         }
         self._session_objects: Dict[str, Optional[SessionData]] = {
             parameter: None for parameter in self._parameters
         }
+        self._controls: Dict[str, Optional[Control]] = {}
         self._widget: Optional[HTMLTag] = None
         self.init_session_data(session_data)
+
+    @property
+    def id(self: Widget) -> str:
+        return self._id
+
+    @property
+    def type(self: Widget) -> WidgetType:
+        return self._type
 
     @property
     def widget(self: Widget) -> Optional[HTMLTag]:
@@ -77,6 +121,10 @@ class Widget:
     @property
     def session_objects(self: Widget) -> Dict[str, Optional[SessionData]]:
         return self._session_objects
+
+    @property
+    def controls(self: Widget) -> Dict[str, Optional[Control]]:
+        return self._controls
 
     def has(self: Widget, parameter: str) -> bool:
         return parameter in self._parameters
@@ -228,7 +276,7 @@ class WeatherWidget(Widget):
         """Formats the temperature with °C."""
         if weather_temp is not None:
             return f"{weather_temp}°C"
-        return ''
+        return '--,-'
 
 
 class BottomBar(Widget):
@@ -299,7 +347,7 @@ class Drawer(Widget):
     ):
         super().__init__(session_data=session_data)
 
-        settings_item: Li = Li(
+        self._settings_item: Li = Li(
             [
                 Img(
                     src="./assets/icons/gear-solid.svg",
@@ -331,7 +379,7 @@ class Drawer(Widget):
                 "duration-700",
             ],
         )
-        about_item: Li = Li(
+        self._about_item: Li = Li(
             [
                 Img(
                     src="./assets/icons/circle-info-solid.svg",
@@ -363,6 +411,13 @@ class Drawer(Widget):
                 "duration-700",
             ],
         )
+        self._controls["menu-item-about-click"] = Control(
+            context="global",
+            event="click",
+            callback=lambda renderer: renderer.open_dialog("about-dialog"),  # will open the dialog about
+            source=self._about_item,
+            target=None, # to target the dialog (to open it)
+        )
 
         self.container: Div = Div(
             _class=[
@@ -378,7 +433,7 @@ class Drawer(Widget):
                 Input(
                     id="drawer-input",
                     _type="checkbox",
-                    _class="drawer-toggle"
+                    _class="drawer-toggle",
                 ),
                 self.container,
                 Div(
@@ -390,8 +445,8 @@ class Drawer(Widget):
                         ),
                         Ul(
                             [
-                                settings_item,
-                                about_item,
+                                self._settings_item,
+                                self._about_item,
                             ],
                             _class=[
                                 "flex",
@@ -416,6 +471,67 @@ class Drawer(Widget):
                 "flex",
                 "flex-col",
                 "grow",
+            ],
+        )
+
+
+class AboutDialog(Widget):
+
+    def __init__(
+        self: AboutDialog,
+        session_data: Optional[Dict[str, Any]] = None,
+    ):
+        super().__init__(type=WidgetType.DIALOG, session_data=session_data)
+
+        self._id: str = "about-dialog"
+        self._button: Button = Button(
+            "Close",
+            _class="btn btn-info",
+        )
+        self._controls["about-close-btn-click"] = Control(
+            context="global",
+            event="click",
+            callback=lambda renderer: renderer.close_dialog("about-dialog"),  # will close the about dialog
+            source=self._button,
+            target=None, # to target the dialog (to close it)
+        )
+        self._widget: Div = Div(
+            [
+                H1("Version", _class="text-[20px] font-bold text-info"),
+                P(VERSION_TEXT),
+                Br(),
+                Br(),
+                H1("License", _class="text-[20px] font-bold text-info"),
+                P(LICENSE_P1),
+                P(
+                    [
+                        LICENSE_P2,
+                        A(
+                            f"{LICENSE_URL}.",
+                            href=LICENSE_URL,
+                            target="_blank",
+                            rel="noopener noreferrer",
+                            _class="text-orange-300",
+                        ),
+                    ],
+                ),
+                P(LICENSE_P3),
+                P(LICENSE_P4),
+                Br(),
+                Br(),
+                Div(
+                    self._button,
+                    _class="flex justify-end w-full b-transparent",
+                ),
+            ],
+            _class=[
+                "modal-box",
+                "min-w-[50vw]",
+                "px-[24px]",
+                "py-[24px]",
+                "text-white",
+                "bg-[#171717]",
+                "bg-opacity-80",
             ],
         )
 
@@ -491,11 +607,19 @@ class HomeScreen:
         background.widget.add_child(date_and_time.widget)
         drawer = Drawer(session_data=session_data)
         bar = BottomBar(session_data=session_data)
+        about_dialog = AboutDialog(session_data=session_data)
         drawer.container.add_child(background.widget)
         drawer.container.add_child(bar.widget)
 
 
-        self._widgets: List[Widget] = [date_and_time, weather, background, drawer, bar]
+        self._widgets: List[Widget] = [
+            date_and_time,
+            weather,
+            background,
+            drawer,
+            bar,
+            about_dialog,
+        ]
 
         self._session_data: Dict[str, Any] = {
             k: v for widget in self._widgets
@@ -539,10 +663,10 @@ class HomeScreen:
                     )
 
     def set_up(self: HomeScreen, renderer: Any) -> None:
-        # Register session parameters
-        registered = []
         for widget in self._widgets:
-            for _, session_object in widget.session_objects.items():
+            # Register session parameters
+            registered = []
+            for parameter, session_object in widget.session_objects.items():
                 # Prevent objects from being registered twice
                 if id(session_object) in registered:
                     continue
@@ -551,5 +675,27 @@ class HomeScreen:
                     parameter=session_object.parameter,
                     target=session_object.component,
                     target_level=session_object.target_level,
+                )
+                registered.append(id(session_object))
+            # Register callbacks
+            registered = []
+            for _, control in widget.controls.items():
+                # Prevent objects from being registered twice
+                if id(control) in registered:
+                    continue
+                renderer.register_callback(
+                    context=control.context,
+                    event=control.event,
+                    fn=partial(control.callback, renderer),
+                    source=control.source,
+                    target=control.target,
+                    target_level=control.target_level,
+                )
+                registered.append(id(control))
+            # Register dialogs
+            if widget.type == WidgetType.DIALOG:
+                renderer.register_dialog(
+                    dialog_id=widget.id,
+                    dialog_content=widget.widget,
                 )
                 registered.append(id(session_object))

@@ -1,16 +1,17 @@
 from __future__ import annotations
 from typing import Union, Optional, List, Dict, Callable, Any
 from secrets import token_hex
-from enum import StrEnum
+from copy import deepcopy
+from enum import Enum
 from pydantic import BaseModel, ConfigDict
-from pyhtmx import Html, Div
+from pyhtmx import Html, Div, Dialog
 from pyhtmx.html_tag import HTMLTag
 from logger import logger
 from master import MASTER_DOCUMENT
 from event_sender import EventSender, global_sender
 
 
-class ContextType(StrEnum):
+class ContextType(str, Enum):
     LOCAL = "local"
     GLOBAL = "global"
 
@@ -49,15 +50,25 @@ class Renderer:
         self._root: Div = Div(
             _id="root",
             _class="flex flex-col",
-            hx_ext="sse",
-            sse_connect="/updates",
+            # hx_ext="sse",
+            # sse_connect="/updates",
             sse_swap="root",
+        )
+        self._dialog_root: Dialog = Dialog(
+            _id="dialog",
+            _class="modal",
+            # hx_ext="sse",
+            # sse_connect="/updates",
+            sse_swap="dialog",
+            hx_swap="outerHTML",
         )
         self._master: Html = MASTER_DOCUMENT
         body, = self._master.find_elements_by_tag(tag="body")
         body.add_child(self._root)
+        body.add_child(self._dialog_root)
         self._routes: List[str] = []
         self._pages: List[HTMLTag] = []
+        self._dialogs: Dict[str, HTMLTag] = {}
         self._global_callbacks: Dict[str, Callback] = {}
         self._local_callbacks: Dict[str, Callback] = {}
         self._session_parameters: Dict[str, Dict[str, SessionParameter]] = {}
@@ -162,6 +173,14 @@ class Renderer:
             target_level=target_level,
         )
 
+    def register_dialog(
+        self: Renderer,
+        dialog_id: str,
+        dialog_content: HTMLTag,
+    ) -> None:
+        if dialog_id not in self._dialogs:
+            self._dialogs[dialog_id] = dialog_content
+
     def update_attributes(
         self: Renderer,
         route: str,
@@ -185,23 +204,31 @@ class Renderer:
             tag = component.tag
             # logger.debug(f"Updated parameter: {route}:{component} -> {parameter}")
 
-    def close_component(
+    def close_dialog(
         self: Renderer,
-        route: str,
-        component: Any,
+        dialog_id: str,
     ) -> None:
-        if route != self._routes[-1]:
+        if dialog_id not in self._dialogs:
+            logger.warning("Dialog '{dialog_id}' not registered.")
             return
-        # Implement me
+        self._dialog_root.text = None
+        _ = self._dialog_root.detach_children()
+        dialog = deepcopy(self._dialog_root)
+        self.update(dialog.to_string(), event_id="dialog")
 
-    def open_component(
+    def open_dialog(
         self: Renderer,
-        route: str,
-        component: HTMLTag,
+        dialog_id: str,
     ) -> None:
-        if route != self._routes[-1]:
+        if dialog_id not in self._dialogs:
+            logger.warning("Dialog '{dialog_id}' not registered.")
             return
-        # Implement me
+        self._dialog_root.text = None
+        _ = self._dialog_root.detach_children()
+        self._dialog_root.add_child(self._dialogs[dialog_id])
+        dialog = deepcopy(self._dialog_root)
+        dialog.update_attributes(attributes={"open": ''})
+        self.update(dialog.to_string(), event_id="dialog")
 
     def show(
         self: Renderer,
