@@ -1,0 +1,109 @@
+/* Algemene stijlen */
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+#carousel-bg {
+  background: linear-gradient(to right, rgb(59, 130, 246), rgb(255, 182, 193));
+  transition: background 0.5s ease;
+}
+
+.tabs-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tabs-shown {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.digital-clock {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 6rem;
+  font-weight: bold;
+  color: #333;
+  text-align: center;
+}
+
+.modern-text {
+  font-family: 'Inter', sans-serif;
+  color: #1f2937;
+}
+
+.modern-title {
+  font-family: 'Inter', sans-serif;
+  color: #111827;
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.carousel-item {
+  width: 100%;
+  height: 100vh;
+  flex-shrink: 0;
+}
+
+.full-screen-image {
+  background-image: url('https://images.pexels.com/photos/1631677/pexels-photo-1631677.jpeg');
+  background-size: cover;
+  background-position: center;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  color: white;
+  text-align: center;
+  padding: 20px;
+  transition: all 0.5s ease;
+}
+
+.full-screen-image.small {
+  height: 80vh;
+  width: 80vw;
+  border-radius: 1rem;
+  margin: auto;
+}
+
+.full-screen-clock {
+  font-size: 5rem;
+  font-weight: bold;
+}
+
+.full-screen-date {
+  font-size: 1.5rem;
+}
+
+.weather-info {
+  display: flex;
+  align-items: center;
+  margin-top: 20px;
+  font-size: 1.25rem;
+}
+
+.weather-info img {
+  margin-right: 10px;
+}
+
+.weather-info span {
+  font-size: 1.25rem;
+}
+
+/* Active tab style */
+.tab-active {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.weather-widget-small {
+    transform: scale(0.7); /* Verklein de widget tot 70% van de originele grootte */
+    width: 100%; /* Houd de breedte binnen de bestaande container */
+    display: flex; /* Gebruik flexbox voor uitlijning */
+    align-items: center; /* Verticaal centreren */
+    justify-content: center; /* Horizontaal centreren */
+}
+
+
