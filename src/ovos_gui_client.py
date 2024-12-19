@@ -192,7 +192,7 @@ class OVOSGuiClient:
             # TODO: change actual homescreen skill
             data = [
                 {
-                    "url": os.path.join(CLIENT_DIR, "home_screen.py"),
+                    "url": os.path.join(CLIENT_DIR, "home_screen_carousel.py"),
                     "page": "home_screen",
                 },
             ]

@@ -165,7 +165,7 @@ class WeatherWidget(Widget):
             _class=[
                 "text-[4vw]",
                 "leading-[8vw]",
-                "text-white",
+                # "text-white",
                 "font-bold",
             ],
         )
@@ -290,23 +290,40 @@ class HomeScreen(Page):
         )
 
         # Tabs-container
+        tab_classes = [
+            "tab",
+            "tab-lifted",
+            "text-[24px]",
+            "h-[50px]",
+            "text-white",
+            "font-bold",
+        ]
         tabs_container = Div(
             [
-                Div(inner_content="1", _class="tab tab-lifted"),
-                Div(inner_content="2", _class="tab tab-lifted"),
-                Div(inner_content="3", _class="tab tab-lifted"),
-                Div(inner_content="4", _class="tab tab-lifted"),
+                Div(inner_content="1", _class=tab_classes),
+                Div(inner_content="2", _class=tab_classes),
+                Div(inner_content="3", _class=tab_classes),
+                Div(inner_content="4", _class=tab_classes),
             ],
             _class=[
                 "tabs",
                 "tabs-boxed",
                 "mb-4",
-                "w-full",
-                "max-w-[15%]",
                 "flex",
                 "justify-center",
             ],
             _id="tabs-container",
+            style={
+                "height": "10%",
+                "width": "100%",
+                "position": "fixed",
+                "z-index": 1,
+                "top": "90vh",
+                "left": "0",
+                "background-color": "rgba(0, 0, 0, 0)",
+                "overflow-y": "hidden",
+                "transition": "0.5s",
+            },
         )
 
         # Combine carousel and tabs
