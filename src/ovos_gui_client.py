@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 from typing import Mapping, Dict, List, Optional, Union, Any
 from enum import Enum
 from threading import Thread, Event
@@ -9,6 +10,9 @@ from pydantic import BaseModel, ConfigDict, Field
 from logger import logger
 from renderer import Renderer, global_renderer
 from gui_management import GuiList
+
+
+CLIENT_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
 # Termination event
@@ -113,7 +117,7 @@ class OVOSGuiClient:
                     message = Message.model_validate_json(response)
                     self.process_message(message)
             except Exception:
-                exception_data = traceback.format_exc(limit=1)
+                exception_data = traceback.format_exc(limit=5)
                 logger.error(f"Error processing message:\n{exception_data}")
 
     # General processing of GUI messages
@@ -186,7 +190,12 @@ class OVOSGuiClient:
         if namespace == "skill-ovos-homescreen.openvoiceos":
             # Force local home screen
             # TODO: change actual homescreen skill
-            data = [{"url": "home_screen.py", "page": "home_screen"}]
+            data = [
+                {
+                    "url": os.path.join(CLIENT_DIR, "home_screen.py"),
+                    "page": "home_screen"
+                }
+            ]
     
         show = len(self._gui_list) == 0
     

@@ -7,13 +7,10 @@ from pyhtmx import (
     Title,
     Body,
     Div,
+    Dialog,
 )
-from config import config_data
 
-
-ping_period: int = round(config_data["ping-period"])
-
-MASTER_DOCUMENT: Html = Html(
+DUMMY_DOCUMENT: Html = Html(
     [
         Head(
             [
@@ -36,19 +33,20 @@ MASTER_DOCUMENT: Html = Html(
                 Script(src="./assets/js/htmx.min.js", defer="true"),
                 Script(src="./assets/js/sse.js", defer="true"),
                 Script(src="./assets/js/htmx-process.js", defer="true"),
-                Title("PyHTMX GUI Client"),
+                Title("PyHTMX GUI Dummy Display"),
             ]
         ),
         Body(
-            Div(
-                _id="session-id",
-                style="display: none;",
-                hx_post="/ping",
-                hx_trigger=f"every {ping_period}s",
-            ),  # hidden element to register session id
-            hx_ext="sse",
-            sse_connect="/updates",
-            style="visibility: hidden;"
+            [
+                Div(
+                    _id="root",
+                    _class="flex flex-col",
+                ),
+                Dialog(
+                    _id="dialog",
+                    _class="modal",
+                ),
+            ],
         ),
     ],
     lang="en",

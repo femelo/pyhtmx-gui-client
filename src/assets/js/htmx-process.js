@@ -17,6 +17,9 @@ let dom_ready = (callback) => {
 dom_ready(() => {
     // Display body when DOM is loaded
     document.body.style.visibility = 'visible';
-    const session_id = document.getElementById("session-id").textContent;
-    console.log(`Session opened: ${session_id}`);
+    const session_element = document.getElementById("session-id");
+    if (session_element != null) {
+        const session_id = session_element.textContent;
+        console.log(`Session opened: ${session_id}`);
+    }
 });
