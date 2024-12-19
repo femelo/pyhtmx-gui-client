@@ -608,7 +608,7 @@ class BackgroundContainer(Widget):
         wallpaper_path = self._session_data.get("wallpaper_path", '')
         selected_wallpaper = self._session_data.get("selected_wallpaper", '')
         if wallpaper_path and selected_wallpaper:
-            # Hack to workaround the way Flet serves figures
+            # Hack to workaround the way figures are served
             shutil.copy(
                 os.path.join(wallpaper_path, selected_wallpaper),
                 "assets/images/",
