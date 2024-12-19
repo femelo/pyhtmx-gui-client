@@ -10,7 +10,10 @@ from pyhtmx import Div, Img, Input, Label, Ul, Li, A, Br, H1, P, Button
 
 
 # Background image
-WALLPAPER = "https://cdn.pixabay.com/photo/2016/06/02/02/33/triangles-1430105_1280.png"
+WALLPAPER = (
+    "https://cdn.pixabay.com/photo/2016/06/02/02/33/"
+    "triangles-1430105_1280.png"
+)
 # Version text
 VERSION_TEXT = "OpenVoiceOS - PyHTMX GUI Version: 1.0.0"
 # License text
@@ -23,13 +26,14 @@ LICENSE_P2 = (
     "You may obtain a copy of the License at "
 )
 LICENSE_P3 = (
-    "Unless required by applicable law or agreed to in writing, software distributed under "
-    "the License is distributed on an 'AS IS' BASIS, WITHOUT WARRANTIES OR CONDITIONS OF "
-    "ANY KIND, either express or implied."
+    "Unless required by applicable law or agreed to in writing, "
+    "software distributed under the License is distributed on an "
+    "'AS IS' BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, "
+    "either express or implied."
 )
 LICENSE_P4 = (
-    "See the License for the specific language governing permissions and limitations under "
-    "the License."
+    "See the License for the specific language governing permissions "
+    "and limitations under the License."
 )
 
 
@@ -129,7 +133,10 @@ class Widget:
     def has(self: Widget, parameter: str) -> bool:
         return parameter in self._parameters
 
-    def init_session_data(self: Widget, session_data: Optional[Dict[str, Any]]) -> None:
+    def init_session_data(
+        self: Widget,
+        session_data: Optional[Dict[str, Any]],
+    ) -> None:
         if session_data:
             self._session_data.update(
                 {
@@ -181,7 +188,12 @@ class DateTimeWidget(Widget):
         )
         # Same object for all date parameters:
         # whenever one of them changes, the object state changes
-        for parameter in ["weekday_string", "month_string", "day_string", "year_string"]:
+        for parameter in [
+            "weekday_string",
+            "month_string",
+            "day_string",
+            "year_string"
+        ]:
             self._session_objects[parameter] = date_session_object
 
         # Time and date container
@@ -205,7 +217,6 @@ class DateTimeWidget(Widget):
         day = self._session_data.get("day_string", '')
         year = self._session_data.get("year_string", '')
         return f"{weekday} {month} {day}, {year}"
-
 
 
 class WeatherWidget(Widget):
@@ -266,14 +277,22 @@ class WeatherWidget(Widget):
             _class="flex grow justify-end items-start",
         )
 
-    def weather_icon_src(self: WeatherWidget, *args: Any, **kwargs: Any) -> str:
+    def weather_icon_src(
+        self: WeatherWidget,
+        *args: Any,
+        **kwargs: Any,
+    ) -> str:
         """Returns the local file path for the weather icon."""
         weather_code = self._session_data["weather_code"]
         if weather_code is not None and weather_code in WEATHER_ICONS:
             return WEATHER_ICONS[weather_code]
         return os.path.join("assets", "icons", "no-internet.svg")
 
-    def weather_temperature(self: WeatherWidget, *args: Any, **kwargs: Any) -> str:
+    def weather_temperature(
+        self: WeatherWidget,
+        *args: Any,
+        **kwargs: Any,
+    ) -> str:
         weather_temp = self._session_data["weather_temp"]
         """Formats the temperature with °C."""
         if weather_temp is not None:
@@ -416,9 +435,10 @@ class Drawer(Widget):
         self._controls["menu-item-about-click"] = Control(
             context="global",
             event="click",
-            callback=lambda renderer: renderer.open_dialog("about-dialog"),  # will open the dialog about
+            # will open the dialog about
+            callback=lambda renderer: renderer.open_dialog("about-dialog"),
             source=self._about_item,
-            target=None, # to target the dialog (to open it)
+            target=None,  # to target the dialog (to open it)
         )
 
         self.container: Div = Div(
@@ -493,9 +513,10 @@ class AboutDialog(Widget):
         self._controls["about-close-btn-click"] = Control(
             context="global",
             event="click",
-            callback=lambda renderer: renderer.close_dialog("about-dialog"),  # will close the about dialog
+            # will close the about dialog
+            callback=lambda renderer: renderer.close_dialog("about-dialog"),
             source=self._button,
-            target=None, # to target the dialog (to close it)
+            target=None,  # to target the dialog (to close it)
         )
         self._widget: Div = Div(
             [
@@ -576,15 +597,18 @@ class BackgroundContainer(Widget):
         self._session_objects["wallpaper_path"] = wallpaper_session_object
         self._session_objects["selected_wallpaper"] = wallpaper_session_object
 
-
         # Time and date container
         self._widget: Div = background_container
 
-    def wallpaper_url(self: BackgroundContainer, *args: Any, **kwargs: Any) -> str:
+    def wallpaper_url(
+        self: BackgroundContainer,
+        *args: Any,
+        **kwargs: Any,
+    ) -> str:
         wallpaper_path = self._session_data.get("wallpaper_path", '')
         selected_wallpaper = self._session_data.get("selected_wallpaper", '')
         if wallpaper_path and selected_wallpaper:
-            # Hack to workaround the way Flet serves figures
+            # Hack to workaround the way figures are served
             shutil.copy(
                 os.path.join(wallpaper_path, selected_wallpaper),
                 "assets/images/",
@@ -612,7 +636,6 @@ class HomeScreen:
         about_dialog = AboutDialog(session_data=session_data)
         drawer.container.add_child(background.widget)
         drawer.container.add_child(bar.widget)
-
 
         self._widgets: List[Widget] = [
             date_and_time,

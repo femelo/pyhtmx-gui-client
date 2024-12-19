@@ -8,7 +8,10 @@ from pyhtmx import Div
 
 
 # Background image
-WALLPAPER = "https://cdn.pixabay.com/photo/2016/06/02/02/33/triangles-1430105_1280.png"
+WALLPAPER = (
+    "https://cdn.pixabay.com/photo/2016/06/02/02/33/"
+    "triangles-1430105_1280.png"
+)
 
 
 class Clock:
@@ -95,7 +98,7 @@ class HomeScreen:
             _class="text-9xl text-white font-bold",
         )
         # Overlay container
-        wallpaper = self._session_data.get("wallpaper") 
+        wallpaper = self._session_data.get("wallpaper")
         overlay: Div = Div(
             clock_text,
             _id="wallpaper",
@@ -162,6 +165,7 @@ class HomeScreen:
                 target=session_object.component,
                 target_level=session_object.target_level,
             )
+
         # Update time
         def update_time():
             while HomeScreen._clock.wait():
