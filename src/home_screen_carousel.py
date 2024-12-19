@@ -243,11 +243,17 @@ class HomeScreen(Page):
         self.weather2 = WeatherWidget(session_data)
         self.skill_examples = SkillExamplesWidget(session_data)  # Add SkillExamplesWidget
         self.add(
-            [self.clock_time, self.date_time, self.weather1, self.weather2, self.skill_examples]
+            [
+                self.clock_time,
+                self.date_time,
+                self.weather1,
+                self.weather2,
+                self.skill_examples,
+            ],
         )
 
         # Carousel Div with items
-        carousel_items = self.generate_carousel(self._session_data)
+        carousel_items = self.generate_carousel()
 
         # Carousel-container
         carousel_container = Div(
@@ -290,122 +296,183 @@ class HomeScreen(Page):
         style_tag = Link(rel="stylesheet", href="assets/css/styles.css") 
         self._page.add_child(style_tag)
 
-    def generate_carousel(self: HomeScreen, session_data: Optional[Dict[str, Any]]) -> List[Div]:
+    def generate_carousel(self: HomeScreen) -> List[Div]:
         """Genereert carousel-items op basis van de HTML-structuur."""
-        return [
-            # Carousel Item 1
-            Div(
-                Div(
-                    [
-                        Div(
-                            self.date_time.widget,
-                            _class="flex flex-col items-center space-y-2",
-                        ),
-                        Div(
-                            self.weather1.widget,  # Re-use the existing WeatherWidget
-                        ),
-                    ],
-                    _id="full-screen-image", 
-                    _class="full-screen-image flex flex-col items-center justify-center",
-                ),
-                _class="carousel-item w-full h-full flex justify-center items-center snap-center",
-            ),
-            # Carousel Item 2
-            Div(
-                Div(
-                    [
-                        Div(
-                            self.clock_time,
-                            _class="bg-white bg-opacity-60 rounded-lg p-8 text-center shadow-lg w-full",
-                        ),
-                        Div(
-                            [
-                                Div(
-                                    [
-                                        Div(inner_content="Weather", _class="modern-title"),
-                                        Div(
-                                            [
-                                                self.weather2.widget,  
-                                            ],
-                                            _class="weather-widget-small", 
-                                        ),
-                                    ],
-                                    _class="bg-white bg-opacity-60 rounded-lg p-8 text-center shadow-lg w-1/2",
-                                ),
-                                Div(
-                                    [
-                                        Div(inner_content="Alarm clock", _class="modern-title"),
-                                        Div(inner_content="Set an alarm to wake up on time", _class="modern-text text-lg mt-4"),
-                                    ],
-                                    _class="bg-white bg-opacity-60 rounded-lg p-8 text-center shadow-lg w-1/2",
-                                ),
-                            ],
-                            _class="flex w-full justify-between space-x-4",
-                        ),
-                    ],
-                    _class="flex flex-col items-center space-y-4 w-full max-w-4xl px-4",
-                ),
-                _class="carousel-item w-full h-full flex justify-center items-center snap-center",
-            ),
-            # Carousel Item 3 (updated)
-            Div(
-                Div(
-                    [
-                        Div(
-                            [
-                                Div(inner_content="What is the latest news?", _class="modern-title"),
-                                Div(inner_content="Stay updated with the latest events happening around the world.", _class="modern-text text-lg mt-4"),
-                            ],
-                            _class="bg-white bg-opacity-40 rounded-lg p-8 text-center shadow-lg",
-                        ),
-                        Div(
-                            [
-                                Div(inner_content="Play music on Spotify", _class="modern-title"),
-                                Div(inner_content="Listen to your favorite playlists and artists on Spotify.", _class="modern-text text-lg mt-4"),
-                            ],
-                            _class="bg-white bg-opacity-40 rounded-lg p-8 text-center shadow-lg",
-                        ),
-                        Div(
-                            [
-                                Div(inner_content="Tell me a joke", _class="modern-title"),
-                                Div(inner_content="Enjoy a lighthearted joke to brighten your day.", _class="modern-text text-lg mt-4"),
-                            ],
-                            _class="bg-white bg-opacity-40 rounded-lg p-8 text-center shadow-lg",
-                        ),
-                        Div(
-                            [
-                                Div(inner_content="Play underwater adventure game", _class="modern-title"),
-                                Div(inner_content="Dive into an exciting underwater adventure game.", _class="modern-text text-lg mt-4"),
-                            ],
-                            _class="bg-white bg-opacity-40 rounded-lg p-8 text-center shadow-lg",
-                        ),
-                        # Skill examples title and widget
-                        Div(
-                            [
-                                Div(inner_content="Skill examples", _class="modern-title"),  # Add title "Skill examples"
-                                self.skill_examples.widget,  # Add SkillExamplesWidget
-                            ],
-                            _class="bg-white bg-opacity-40 rounded-lg p-8 text-center shadow-lg",
-                        ),
-                    ],
-                    _class="grid grid-cols-2 gap-4 w-full max-w-4xl px-4",
-                ),
-                _class="carousel-item w-full h-full flex justify-center items-center snap-center", 
-            ),
-            # Carousel Item 4
-            Div(
-                Div(
-                    [
-                        Div(
-                            inner_content="Another widget", _class="modern-title"
-                        ),
-                        Div(
-                            inner_content="Room for other skills content.", _class="modern-text text-lg mt-4"
-                        ),
-                    ],
-                    _class="bg-white bg-opacity-60 rounded-lg p-8 text-center shadow-lg",
-                ),
-                _class="carousel-item w-full h-full flex justify-center items-center snap-center", 
-            ),
+        # General carousel item and subitem classes
+        item_classes = [
+            "carousel-item",
+            "w-full",
+            "h-full",
+            "flex",
+            "justify-center",
+            "items-center",
+            "snap-center",
         ]
-  
+        subitem_classes = [
+            "bg-white",
+            "rounded-lg",
+            "p-8",
+            "text-center",
+            "shadow-lg",
+        ]
+        # Carousel Item 1
+        item1: Div = Div(
+            Div(
+                [
+                    Div(
+                        self.date_time.widget,
+                        _class="flex flex-col items-center space-y-2",
+                    ),
+                    Div(
+                        self.weather1.widget,
+                    ),
+                ],
+                _id="full-screen-image", 
+                _class=[
+                    "full-screen-image",
+                    "flex",
+                    "flex-col",
+                    "items-center",
+                    "justify-center",
+                ],
+            ),
+            _class=item_classes,
+        )
+        # Carousel Item 2
+        item2: Div = Div(
+            Div(
+                [
+                    Div(
+                        self.clock_time,
+                        _class=[*subitem_classes, "bg-opacity-60", "w-full"],
+                    ),
+                    Div(
+                        [
+                            Div(
+                                [
+                                    Div(inner_content="Weather", _class="modern-title"),
+                                    Div(
+                                        self.weather2.widget,
+                                        _class="weather-widget-small", 
+                                    ),
+                                ],
+                                _class=[*subitem_classes, "bg-opacity-60", "w-1/2"],
+                            ),
+                            Div(
+                                [
+                                    Div(
+                                        inner_content="Alarm clock",
+                                        _class="modern-title"
+                                    ),
+                                    Div(
+                                        inner_content="Set an alarm to wake up on time",
+                                        _class="modern-text text-lg mt-4"
+                                    ),
+                                ],
+                                _class=[*subitem_classes, "bg-opacity-60", "w-1/2"],
+                            ),
+                        ],
+                        _class="flex w-full justify-between space-x-4",
+                    ),
+                ],
+                _class="flex flex-col items-center space-y-4 w-full max-w-4xl px-4",
+            ),
+            _class=item_classes,
+        )
+        # Carousel Item 3 (updated)
+        item3: Div = Div(
+            Div(
+                [
+                    Div(
+                        [
+                            Div(
+                                inner_content="What is the latest news?",
+                                _class="modern-title",
+                            ),
+                            Div(
+                                inner_content="Stay updated with the latest events happening around the world.",
+                                _class="modern-text text-lg mt-4",
+                            ),
+                        ],
+                        _class=[*subitem_classes, "bg-opacity-40"],
+                    ),
+                    Div(
+                        [
+                            Div(
+                                inner_content="Play music on Spotify",
+                                _class="modern-title",
+                            ),
+                            Div(
+                                inner_content="Listen to your favorite playlists and artists on Spotify.",
+                                _class="modern-text text-lg mt-4",
+                            ),
+                        ],
+                        _class=[*subitem_classes, "bg-opacity-40"],
+                    ),
+                    Div(
+                        [
+                            Div(
+                                inner_content="Tell me a joke",
+                                _class="modern-title",
+                            ),
+                            Div(
+                                inner_content="Enjoy a lighthearted joke to brighten your day.",
+                                _class="modern-text text-lg mt-4",
+                            ),
+                        ],
+                        _class=[*subitem_classes, "bg-opacity-40"],
+                    ),
+                    Div(
+                        [
+                            Div(
+                                inner_content="Play underwater adventure game",
+                                _class="modern-title",
+                            ),
+                            Div(
+                                inner_content="Dive into an exciting underwater adventure game.",
+                                _class="modern-text text-lg mt-4",
+                            ),
+                        ],
+                        _class=[*subitem_classes, "bg-opacity-40"],
+                    ),
+                    # Skill examples title and widget
+                    Div(
+                        [
+                            Div(
+                                inner_content="Skill examples",
+                                _class="modern-title"
+                            ),  # Add title "Skill examples"
+                            self.skill_examples.widget,  # Add SkillExamplesWidget
+                        ],
+                        _class=[*subitem_classes, "bg-opacity-40"],
+                    ),
+                ],
+                _class=[
+                    "grid",
+                    "grid-cols-2",
+                    "gap-4",
+                    "w-full",
+                    "max-w-4xl",
+                    "px-4",
+                ],
+            ),
+            _class=item_classes, 
+        )
+        # Carousel Item 4
+        item4: Div = Div(
+            Div(
+                [
+                    Div(
+                        inner_content="Another widget",
+                        _class="modern-title",
+                    ),
+                    Div(
+                        inner_content="Room for other skills content.",
+                        _class="modern-text text-lg mt-4",
+                    ),
+                ],
+                _class=subitem_classes,
+            ),
+            _class=item_classes, 
+        )
+        return [item1, item2, item3, item4]
