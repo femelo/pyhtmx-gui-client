@@ -38,7 +38,7 @@ class ClockTimeWidget(Widget):
                 parameter="clock",
                 attribute="inner_content",
                 component=time_text,
-            )
+            ),
         )
         self._widget: Div = Div(
             [
@@ -69,13 +69,13 @@ class DateTimeWidget(Widget):
         # Time text
         time_text: Div = Div(
             inner_content=session_data.get("time_string"),
-            _id=f"time-{self.id}",
+            _id="time",
             _class="text-[10vw] text-white font-bold",
         )
         self.add(
             "time_string",
             SessionItem(
-                parameter=f"time-{self.id}",
+                parameter="time",
                 attribute="inner_content",
                 component=time_text,
             )
@@ -84,11 +84,11 @@ class DateTimeWidget(Widget):
         # Full date text
         date_text: Div = Div(
             inner_content=self.format_date(),
-            _id=f"date-{self.id}",
+            _id="date",
             _class="text-[6vw] text-white font-bold",
         )
         session_item = SessionItem(
-            parameter=f"date-{self.id}",
+            parameter="date",
             attribute="inner_content",
             component=date_text,
             format_value=self.format_date,
@@ -212,7 +212,7 @@ class WeatherWidget(Widget):
         """Formats the temperature with °C."""
         if weather_temp is not None:
             return f"{weather_temp}°C"
-        return ''
+        return '--.-°C'
 
 
 class SkillExamplesWidget(Widget):
@@ -225,7 +225,7 @@ class SkillExamplesWidget(Widget):
         super().__init__(session_data=session_data)
 
         # List of example commands
-        examples_text = "\n".join(
+        examples_text = '\n'.join(
             session_data.get("skill_examples", {}).get("examples", [])
         )
 
@@ -312,7 +312,14 @@ class HomeScreen(Page):
         # Combine carousel and tabs
         main_view = Div(
             [carousel_container, tabs_container],
-            _class="h-full w-full flex flex-col items-center justify-center",
+            _class=[
+                "h-full",
+                "w-full",
+                "flex",
+                "flex-col",
+                "items-center",
+                "justify-center",
+            ],
             _id="carousel-bg",
             style={
                 "background": (

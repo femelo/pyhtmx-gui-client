@@ -193,8 +193,8 @@ class OVOSGuiClient:
             data = [
                 {
                     "url": os.path.join(CLIENT_DIR, "home_screen.py"),
-                    "page": "home_screen"
-                }
+                    "page": "home_screen",
+                },
             ]
 
         show = len(self._gui_list) == 0

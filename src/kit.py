@@ -144,13 +144,23 @@ class Page:
         session_data: Optional[Dict[str, Any]] = None,
     ):
         self._route: str = route or f"/page-{token_hex(4)}"
-        self._session_data: Dict[str, Any] = session_data
+        self._session_data: Dict[str, Any] = session_data or {}
         self._widgets: List[Widget] = []
         self._page: HTMLTag = HTMLTag("div")
 
     @property
     def page(self: Page) -> HTMLTag:
         return self._page
+
+    def propagate_session_data(
+        self: Page,
+    ) -> None:
+        self._session_data.update(
+            {
+                k: v for widget in self._widgets
+                for k, v in widget._session_data.items()
+            }
+        )
 
     def add(self: Page, widgets: Union[Widget, List[Widget]]) -> None:
         if isinstance(widgets, Widget):
@@ -270,6 +280,8 @@ class Page:
             )
 
     def set_up(self: Page, renderer: Any) -> None:
+        # Propagate session data from widgets
+        self.propagate_session_data()
         for widget in self._widgets:
             # Register session parameters
             self.register_session_items(widget, renderer)
