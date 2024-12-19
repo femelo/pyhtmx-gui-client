@@ -63,7 +63,11 @@ class PageLoader(BaseModel):
                 objects.append(obj)
             elif inspect.isclass(obj) and HTMLTag in obj.__bases__:
                 objects.append(obj)
-            elif inspect.isclass(obj) and hasattr(obj, "_is_page") and obj._is_page:
+            elif (
+                inspect.isclass(obj) and
+                hasattr(obj, "_is_page") and
+                obj._is_page
+            ):
                 objects.append(obj)
             else:
                 pass
@@ -75,7 +79,7 @@ class PageLoader(BaseModel):
                 "Make sure wrapping classes have the class "
                 "attribute _is_page = True"
             )
-        else:    
+        else:
             if len(objects) > 1:
                 logger.warning(
                     f"Multiple page views defined on {self.uri}. "

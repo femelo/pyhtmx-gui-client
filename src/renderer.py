@@ -154,7 +154,10 @@ class Renderer:
                 attributes={
                     "hx-post": f"/global-event/{event_id}",
                     "hx-trigger": event,
-                    # "hx-target": target.attributes["id"] if target is not None else "none",
+                    # "hx-target": (
+                    #     target.attributes["id"]
+                    #     if target is not None else "none"
+                    # ),
                     # "hx-swap": "none",
                 }
             )
@@ -201,8 +204,9 @@ class Renderer:
             else:
                 component.update_attributes(attributes={attr_name: attr_value})
                 self.update(component.to_string(), event_id=parameter_id)
-            tag = component.tag
-            # logger.debug(f"Updated parameter: {route}:{component} -> {parameter}")
+            # logger.debug(
+            #   f"Updated parameter: {route}:{component} -> {parameter}"
+            # )
 
     def close_dialog(
         self: Renderer,
@@ -343,6 +347,7 @@ class Renderer:
             # Call
             content = callback_mapping[event_id].fn()
         return content
+
 
 # Instantiate global renderer
 global_renderer: Renderer = Renderer()
