@@ -51,8 +51,8 @@ class Message(BaseModel):
 
 
 class OVOSGuiClient:
-    id : str = "ovos-pyhtmx-gui-client"
-    server_url : str = "ws://localhost:18181/gui"
+    id: str = "ovos-pyhtmx-gui-client"
+    server_url: str = "ws://localhost:18181/gui"
     renderer: Renderer = global_renderer
 
     def __init__(self: OVOSGuiClient):
@@ -67,7 +67,7 @@ class OVOSGuiClient:
     @staticmethod
     def connect() -> Optional[WebSocket]:
         try:
-            ws = create_connection(OVOSGuiClient.server_url)  # Use the correct host, port, and route
+            ws = create_connection(OVOSGuiClient.server_url)
             logger.info("Connected to ovos-gui websocket")
             return ws
         except Exception as e:
@@ -111,7 +111,7 @@ class OVOSGuiClient:
         while not termination_event.is_set():
             try:
                 if self._ws:
-                    response = self._ws.recv()  # Receive messages from the WebSocket
+                    response = self._ws.recv()
                 if response:
                     logger.debug(f"Received message: {response}")
                     message = Message.model_validate_json(response)
@@ -196,23 +196,23 @@ class OVOSGuiClient:
                     "page": "home_screen"
                 }
             ]
-    
+
         show = len(self._gui_list) == 0
-    
+
         if namespace not in self._gui_list:
             self._gui_list[namespace] = GuiList(
                 namespace=namespace,
                 renderer=OVOSGuiClient.renderer,
             )
-    
+
         if position is None:
             position = 0
-    
+
         if namespace in self._session:
             session_data = self._session[namespace]
         else:
             session_data = {}
-    
+
         self._gui_list[namespace].insert(
             position=position,
             values=values if values is not None else data,
@@ -276,7 +276,10 @@ class OVOSGuiClient:
         namespace: str,
         property: str,
     ) -> None:
-        if (namespace in self._session) and (property in self._session[namespace]):
+        if (
+            namespace in self._session and
+            property in self._session[namespace]
+        ):
             del self._session[namespace][property]
             # TODO: handle session parameter delete in the renderer
 
@@ -287,7 +290,7 @@ class OVOSGuiClient:
         property: Optional[str],
         data: Optional[Mapping[str, Any]],
         values: Optional[List[Mapping[str, Any]]],
-        ) -> None:
+    ) -> None:
         if namespace == "mycroft.system.active_skills":
             skill = data[0].get("skill_id", None)
             if skill:
@@ -297,13 +300,17 @@ class OVOSGuiClient:
                 self._session[namespace] = {}
             if position is None:
                 position = 0
-            if property is not None and property not in self._session[namespace]:
-                self._session[namespace][property] = [None for _ in range(position)]
+            if (
+                property is not None and
+                property not in self._session[namespace]
+            ):
+                self._session[namespace][property] = [
+                    None for _ in range(position)
+                ]
             for item in reversed(values):
                 self._session[namespace][property].insert(position, item)
             if namespace in self._gui_list:
                 self._gui_list[namespace].update(self._session[namespace])
-
 
     def handle_session_list_update(self: OVOSGuiClient) -> None:
         # TODO: Implement me
