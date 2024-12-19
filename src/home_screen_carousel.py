@@ -118,7 +118,7 @@ class DateTimeWidget(Widget):
             ],
         )
 
-    def format_date(self: DateTimeWidget, value: Any) -> str:
+    def format_date(self: DateTimeWidget, value: Any = None) -> str:
         weekday = self._session_data.get("weekday_string", '')[:3]
         month = self._session_data.get("month_string", '')
         day = self._session_data.get("day_string", '')
@@ -200,14 +200,14 @@ class WeatherWidget(Widget):
             ],
         )
 
-    def weather_icon_src(self: WeatherWidget, value: Any) -> str:
+    def weather_icon_src(self: WeatherWidget, value: Any = None) -> str:
         """Returns the local file path for the weather icon."""
         weather_code = self._session_data["weather_code"]
         if weather_code is not None and weather_code in WEATHER_ICONS:
             return WEATHER_ICONS[weather_code]
         return os.path.join("assets", "icons", "no-internet.svg")
 
-    def weather_temperature(self: WeatherWidget, value: Any) -> str:
+    def weather_temperature(self: WeatherWidget, value: Any = None) -> str:
         weather_temp = self._session_data["weather_temp"]
         """Formats the temperature with °C."""
         if weather_temp is not None:
@@ -236,8 +236,11 @@ class SkillExamplesWidget(Widget):
         )
         self.add(
             "examples",
-            attribute="inner_content",
-            component=examples_div,
+            SessionItem(
+                parameter="examples",
+                attribute="inner_content",
+                component=examples_div,
+            ),
         )
 
         # Widget container
@@ -387,7 +390,7 @@ class HomeScreen(Page):
             Div(
                 [
                     Div(
-                        self.clock_time,
+                        self.clock_time.widget,
                         _class=[
                             *subitem_classes,
                             "bg-opacity-60",

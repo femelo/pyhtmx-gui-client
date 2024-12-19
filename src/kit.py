@@ -155,7 +155,7 @@ class Page:
     def add(self: Page, widgets: Union[Widget, List[Widget]]) -> None:
         if isinstance(widgets, Widget):
             self._widgets.append(widgets)
-        elif isinstance(widgets, List[Widget]):
+        elif isinstance(widgets, list):
             self._widgets.extend(widgets)
         else:
             logger.error(f"Invalid widgets format: {widgets}")
