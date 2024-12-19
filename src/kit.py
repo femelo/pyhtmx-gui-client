@@ -148,7 +148,6 @@ class Page:
         self._widgets: List[Widget] = []
         self._page: HTMLTag = HTMLTag("div")
 
-
     @property
     def page(self: Page) -> HTMLTag:
         return self._page
