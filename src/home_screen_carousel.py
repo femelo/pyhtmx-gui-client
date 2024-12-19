@@ -85,7 +85,7 @@ class DateTimeWidget(Widget):
         date_text: Div = Div(
             inner_content=self.format_date(),
             _id="date",
-            _class="text-[6vw] text-white font-bold",
+            _class="text-[4vw] text-white font-bold",
         )
         session_item = SessionItem(
             parameter="date",
@@ -293,8 +293,6 @@ class HomeScreen(Page):
         tab_classes = [
             "tab",
             "tab-lifted",
-            "text-[24px]",
-            "h-[50px]",
             "text-white",
             "font-bold",
         ]
@@ -308,6 +306,8 @@ class HomeScreen(Page):
             _class=[
                 "tabs",
                 "tabs-boxed",
+                "tabs-lg",
+                "tabs-hidden",
                 "mb-4",
                 "flex",
                 "justify-center",
