@@ -6,6 +6,7 @@ const tabsContainer = document.getElementById("tabs-container");
 const fullScreenImage = document.getElementById("full-screen-image");
 
 let selectedTab = 0;
+const inactivityTimeout = 2000; // ms
 let tabsVisibleTimeout;
 
 
@@ -55,7 +56,6 @@ function updateTabs() {
 
 // Function to show tabs temporarily and adjust fullscreen image
 function showTabs() {
-  clearTimeout(tabsVisibleTimeout); // Reset de timeout voor het verbergen van tabs
   tabsContainer.classList.remove("tabs-hidden"); // Verwijder de 'hidden' klassen van de tabs
   tabsContainer.classList.add("tabs-shown"); // Voeg de 'tabs-shown' klasse toe om ze zichtbaar te maken
 
@@ -83,16 +83,20 @@ function hideTabs() {
 
 // Show tabs on hover over the carousel
 function handleMouseover(event) {
+  clearTimeout(tabsVisibleTimeout);
   event.preventDefault();
   showTabs();
+  tabsVisibleTimeout = setTimeout(hideTabs, inactivityTimeout);
 }
 
 function handleMouseout(event) {
+  clearTimeout(tabsVisibleTimeout);
   event.preventDefault();
   hideTabs();
 }
 
 function handleKeyup(event) {
+  clearTimeout(tabsVisibleTimeout);
   event.preventDefault();
   let index;
   if (event.code === "ArrowRight") {
@@ -105,6 +109,7 @@ function handleKeyup(event) {
     left: scrollTo,
     behavior: 'smooth' // Zorgt voor een soepele scrollanimatie
   });
+  tabsVisibleTimeout = setTimeout(hideTabs, inactivityTimeout);
 }
 
 const debouncedHandleMouseover = debounce(handleMouseover, 10);
