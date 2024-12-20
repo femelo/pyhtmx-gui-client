@@ -39,6 +39,12 @@ function updateBackgroundOnScroll() {
 
 // Function to update the active tabs based on the scroll position
 function updateTabs() {
+  const scrollPosition = carousel.scrollLeft;
+  const totalWidth = carousel.scrollWidth - carousel.offsetWidth;
+  selectedTab = Math.min(
+    Math.floor(scrollPosition / (totalWidth / carouselItems.length)),
+    tabs.length - 1,
+  );
   tabs.forEach((tab, idx) => {
     tab.classList.remove('tab-active'); // Verwijder de actieve klasse van alle tabs
     if (idx === selectedTab) {
@@ -88,12 +94,13 @@ function handleMouseout(event) {
 
 function handleKeyup(event) {
   event.preventDefault();
+  let index;
   if (event.code === "ArrowRight") {
-    selectedTab = Math.min(selectedTab + 1, tabs.length - 1);
+    index = Math.min(selectedTab + 1, tabs.length - 1);
   } else if (event.code == "ArrowLeft") {
-    selectedTab = Math.max(selectedTab - 1, 0);
+    index = Math.max(selectedTab - 1, 0);
   }
-  const scrollTo = carouselItems[selectedTab].offsetLeft; // Scroll naar de juiste carousel item op basis van de tab index
+  const scrollTo = carouselItems[index].offsetLeft; // Scroll naar de juiste carousel item op basis van de tab index
   carousel.scrollTo({
     left: scrollTo,
     behavior: 'smooth' // Zorgt voor een soepele scrollanimatie
@@ -102,7 +109,7 @@ function handleKeyup(event) {
 
 const debouncedHandleMouseover = debounce(handleMouseover, 10);
 const debouncedHandleMouseout = debounce(handleMouseout, 10);
-const debouncedHandleKeyup = debounce(handleKeyup, 100);
+const debouncedHandleKeyup = debounce(handleKeyup, 25);
 
 document.addEventListener("mouseover", debouncedHandleMouseover);
 document.addEventListener("mouseout", debouncedHandleMouseout);
@@ -119,7 +126,6 @@ carousel.addEventListener("scroll", () => {
 tabs.forEach((tab, index) => {
   tab.addEventListener('click', (event) => {
     event.preventDefault();
-    selectedTab = index;
     const scrollTo = carouselItems[index].offsetLeft; // Scroll naar de juiste carousel item op basis van de tab index
     carousel.scrollTo({
       left: scrollTo,
