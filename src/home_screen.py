@@ -69,7 +69,7 @@ class DateTimeWidget(Widget):
             _class="text-[10vw] text-white font-bold",
             style={"text-shadow": "#272727 0.5vw 0.5vh 1vw"},
         )
-        self.add(
+        self.add_interaction(
             "time_string",
             SessionItem(
                 parameter="time",
@@ -98,7 +98,7 @@ class DateTimeWidget(Widget):
             "day_string",
             "year_string"
         ]:
-            self.add(parameter, date_session_item)
+            self.add_interaction(parameter, date_session_item)
 
         # Time and date container
         self._widget: Div = Div(
@@ -145,7 +145,7 @@ class WeatherWidget(Widget):
             weather_icon,
             _class="w-[8vw] h-[8vw]",
         )
-        self.add(
+        self.add_interaction(
             "weather_code",
             SessionItem(
                 parameter="weather_code",
@@ -162,7 +162,7 @@ class WeatherWidget(Widget):
             _class="text-[4vw] leading-[8vw] text-white font-bold",
             style={"text-shadow": "#272727 0.5vw 0.5vh 1vw"},
         )
-        self.add(
+        self.add_interaction(
             "weather_temp",
             SessionItem(
                 parameter="weather_temp",
@@ -340,7 +340,7 @@ class Drawer(Widget):
                 "duration-700",
             ],
         )
-        self.add(
+        self.add_interaction(
             "menu-item-about-click",
             Control(
                 context="global",
@@ -424,7 +424,7 @@ class AboutDialog(Widget):
             "Close",
             _class="btn btn-info",
         )
-        self.add(
+        self.add_interaction(
             "about-close-btn-click",
             Control(
                 context="global",
@@ -513,8 +513,8 @@ class BackgroundContainer(Widget):
         )
         # Same object for both wallpaper parameters:
         # whenever one of them changes, the object state changes
-        self.add("wallpaper_path", wallpaper_session_item)
-        self.add("selected_wallpaper", wallpaper_session_item)
+        self.add_interaction("wallpaper_path", wallpaper_session_item)
+        self.add_interaction("selected_wallpaper", wallpaper_session_item)
 
         # Time and date container
         self._widget: Div = background_container
@@ -540,7 +540,7 @@ class HomeScreen(Page):
         self: HomeScreen,
         session_data: Optional[Dict[str, Any]],
     ):
-        super().__init__(route="/home", session_data=session_data)
+        super().__init__(name="home", session_data=session_data)
 
         date_and_time = DateTimeWidget(session_data=session_data)
         weather = WeatherWidget(session_data=session_data)
@@ -553,7 +553,7 @@ class HomeScreen(Page):
         drawer.container.add_child(background.widget)
         drawer.container.add_child(bar.widget)
 
-        self.add(
+        self.add_component(
             [
                 date_and_time,
                 weather,
