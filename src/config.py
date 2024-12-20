@@ -1,5 +1,9 @@
 import os
-import tomllib
+import sys
+if sys.version_info.minor < 11:
+    import tomli as tomllib
+else:
+    import tomllib
 
 APP_DIR = os.path.abspath(os.path.dirname(__file__))
 
