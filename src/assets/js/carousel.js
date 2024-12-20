@@ -5,7 +5,20 @@ const tabs = document.querySelectorAll(".tab");
 const tabsContainer = document.getElementById("tabs-container");
 const fullScreenImage = document.getElementById("full-screen-image");
 
+let selectedTab = 0;
+const inactivityTimeout = 2000; // ms
 let tabsVisibleTimeout;
+
+
+// Helper function to debounce events
+function debounce(func, timeout = 300){
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => { func.apply(this, args); }, timeout);
+  };
+}
+
 
 // Function to calculate the dynamic gradient based on scroll position
 function calculateDynamicGradient(scrollRatio) {
@@ -29,11 +42,13 @@ function updateBackgroundOnScroll() {
 function updateTabs() {
   const scrollPosition = carousel.scrollLeft;
   const totalWidth = carousel.scrollWidth - carousel.offsetWidth;
-  const index = Math.floor(scrollPosition / (totalWidth / carouselItems.length));
-
+  selectedTab = Math.min(
+    Math.floor(scrollPosition / (totalWidth / carouselItems.length)),
+    tabs.length - 1,
+  );
   tabs.forEach((tab, idx) => {
     tab.classList.remove('tab-active'); // Verwijder de actieve klasse van alle tabs
-    if (idx === index) {
+    if (idx === selectedTab) {
       tab.classList.add('tab-active'); // Voeg de actieve klasse toe aan de tab die overeenkomt met de scrollpositie
     }
   });
@@ -41,26 +56,69 @@ function updateTabs() {
 
 // Function to show tabs temporarily and adjust fullscreen image
 function showTabs() {
-  clearTimeout(tabsVisibleTimeout); // Reset de timeout voor het verbergen van tabs
-  tabsContainer.classList.remove("opacity-0", "pointer-events-none"); // Verwijder de 'hidden' klassen van de tabs
+  tabsContainer.classList.remove("tabs-hidden"); // Verwijder de 'hidden' klassen van de tabs
   tabsContainer.classList.add("tabs-shown"); // Voeg de 'tabs-shown' klasse toe om ze zichtbaar te maken
 
   // Maak de full-screen afbeelding kleiner
   fullScreenImage.classList.add("small");
 
-  tabsVisibleTimeout = setTimeout(() => {
-    tabsContainer.classList.remove("tabs-shown"); // Verberg de tabs na 2 seconden
-    tabsContainer.classList.add("opacity-0", "pointer-events-none");
+  // TODO: fix me
+  // tabsVisibleTimeout = setTimeout(() => {
+  //   tabsContainer.classList.remove("tabs-shown"); // Verberg de tabs na 2 seconden
+  //   // tabsContainer.classList.add("opacity-0", "pointer-events-none");
+  //   tabsContainer.classList.add("tabs-hidden");
 
-    // Herstel de grootte van de full-screen afbeelding
-    fullScreenImage.classList.remove("small");
-  }, 2000); // De tabs verdwijnen na 2 seconden
+  //   // Herstel de grootte van de full-screen afbeelding
+  //   fullScreenImage.classList.remove("small");
+  // }, 2000); // De tabs verdwijnen na 2 seconden
+}
+
+function hideTabs() {
+  tabsContainer.classList.remove("tabs-shown"); // Verberg de tabs na 2 seconden
+  tabsContainer.classList.add("tabs-hidden");
+
+  // Herstel de grootte van de full-screen afbeelding
+  fullScreenImage.classList.remove("small");
 }
 
 // Show tabs on hover over the carousel
-carousel.addEventListener("mouseover", () => {
+function handleMouseover(event) {
+  clearTimeout(tabsVisibleTimeout);
+  event.preventDefault();
   showTabs();
-});
+  tabsVisibleTimeout = setTimeout(hideTabs, inactivityTimeout);
+}
+
+function handleMouseout(event) {
+  clearTimeout(tabsVisibleTimeout);
+  event.preventDefault();
+  hideTabs();
+}
+
+function handleKeyup(event) {
+  clearTimeout(tabsVisibleTimeout);
+  event.preventDefault();
+  let index;
+  if (event.code === "ArrowRight") {
+    index = Math.min(selectedTab + 1, tabs.length - 1);
+  } else if (event.code == "ArrowLeft") {
+    index = Math.max(selectedTab - 1, 0);
+  }
+  const scrollTo = carouselItems[index].offsetLeft; // Scroll naar de juiste carousel item op basis van de tab index
+  carousel.scrollTo({
+    left: scrollTo,
+    behavior: 'smooth' // Zorgt voor een soepele scrollanimatie
+  });
+  tabsVisibleTimeout = setTimeout(hideTabs, inactivityTimeout);
+}
+
+const debouncedHandleMouseover = debounce(handleMouseover, 10);
+const debouncedHandleMouseout = debounce(handleMouseout, 10);
+const debouncedHandleKeyup = debounce(handleKeyup, 25);
+
+document.addEventListener("mouseover", debouncedHandleMouseover);
+document.addEventListener("mouseout", debouncedHandleMouseout);
+document.addEventListener("keyup", debouncedHandleKeyup);
 
 // Listen for scroll events to update the background, active tab, and show tabs
 carousel.addEventListener("scroll", () => {

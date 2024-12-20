@@ -47,6 +47,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Termination handler
 def termination_handler(*args: Any) -> None:
     if not termination_event.is_set():
@@ -55,6 +56,7 @@ def termination_handler(*args: Any) -> None:
         global_client.close()
     else:
         os.kill(os.getpid(), SIGTERM)
+
 
 # Set signal
 signal(SIGINT, termination_handler)
@@ -80,6 +82,7 @@ def check_disconnected() -> None:
             with session_lock:
                 for session_id in disconnected:
                     del sessions[session_id]
+
 
 Thread(target=check_disconnected, daemon=True).start()
 

@@ -38,4 +38,8 @@ def init_logger(
 
     return logger
 
-logger = init_logger("PYHTMX GUI", level=config_data["log-level"].upper())
+
+logger: logging.Logger = init_logger(
+    "PYHTMX GUI",
+    level=config_data["log-level"].upper(),
+)

@@ -71,7 +71,8 @@ class Renderer:
         self._dialogs: Dict[str, HTMLTag] = {}
         self._global_callbacks: Dict[str, Callback] = {}
         self._local_callbacks: Dict[str, Callback] = {}
-        self._session_parameters: Dict[str, Dict[str, SessionParameter]] = {}
+        self._session_parameters: \
+            Dict[str, Dict[str, List[SessionParameter]]] = {}
 
     @property
     def document(self: Renderer) -> Html:
@@ -105,11 +106,23 @@ class Renderer:
         )
         if route not in self._session_parameters:
             self._session_parameters[route] = {}
-        self._session_parameters[route][parameter] = SessionParameter(
-            parameter_name=parameter,
-            parameter_id=parameter_id,
-            target=target,
+        if parameter not in self._session_parameters[route]:
+            self._session_parameters[route][parameter] = []
+        self._session_parameters[route][parameter].append(
+            SessionParameter(
+                parameter_name=parameter,
+                parameter_id=parameter_id,
+                target=target,
+            )
         )
+        # parameter_full_id: str = (
+        #     f"{route}/"
+        #     f"{parameter}/"
+        #     f"{parameter_id}/"
+        #     f"{target.tag}/"
+        #     f"{target.attributes.get('id', '')}"
+        # )
+        # logger.info(f"Parameter registered: {parameter_full_id}")
 
     def register_callback(
         self: Renderer,
@@ -154,7 +167,10 @@ class Renderer:
                 attributes={
                     "hx-post": f"/global-event/{event_id}",
                     "hx-trigger": event,
-                    # "hx-target": target.attributes["id"] if target is not None else "none",
+                    # "hx-target": (
+                    #     target.attributes["id"]
+                    #     if target is not None else "none"
+                    # ),
                     # "hx-swap": "none",
                 }
             )
@@ -191,18 +207,33 @@ class Renderer:
             return
         if parameter not in self._session_parameters[route]:
             return
-        session_parameter = self._session_parameters[route][parameter]
-        for attr_name, attr_value in attribute.items():
-            parameter_id = session_parameter.parameter_id
-            component = session_parameter.target
-            if attr_name == "inner_content":
-                component.update_attributes(text_content=attr_value)
-                self.update(attr_value, event_id=parameter_id)
-            else:
-                component.update_attributes(attributes={attr_name: attr_value})
-                self.update(component.to_string(), event_id=parameter_id)
-            tag = component.tag
-            # logger.debug(f"Updated parameter: {route}:{component} -> {parameter}")
+        for session_parameter in self._session_parameters[route][parameter]:
+            for attr_name, attr_value in attribute.items():
+                parameter_id = session_parameter.parameter_id
+                component = session_parameter.target
+                if attr_name == "inner_content":
+                    component.update_attributes(text_content=attr_value)
+                    self.update(
+                        attr_value,
+                        event_id=parameter_id,
+                    )
+                else:
+                    component.update_attributes(
+                        attributes={attr_name: attr_value}
+                    )
+                    self.update(
+                        component.to_string(),
+                        event_id=parameter_id,
+                    )
+                # parameter_full_id = (
+                #     f"{route}:"
+                #     f"{component.tag}:"
+                #     f"{component.attributes.get('id', 'no-id')}:"
+                #     f"{parameter} -> {attr_value}"
+                # )
+                # logger.debug(
+                #   f"Updated parameter: {parameter_full_id}"
+                # )
 
     def close_dialog(
         self: Renderer,
@@ -343,6 +374,7 @@ class Renderer:
             # Call
             content = callback_mapping[event_id].fn()
         return content
+
 
 # Instantiate global renderer
 global_renderer: Renderer = Renderer()
