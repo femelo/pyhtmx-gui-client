@@ -32,7 +32,7 @@ class ClockTimeWidget(Widget):
             _id="clock",
             _class="digital-clock",
         )
-        self.add(
+        self.add_interaction(
             "time_string",
             SessionItem(
                 parameter="clock",
@@ -72,7 +72,7 @@ class DateTimeWidget(Widget):
             _id="time",
             _class="text-[10vw] text-white font-bold",
         )
-        self.add(
+        self.add_interaction(
             "time_string",
             SessionItem(
                 parameter="time",
@@ -101,7 +101,7 @@ class DateTimeWidget(Widget):
             "day_string",
             "year_string",
         ]:
-            self.add(parameter, session_item)
+            self.add_interaction(parameter, session_item)
 
         # Time and date container
         self._widget: Div = Div(
@@ -142,7 +142,7 @@ class WeatherWidget(Widget):
             width="auto",
             height="auto",
         )
-        self.add(
+        self.add_interaction(
             "weather_code",
             SessionItem(
                 parameter="weather_code",
@@ -169,7 +169,7 @@ class WeatherWidget(Widget):
                 "font-bold",
             ],
         )
-        self.add(
+        self.add_interaction(
             "weather_temp",
             SessionItem(
                 parameter="weather_temp",
@@ -234,7 +234,7 @@ class SkillExamplesWidget(Widget):
             _id="examples",
             _class="text-[4vw] text-white font-bold",
         )
-        self.add(
+        self.add_interaction(
             "examples",
             SessionItem(
                 parameter="examples",
@@ -252,7 +252,7 @@ class SkillExamplesWidget(Widget):
 
 class HomeScreen(Page):
     def __init__(self, session_data: Optional[Dict[str, Any]]):
-        super().__init__(route="/home", session_data=session_data)
+        super().__init__(name="home", session_data=session_data)
 
         self.clock_time = ClockTimeWidget(session_data)
         self.date_time = DateTimeWidget(session_data)
@@ -260,7 +260,7 @@ class HomeScreen(Page):
         self.weather2 = WeatherWidget(session_data)
         # Add SkillExamplesWidget
         self.skill_examples = SkillExamplesWidget(session_data)
-        self.add(
+        self.add_component(
             [
                 self.clock_time,
                 self.date_time,

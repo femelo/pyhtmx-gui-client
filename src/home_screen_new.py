@@ -1,10 +1,12 @@
 from __future__ import annotations
-from typing import Any, Optional, Dict, Callable
+import os
+import shutil
+from typing import Any, Optional, Dict
 from threading import Thread, Condition
 from datetime import datetime
 import time
-from pyhtmx.html_tag import HTMLTag
 from pyhtmx import Div
+from kit import Page, SessionItem
 
 
 # Background image
@@ -55,50 +57,22 @@ class Clock:
 global_clock = Clock()
 
 
-# TODO: move this to 'types.py'
-class SessionData:
-    def __init__(
-        self: SessionData,
-        parameter: str,
-        attribute: str,
-        component: HTMLTag,
-        format_value: Optional[Callable] = None,
-        target_level: Optional[str] = "innerHTML",
-    ):
-        self.parameter = parameter
-        self.attribute = attribute
-        self.component = component
-        self.format_value = format_value
-        self.target_level = target_level
-
-
-class HomeScreen:
-    _is_page: bool = True
+class HomeScreen(Page):
+    _parameters = ("clock-time", "wallpaper")
     _clock: Clock = global_clock
 
     def __init__(
         self: HomeScreen,
         session_data: Optional[Dict[str, Any]],
     ):
-        self._route: str = "/home"
-        self._session_data: Dict[str, Any] = {
-            "wallpaper": WALLPAPER,
-        }
-        if session_data:
-            self._session_data.update(session_data)
+        super().__init__(name="home", session_data=session_data)
 
-        self._session_objects: Dict[str, Optional[SessionData]] = {
-            "clock-time": None,
-            "wallpaper": None,
-        }
         # Clock text
         clock_text: Div = Div(
-            inner_content=session_data.get("clock-time"),
             _id="clock-time",
             _class="text-9xl text-white font-bold",
         )
         # Overlay container
-        wallpaper = self._session_data.get("wallpaper")
         overlay: Div = Div(
             clock_text,
             _id="wallpaper",
@@ -110,20 +84,26 @@ class HomeScreen:
                 "justify-start",
                 "items-end",
                 "bg-cover",
-                f"bg-[url({wallpaper})]" if wallpaper else "",
             ],
+            style=self.wallpaper_url(),
         )
 
-        self._session_objects["clock-time"] = SessionData(
-            parameter="clock-time",
-            attribute="inner_content",
-            component=clock_text,
+        self.add_interaction(
+            "clock-time",
+            SessionItem(
+                parameter="clock-time",
+                attribute="inner_content",
+                component=clock_text,
+            ),
         )
-        self._session_objects["wallpaper"] = SessionData(
-            parameter="wallpaper",
-            attribute="_class",
-            component=overlay,
-            format_value=lambda x: f"bg-[url({x})]",
+        self.add_interaction(
+            "wallpaper",
+            SessionItem(
+                parameter="wallpaper",
+                attribute="_class",
+                component=overlay,
+                format_value=self.wallpaper_url,
+            ),
         )
 
         # Main view
@@ -133,38 +113,30 @@ class HomeScreen:
             _class="flex flex-col h-screen",
         )
 
-    @property
-    def page(self: HomeScreen) -> HTMLTag:
-        return self._page
-
-    def update_session_data(
+    def wallpaper_url(
         self: HomeScreen,
-        session_data: Dict[str, Any],
-        renderer: Any
-    ) -> None:
-        for parameter, value in session_data.items():
-            if parameter in self._session_objects:
-                session_object = self._session_objects[parameter]
-                attr_name = session_object.attribute
-                attr_value = (
-                    session_object.format_value(value)
-                    if session_object.format_value else value
-                )
-                renderer.update_attributes(
-                    route=self._route,
-                    parameter=parameter,
-                    attribute={attr_name: attr_value},
-                )
+        value: Any = None,
+    ) -> str:
+        wallpaper_path = self._session_data.get("wallpaper_path", '')
+        selected_wallpaper = self._session_data.get("selected_wallpaper", '')
+        if wallpaper_path and selected_wallpaper:
+            # Hack to workaround the way figures are served
+            shutil.copy(
+                os.path.join(wallpaper_path, selected_wallpaper),
+                "assets/images/",
+            )
+        if not wallpaper_path or not selected_wallpaper:
+            wallpaper_url = WALLPAPER
+        else:
+            wallpaper_url = os.path.join(
+                "assets",
+                "images",
+                selected_wallpaper
+            )
+        return f"background-image: url({wallpaper_url});"
 
     def set_up(self: HomeScreen, renderer: Any) -> None:
-        # Register session parameters
-        for parameter, session_object in self._session_objects.items():
-            renderer.register_session_parameter(
-                route=self._route,
-                parameter=parameter,
-                target=session_object.component,
-                target_level=session_object.target_level,
-            )
+        super().set_up(renderer)
 
         # Update time
         def update_time():

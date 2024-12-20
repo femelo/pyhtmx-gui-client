@@ -51,6 +51,7 @@ class Control(Registrable):
 
 
 class WidgetType(str, Enum):
+    PAGE = "page"
     COMPONENT = "component"
     DIALOG = "dialog"
 
@@ -66,9 +67,9 @@ class Widget:
     ):
         self._type: WidgetType = type
         self._name: str = name or f"widget-{token_hex(4)}"
-        self._session_data: Dict[str, Any] = {
-            parameter: '' for parameter in self._parameters
-        }
+        self._session_data: Dict[str, Any] = (
+            dict.fromkeys(self._parameters, '')
+        )
         self._session_items: Dict[str, SessionItem] = {}
         self._triggers: Dict[str, Trigger] = {}
         self._controls: Dict[str, Control] = {}
@@ -99,7 +100,7 @@ class Widget:
     def controls(self: Widget) -> Dict[str, Control]:
         return self._controls
 
-    def add(
+    def add_interaction(
         self: Widget,
         key: str,
         value: Union[SessionItem, Trigger, Control],
@@ -135,17 +136,21 @@ class Widget:
             )
 
 
-class Page:
+class Page(Widget):
     _is_page: bool = True  # required class attribute for correct loading
 
     def __init__(
         self: Page,
-        route: Optional[str] = None,
+        name: Optional[str] = None,
         session_data: Optional[Dict[str, Any]] = None,
     ):
-        self._route: str = route or f"/page-{token_hex(4)}"
-        self._session_data: Dict[str, Any] = session_data or {}
-        self._widgets: List[Widget] = []
+        super().__init__(
+            type=WidgetType.PAGE,
+            name=name or f"page-{token_hex(4)}",
+            session_data=session_data,
+        )
+        self._route: str = f"/{self.id}"
+        self._widgets: List[Widget] = [self]
         self._page: HTMLTag = HTMLTag("div")
 
     @property
@@ -162,7 +167,10 @@ class Page:
             }
         )
 
-    def add(self: Page, widgets: Union[Widget, List[Widget]]) -> None:
+    def add_component(
+        self: Page,
+        widgets: Union[Widget, List[Widget]]
+    ) -> None:
         if isinstance(widgets, Widget):
             self._widgets.append(widgets)
         elif isinstance(widgets, list):

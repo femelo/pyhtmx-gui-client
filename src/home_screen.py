@@ -1,12 +1,9 @@
 from __future__ import annotations
 import shutil
 import os
-from secrets import token_hex
-from typing import Any, Optional, List, Dict, Tuple, Callable
-from enum import Enum
-from functools import partial
-from pyhtmx.html_tag import HTMLTag
+from typing import Any, Optional, Dict
 from pyhtmx import Div, Img, Input, Label, Ul, Li, A, Br, H1, P, Button
+from kit import Widget, WidgetType, SessionItem, Control, Page
 
 
 # Background image
@@ -50,102 +47,6 @@ WEATHER_ICONS = {
 }
 
 
-# TODO: move this to 'types.py'
-class SessionData:
-    def __init__(
-        self: SessionData,
-        parameter: str,
-        attribute: str,
-        component: HTMLTag,
-        format_value: Optional[Callable] = None,
-        target_level: Optional[str] = "innerHTML",
-    ):
-        self.parameter = parameter
-        self.attribute = attribute
-        self.component = component
-        self.format_value = format_value
-        self.target_level = target_level
-
-
-class Control:
-    def __init__(
-        self: Control,
-        context: str,
-        event: str,
-        callback: Callable,
-        source: HTMLTag,
-        target: Optional[HTMLTag] = None,
-        target_level: str = "innerHTML",
-    ):
-        self.context = context
-        self.event = event
-        self.callback = callback
-        self.source = source
-        self.target = target
-        self.target_level = target_level
-
-
-class WidgetType(str, Enum):
-    COMPONENT = "component"
-    DIALOG = "dialog"
-
-
-class Widget:
-    _parameters: Tuple[str] = ()
-
-    def __init__(
-        self: Widget,
-        type: WidgetType = WidgetType.COMPONENT,
-        session_data: Optional[Dict[str, Any]] = None,
-    ):
-        self._id: str = token_hex(8)
-        self._type: WidgetType = type
-        self._session_data: Dict[str, Any] = {
-            parameter: '' for parameter in self._parameters
-        }
-        self._session_objects: Dict[str, Optional[SessionData]] = {
-            parameter: None for parameter in self._parameters
-        }
-        self._controls: Dict[str, Optional[Control]] = {}
-        self._widget: Optional[HTMLTag] = None
-        self.init_session_data(session_data)
-
-    @property
-    def id(self: Widget) -> str:
-        return self._id
-
-    @property
-    def type(self: Widget) -> WidgetType:
-        return self._type
-
-    @property
-    def widget(self: Widget) -> Optional[HTMLTag]:
-        return self._widget
-
-    @property
-    def session_objects(self: Widget) -> Dict[str, Optional[SessionData]]:
-        return self._session_objects
-
-    @property
-    def controls(self: Widget) -> Dict[str, Optional[Control]]:
-        return self._controls
-
-    def has(self: Widget, parameter: str) -> bool:
-        return parameter in self._parameters
-
-    def init_session_data(
-        self: Widget,
-        session_data: Optional[Dict[str, Any]],
-    ) -> None:
-        if session_data:
-            self._session_data.update(
-                {
-                    k: v for k, v in session_data.items()
-                    if k in self._session_data
-                }
-            )
-
-
 class DateTimeWidget(Widget):
     _parameters = (
         "time_string",
@@ -168,10 +69,13 @@ class DateTimeWidget(Widget):
             _class="text-[10vw] text-white font-bold",
             style={"text-shadow": "#272727 0.5vw 0.5vh 1vw"},
         )
-        self._session_objects["time_string"] = SessionData(
-            parameter="time",
-            attribute="inner_content",
-            component=time_text,
+        self.add_interaction(
+            "time_string",
+            SessionItem(
+                parameter="time",
+                attribute="inner_content",
+                component=time_text,
+            ),
         )
         # Full date text
         date_text: Div = Div(
@@ -180,7 +84,7 @@ class DateTimeWidget(Widget):
             _class="text-[6vw] text-white font-bold",
             style={"text-shadow": "#272727 0.5vw 0.5vh 1vw"},
         )
-        date_session_object = SessionData(
+        date_session_item = SessionItem(
             parameter="date",
             attribute="inner_content",
             component=date_text,
@@ -194,7 +98,7 @@ class DateTimeWidget(Widget):
             "day_string",
             "year_string"
         ]:
-            self._session_objects[parameter] = date_session_object
+            self.add_interaction(parameter, date_session_item)
 
         # Time and date container
         self._widget: Div = Div(
@@ -211,7 +115,7 @@ class DateTimeWidget(Widget):
             ],
         )
 
-    def format_date(self: DateTimeWidget, *args: Any, **kwargs: Any) -> str:
+    def format_date(self: DateTimeWidget, value: Any = None) -> str:
         weekday = self._session_data.get("weekday_string", '')[:3]
         month = self._session_data.get("month_string", '')
         day = self._session_data.get("day_string", '')
@@ -241,12 +145,15 @@ class WeatherWidget(Widget):
             weather_icon,
             _class="w-[8vw] h-[8vw]",
         )
-        self._session_objects["weather_code"] = SessionData(
-            parameter="weather_code",
-            attribute="src",
-            component=weather_icon,
-            format_value=self.weather_icon_src,
-            target_level="outerHTML",
+        self.add_interaction(
+            "weather_code",
+            SessionItem(
+                parameter="weather_code",
+                attribute="src",
+                component=weather_icon,
+                format_value=self.weather_icon_src,
+                target_level="outerHTML",
+            ),
         )
         # Weather temperature text
         weather_temp_text: Div = Div(
@@ -255,11 +162,14 @@ class WeatherWidget(Widget):
             _class="text-[4vw] leading-[8vw] text-white font-bold",
             style={"text-shadow": "#272727 0.5vw 0.5vh 1vw"},
         )
-        self._session_objects["weather_temp"] = SessionData(
-            parameter="weather_temp",
-            attribute="inner_content",
-            component=weather_temp_text,
-            format_value=self.weather_temperature,
+        self.add_interaction(
+            "weather_temp",
+            SessionItem(
+                parameter="weather_temp",
+                attribute="inner_content",
+                component=weather_temp_text,
+                format_value=self.weather_temperature,
+            ),
         )
         # Weather container
         self._widget: Div = Div(
@@ -279,8 +189,7 @@ class WeatherWidget(Widget):
 
     def weather_icon_src(
         self: WeatherWidget,
-        *args: Any,
-        **kwargs: Any,
+        value: Any = None,
     ) -> str:
         """Returns the local file path for the weather icon."""
         weather_code = self._session_data["weather_code"]
@@ -290,8 +199,7 @@ class WeatherWidget(Widget):
 
     def weather_temperature(
         self: WeatherWidget,
-        *args: Any,
-        **kwargs: Any,
+        value: Any = None,
     ) -> str:
         weather_temp = self._session_data["weather_temp"]
         """Formats the temperature with °C."""
@@ -432,13 +340,16 @@ class Drawer(Widget):
                 "duration-700",
             ],
         )
-        self._controls["menu-item-about-click"] = Control(
-            context="global",
-            event="click",
-            # will open the dialog about
-            callback=lambda renderer: renderer.open_dialog("about-dialog"),
-            source=self._about_item,
-            target=None,  # to target the dialog (to open it)
+        self.add_interaction(
+            "menu-item-about-click",
+            Control(
+                context="global",
+                event="click",
+                # will open the dialog about
+                callback=lambda renderer: renderer.open_dialog("about-dialog"),
+                source=self._about_item,
+                target=None,  # to target the dialog (to open it)
+            ),
         )
 
         self.container: Div = Div(
@@ -503,20 +414,28 @@ class AboutDialog(Widget):
         self: AboutDialog,
         session_data: Optional[Dict[str, Any]] = None,
     ):
-        super().__init__(type=WidgetType.DIALOG, session_data=session_data)
+        super().__init__(
+            type=WidgetType.DIALOG,
+            name="about-dialog",
+            session_data=session_data,
+        )
 
-        self._id: str = "about-dialog"
         self._button: Button = Button(
             "Close",
             _class="btn btn-info",
         )
-        self._controls["about-close-btn-click"] = Control(
-            context="global",
-            event="click",
-            # will close the about dialog
-            callback=lambda renderer: renderer.close_dialog("about-dialog"),
-            source=self._button,
-            target=None,  # to target the dialog (to close it)
+        self.add_interaction(
+            "about-close-btn-click",
+            Control(
+                context="global",
+                event="click",
+                # will close the about dialog
+                callback=(
+                    lambda renderer: renderer.close_dialog("about-dialog")
+                ),
+                source=self._button,
+                target=None,  # to target the dialog (to close it)
+            ),
         )
         self._widget: Div = Div(
             [
@@ -586,7 +505,7 @@ class BackgroundContainer(Widget):
             ],
             style=self.wallpaper_url(),
         )
-        wallpaper_session_object = SessionData(
+        wallpaper_session_item = SessionItem(
             parameter="wallpaper",
             attribute="style",
             component=background_container,
@@ -594,16 +513,15 @@ class BackgroundContainer(Widget):
         )
         # Same object for both wallpaper parameters:
         # whenever one of them changes, the object state changes
-        self._session_objects["wallpaper_path"] = wallpaper_session_object
-        self._session_objects["selected_wallpaper"] = wallpaper_session_object
+        self.add_interaction("wallpaper_path", wallpaper_session_item)
+        self.add_interaction("selected_wallpaper", wallpaper_session_item)
 
         # Time and date container
         self._widget: Div = background_container
 
     def wallpaper_url(
         self: BackgroundContainer,
-        *args: Any,
-        **kwargs: Any,
+        value: Any = None,
     ) -> str:
         wallpaper_path = self._session_data.get("wallpaper_path", '')
         selected_wallpaper = self._session_data.get("selected_wallpaper", '')
@@ -617,14 +535,12 @@ class BackgroundContainer(Widget):
         return f"background-image: url({wallpaper_url});"
 
 
-class HomeScreen:
-    _is_page: bool = True  # required class attribute for correct loading
-
+class HomeScreen(Page):
     def __init__(
         self: HomeScreen,
         session_data: Optional[Dict[str, Any]],
     ):
-        self._route: str = "/home"
+        super().__init__(name="home", session_data=session_data)
 
         date_and_time = DateTimeWidget(session_data=session_data)
         weather = WeatherWidget(session_data=session_data)
@@ -637,19 +553,16 @@ class HomeScreen:
         drawer.container.add_child(background.widget)
         drawer.container.add_child(bar.widget)
 
-        self._widgets: List[Widget] = [
-            date_and_time,
-            weather,
-            background,
-            drawer,
-            bar,
-            about_dialog,
-        ]
-
-        self._session_data: Dict[str, Any] = {
-            k: v for widget in self._widgets
-            for k, v in widget._session_data.items()
-        }
+        self.add_component(
+            [
+                date_and_time,
+                weather,
+                background,
+                drawer,
+                bar,
+                about_dialog,
+            ]
+        )
 
         # Main view
         self._page: Div = Div(
@@ -658,69 +571,3 @@ class HomeScreen:
             _class="flex flex-col",
             style={"width": "100vw", "height": "100vh"},
         )
-
-    @property
-    def page(self: HomeScreen) -> HTMLTag:
-        return self._page
-
-    def update_session_data(
-        self: HomeScreen,
-        session_data: Dict[str, Any],
-        renderer: Any
-    ) -> None:
-        for parameter, value in session_data.items():
-            for widget in self._widgets:
-                # Check whether the session parameter pertains to the widget
-                if widget.has(parameter):
-                    # If so, update the session data
-                    widget._session_data[parameter] = value
-                    # And update the corresponding attribute
-                    session_object = widget.session_objects[parameter]
-                    attr_name = session_object.attribute
-                    attr_value = (
-                        session_object.format_value(value)
-                        if session_object.format_value else value
-                    )
-                    renderer.update_attributes(
-                        route=self._route,
-                        parameter=session_object.parameter,
-                        attribute={attr_name: attr_value},
-                    )
-
-    def set_up(self: HomeScreen, renderer: Any) -> None:
-        for widget in self._widgets:
-            # Register session parameters
-            registered = []
-            for parameter, session_object in widget.session_objects.items():
-                # Prevent objects from being registered twice
-                if id(session_object) in registered:
-                    continue
-                renderer.register_session_parameter(
-                    route=self._route,
-                    parameter=session_object.parameter,
-                    target=session_object.component,
-                    target_level=session_object.target_level,
-                )
-                registered.append(id(session_object))
-            # Register callbacks
-            registered = []
-            for _, control in widget.controls.items():
-                # Prevent objects from being registered twice
-                if id(control) in registered:
-                    continue
-                renderer.register_callback(
-                    context=control.context,
-                    event=control.event,
-                    fn=partial(control.callback, renderer),
-                    source=control.source,
-                    target=control.target,
-                    target_level=control.target_level,
-                )
-                registered.append(id(control))
-            # Register dialogs
-            if widget.type == WidgetType.DIALOG:
-                renderer.register_dialog(
-                    dialog_id=widget.id,
-                    dialog_content=widget.widget,
-                )
-                registered.append(id(session_object))
