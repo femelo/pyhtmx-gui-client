@@ -8,7 +8,7 @@ from pyhtmx import (
     Body,
     Div,
 )
-from config import config_data
+from .config import config_data
 
 
 ping_period: int = round(config_data["ping-period"])

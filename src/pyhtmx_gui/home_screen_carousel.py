@@ -2,7 +2,7 @@ from __future__ import annotations
 import os
 from typing import Any, Optional, List, Dict
 from pyhtmx import Div, Img, Script, Link
-from kit import SessionItem, Widget, Page
+from pyhtmx_gui.kit import SessionItem, Widget, Page
 
 
 # Weather icon mapping

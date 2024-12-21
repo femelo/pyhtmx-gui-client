@@ -8,6 +8,7 @@ dependencies = [
     "pydantic>=2.7.0",
     "pyhtmx-lib>=0.0.8",
     "tomli>=2.0.0",
+    "typer>=0.15.0",
     "uvicorn>=0.24.0",
     "websocket-client>=1.6.0",
     "websockets>=12.0",
@@ -40,6 +41,9 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+
+[project.scripts]
+"pyhtmx-gui" = "pyhtmx_gui.bin.gui_cli:main"
 
 [project.urls]
 Homepage = "https://github.com/femelo/pyhtmx-gui-client"

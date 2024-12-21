@@ -1,6 +1,6 @@
 from __future__ import annotations
 import os
-from typing import Iterator, Dict, Any
+from typing import Iterator, Dict, Any, Optional
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -11,19 +11,16 @@ from time import time
 from threading import Lock, Thread
 from secrets import token_hex
 from signal import signal, SIGINT, SIGTERM
-from config import config_data
 import uvicorn
-from renderer import ContextType, global_renderer
-from logger import logger
-from event_sender import global_sender
-from ovos_gui_client import global_client, termination_event
+from .config import config_data
+from .renderer import ContextType, global_renderer
+from .logger import logger
+from .event_sender import global_sender
+from .ovos_gui_client import global_client, termination_event
 
 
 APP_DIR = os.path.abspath(os.path.dirname(__file__))
-ASSETS_DIR = (
-    config_data.get("assets-directory") or
-    os.path.join(APP_DIR, "assets")
-)
+ASSETS_DIR = os.path.join(APP_DIR, "assets")
 
 
 @asynccontextmanager
@@ -150,11 +147,18 @@ async def root() -> HTMLResponse:
     return HTMLResponse(document.to_string())
 
 
-if __name__ == "__main__":
+def run(
+    host: Optional[str] = None,
+    port: Optional[int] = None,
+) -> None:
     # Launch app
     uvicorn.run(
         app,
-        host=config_data["server-host"],
-        port=config_data["server-port"],
+        host=host or config_data["server-host"],
+        port=port or config_data["server-port"],
         log_level="warning",  # set log level to warning
     )
+
+
+if __name__ == "__main__":
+    run()

@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict
 from secrets import token_hex
 from functools import partial
 from pyhtmx.html_tag import HTMLTag
-from logger import logger
+from .logger import logger
 
 
 class Registrable(BaseModel):
