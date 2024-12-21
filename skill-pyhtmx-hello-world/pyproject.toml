@@ -7,6 +7,14 @@ dependencies = [
     "ovos-pyhtmx-gui-client>=0.0.1",
 ]
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+skill_pyhtmx_hello_world = [
+  "locale/*/*/*.intent",
+]
+
 [project]
 name = "skill-pyhtmx-hello-world"
 version = "0.0.1"
