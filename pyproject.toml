@@ -21,7 +21,8 @@ pyhtmx_gui = [
   "assets/js/*.js",
   "assets/css/*.css",
   "assets/icons/*.svg",
-  "assets/images/*.jpg"
+  "assets/images/*.jpg",
+  "config/*.toml"
 ]
 
 [project]
