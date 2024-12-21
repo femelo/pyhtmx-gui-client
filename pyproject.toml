@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+dependencies = [
+    "colorlog>=6.8.0",
+    "fastapi>=0.110.0", 
+    "ovos-workshop>=2.4.0",
+    "pydantic>=2.7.0",
+    "pyhtmx-lib>=0.0.8",
+    "tomli>=2.0.0",
+    "typer>=0.15.0",
+    "uvicorn>=0.24.0",
+    "websocket-client>=1.6.0",
+    "websockets>=12.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+pyhtmx_gui = [
+  "assets/js/*.js",
+  "assets/css/*.css",
+  "assets/icons/*.svg",
+  "assets/images/*.jpg",
+  "config/*.toml"
+]
+
+[project]
+name = "ovos-pyhtmx-gui-client"
+version = "0.0.1"
+authors = [
+  { name="Flávio De Melo", email="flavio.eler@gmail.com" },
+  { name="Timon van Hasselt", email="timonvanhasselt@visio.org" },
+]
+description = "A GUI client for OpenVoiceOS based on PyHTMX"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.scripts]
+"pyhtmx-gui" = "pyhtmx_gui.bin.gui_cli:main"
+
+[project.urls]
+Homepage = "https://github.com/femelo/pyhtmx-gui-client"
+Issues = "https://github.com/femelo/pyhtmx-gui-client/issues"

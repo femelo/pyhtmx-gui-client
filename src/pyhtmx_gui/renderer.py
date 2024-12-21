@@ -6,9 +6,9 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict
 from pyhtmx import Html, Div, Dialog
 from pyhtmx.html_tag import HTMLTag
-from logger import logger
-from master import MASTER_DOCUMENT
-from event_sender import EventSender, global_sender
+from .logger import logger
+from .master import MASTER_DOCUMENT
+from .event_sender import EventSender, global_sender
 
 
 class ContextType(str, Enum):

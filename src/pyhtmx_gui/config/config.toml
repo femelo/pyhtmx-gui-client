@@ -1,6 +1,5 @@
 connection-check-wait = 0.5
 ping-period = 5.0
-assets-directory = "assets"
 server-host = "127.0.0.1"
 server-port = 8000
 log-level = "debug"

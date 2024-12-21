@@ -9,11 +9,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import HTMLResponse
 import uvicorn
 from pyhtmx import HTMLTag
-from dummy_document import DUMMY_DOCUMENT
-from utils import build_page
+from .dummy_document import DUMMY_DOCUMENT
+from .utils import build_page
+
 
 BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 app = FastAPI()
+
 
 app.mount(
     "/assets",
@@ -31,6 +33,7 @@ app.add_middleware(
 )
 
 page: Optional[Any] = None
+
 
 @app.get("/")
 async def root() -> HTMLResponse:

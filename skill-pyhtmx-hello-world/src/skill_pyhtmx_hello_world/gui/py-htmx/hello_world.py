@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Any, Optional, Dict
 from pyhtmx import Div, Button
-from kit import Widget, SessionItem, Control, Page
+from pyhtmx_gui.kit import Widget, SessionItem, Control, Page
 
 
 class HelloWorldWidget(Widget):
@@ -86,7 +86,6 @@ class HelloWorldWidget(Widget):
 
 
 class HelloWorldPage(Page):
-    _is_page: bool = True
 
     def __init__(
         self: HelloWorldPage,

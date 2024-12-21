@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+dependencies = [
+    "ovos-workshop>=2.4.0",
+    "pyhtmx-lib>=0.0.8",
+    "ovos-pyhtmx-gui-client>=0.0.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+skill_pyhtmx_hello_world = [
+  "locale/*/*/*.intent",
+]
+
+[project]
+name = "skill-pyhtmx-hello-world"
+version = "0.0.1"
+authors = [
+  { name="Flávio De Melo", email="flavio.eler@gmail.com" },
+  { name="Timon van Hasselt", email="timonvanhasselt@visio.org" },
+]
+description = "A hello world skill for the OVOS PyHTMX GUI client"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.entry-points."ovos.plugin.skill"]
+"skill-pyhtmx-hello-world.femelo" = "skill_pyhtmx_hello_world:HelloWorldSkill"

@@ -3,7 +3,7 @@ import shutil
 import os
 from typing import Any, Optional, Dict
 from pyhtmx import Div, Img, Input, Label, Ul, Li, A, Br, H1, P, Button
-from kit import Widget, WidgetType, SessionItem, Control, Page
+from pyhtmx_gui.kit import Widget, WidgetType, SessionItem, Control, Page
 
 
 # Background image

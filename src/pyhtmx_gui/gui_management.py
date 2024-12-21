@@ -2,12 +2,12 @@ from __future__ import annotations
 # import sys
 from typing import Any, Union, Optional, List, Dict
 from pydantic import BaseModel, ConfigDict
-from pyhtmx.html_tag import HTMLTag
-from renderer import Renderer
 import secrets
 import inspect
 import importlib.util
-from logger import logger
+from pyhtmx.html_tag import HTMLTag
+from .renderer import Renderer
+from .logger import logger
 
 
 class PageLoader(BaseModel):

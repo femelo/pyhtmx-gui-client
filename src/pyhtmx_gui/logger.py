@@ -1,7 +1,7 @@
 import logging
 from typing import Union
 from colorlog import ColoredFormatter
-from config import config_data
+from .config import config_data
 
 
 def init_logger(

@@ -7,9 +7,9 @@ from time import sleep
 import traceback
 from websocket import WebSocket, create_connection
 from pydantic import BaseModel, ConfigDict, Field
-from logger import logger
-from renderer import Renderer, global_renderer
-from gui_management import GuiList
+from .logger import logger
+from .renderer import Renderer, global_renderer
+from .gui_management import GuiList
 
 
 CLIENT_DIR = os.path.abspath(os.path.dirname(__file__))

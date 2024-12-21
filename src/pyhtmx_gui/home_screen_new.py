@@ -6,7 +6,7 @@ from threading import Thread, Condition
 from datetime import datetime
 import time
 from pyhtmx import Div
-from kit import Page, SessionItem
+from pyhtmx_gui.kit import Page, SessionItem
 
 
 # Background image

@@ -2,7 +2,7 @@ from __future__ import annotations
 import os
 from typing import Any, Optional, List, Dict
 from pyhtmx import Div, Img, Script, Link
-from kit import SessionItem, Widget, Page
+from pyhtmx_gui.kit import SessionItem, Widget, Page
 
 
 # Weather icon mapping
@@ -220,7 +220,7 @@ class SkillExamplesWidget(Widget):
 
     def __init__(
         self: SkillExamplesWidget,
-        session_data: Optional[Dict[str, Any]] = None
+        session_data: Optional[Dict[str, Any]] = None,
     ):
         super().__init__(session_data=session_data)
 
@@ -246,7 +246,13 @@ class SkillExamplesWidget(Widget):
         # Widget container
         self._widget: Div = Div(
             examples_div,
-            _class="p-[1vw] flex flex-col justify-start items-start",
+            _class=[
+                "p-[1vw]",
+                "flex",
+                "flex-col",
+                "justify-start",
+                "items-start",
+            ],
         )
 
 
