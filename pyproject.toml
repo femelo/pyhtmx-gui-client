@@ -13,6 +13,17 @@ dependencies = [
     "websockets>=12.0",
 ]
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+pyhtmx_gui = [
+  "assets/js/*.js",
+  "assets/css/*.css",
+  "assets/icons/*.svg",
+  "assets/images/*.jpg"
+]
+
 [project]
 name = "ovos-pyhtmx-gui-client"
 version = "0.0.1"

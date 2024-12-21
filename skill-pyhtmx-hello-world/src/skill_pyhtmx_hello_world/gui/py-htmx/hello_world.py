@@ -86,7 +86,6 @@ class HelloWorldWidget(Widget):
 
 
 class HelloWorldPage(Page):
-    _is_page: bool = True
 
     def __init__(
         self: HelloWorldPage,
