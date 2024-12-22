@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Tuple, Dict, List, Optional, Callable, Union
+from typing import Any, Tuple, Dict, List, Iterable, Optional, Callable, Union
 from enum import Enum
 from pydantic import BaseModel, ConfigDict
 from secrets import token_hex
@@ -27,17 +27,17 @@ class Registrable(BaseModel):
 
 class SessionItem(Registrable):
     parameter: str
-    attribute: str
+    attribute: Union[str, Iterable[str]]
     component: HTMLTag
-    format_value: Optional[Callable] = None
+    format_value: Union[Callable, Dict[str, Callable], None] = None
     target_level: Optional[str] = "innerHTML"
 
 
 class Trigger(Registrable):
     event: str
-    attribute: str
+    attribute: Union[str, Iterable[str]]
     component: HTMLTag
-    get_value: Optional[Callable] = None
+    get_value: Union[Callable, Dict[str, Callable], None] = None
     target_level: Optional[str] = "innerHTML"
 
 
@@ -189,17 +189,27 @@ class Page(Widget):
                 if widget.has(parameter):
                     # If so, update the session data
                     widget._session_data[parameter] = value
-                    # And update the corresponding attribute
+                    # Collect session item
                     session_item = widget.session_items[parameter]
-                    attr_name = session_item.attribute
-                    attr_value = (
-                        session_item.format_value(value)
-                        if session_item.format_value else value
-                    )
+                    # Collect attributes to be updated
+                    attr_names = session_item.attribute
+                    formatters = session_item.format_value or {}
+                    if isinstance(attr_names, str):
+                        attr_names = [attr_names]
+                        if isinstance(formatters, Callable):
+                            formatters = dict.fromkeys(attr_names, formatters)
+                    attributes = {}
+                    for attr_name in attr_names:
+                        attr_value = (
+                            formatters[attr_name](value)
+                            if attr_name in formatters else value
+                        )
+                        attributes[attr_name] = attr_value
+                    # Update corresponding attributes
                     renderer.update_attributes(
                         route=self._route,
                         parameter=session_item.parameter,
-                        attribute={attr_name: attr_value},
+                        attribute=attributes,
                     )
 
     def update_trigger_state(
@@ -218,6 +228,24 @@ class Page(Widget):
                     route=self._route,
                     parameter=trigger.event,
                     attribute={attr_name: attr_value},
+                )
+                # Collect attributes to be updated
+                attr_names = trigger.attribute
+                getters = trigger.get_value or {}
+                if isinstance(attr_names, str):
+                    attr_names = [attr_names]
+                if isinstance(getters, Callable):
+                    getters = dict.fromkeys(attr_names, getters)
+                attributes = {}
+                for attr_name in attr_names:
+                    if attr_name in getters:
+                        attr_value = getters[attr_name]()
+                        attributes[attr_name] = attr_value
+                # Update corresponding attributes
+                renderer.update_attributes(
+                    route=self._route,
+                    parameter=trigger.event,
+                    attribute=attributes,
                 )
 
     def register_session_items(
