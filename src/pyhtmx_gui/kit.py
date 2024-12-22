@@ -106,8 +106,37 @@ class Widget:
         value: Union[SessionItem, Trigger, Control],
     ) -> None:
         if isinstance(value, SessionItem):
+            # Restructure session item for updates
+            if isinstance(value.attribute, str):
+                value.attribute = (value.attribute, )
+            value.format_value = value.format_value or {}
+            if isinstance(value.format_value, Callable):
+                if len(value.attribute) > 1:
+                    logger.warning(
+                        "Single value formatter provided for "
+                        "multiple attributes in session item. "
+                        "All attributes will use the same formatter."
+                    )
+                value.format_value = dict.fromkeys(
+                    value.attribute,
+                    value.format_value,
+                )
             self._session_items[key] = value
         elif isinstance(value, Trigger):
+            # Restructure trigger for updates
+            if isinstance(value.attribute, str):
+                value.attribute = (value.attribute, )
+            value.format_value = value.format_value or {}
+            if isinstance(value.format_value, Callable):
+                if len(value.attribute) > 1:
+                    logger.warning(
+                        "Single value getter provided for "
+                        "multiple attributes in event trigger. "
+                        "Only the first attribute will be set."
+                    )
+                value.format_value = {
+                    value.attribute[0]: value.format_value
+                }
             self._triggers[key] = value
         elif isinstance(value, Control):
             self._controls[key] = value
@@ -189,23 +218,18 @@ class Page(Widget):
                 if widget.has(parameter):
                     # If so, update the session data
                     widget._session_data[parameter] = value
-                    # Collect session item
+                    # Get session item
                     session_item = widget.session_items[parameter]
                     # Collect attributes to be updated
-                    attr_names = session_item.attribute
-                    formatters = session_item.format_value or {}
-                    if isinstance(attr_names, str):
-                        attr_names = [attr_names]
-                        if isinstance(formatters, Callable):
-                            formatters = dict.fromkeys(attr_names, formatters)
                     attributes = {}
-                    for attr_name in attr_names:
+                    formatters = session_item.format_value
+                    for attr_name in session_item.attribute:
                         attr_value = (
                             formatters[attr_name](value)
                             if attr_name in formatters else value
                         )
                         attributes[attr_name] = attr_value
-                    # Update corresponding attributes
+                    # Update
                     renderer.update_attributes(
                         route=self._route,
                         parameter=session_item.parameter,
@@ -220,28 +244,16 @@ class Page(Widget):
         for widget in self._widgets:
             # Check whether the session parameter pertains to the widget
             if widget.acts_on(triggered_event):
-                # And update the corresponding attribute
+                # Get trigger
                 trigger = widget.triggers[triggered_event]
-                attr_name = trigger.attribute
-                attr_value = trigger.get_value()
-                renderer.update_attributes(
-                    route=self._route,
-                    parameter=trigger.event,
-                    attribute={attr_name: attr_value},
-                )
                 # Collect attributes to be updated
-                attr_names = trigger.attribute
-                getters = trigger.get_value or {}
-                if isinstance(attr_names, str):
-                    attr_names = [attr_names]
-                if isinstance(getters, Callable):
-                    getters = dict.fromkeys(attr_names, getters)
                 attributes = {}
-                for attr_name in attr_names:
+                getters = trigger.get_value
+                for attr_name in trigger.attribute:
                     if attr_name in getters:
                         attr_value = getters[attr_name]()
                         attributes[attr_name] = attr_value
-                # Update corresponding attributes
+                # Update
                 renderer.update_attributes(
                     route=self._route,
                     parameter=trigger.event,
