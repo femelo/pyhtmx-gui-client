@@ -70,8 +70,8 @@ class Widget:
         self._session_data: Dict[str, Any] = (
             dict.fromkeys(self._parameters, '')
         )
-        self._session_items: Dict[str, SessionItem] = {}
-        self._triggers: Dict[str, Trigger] = {}
+        self._session_items: Dict[str, List[SessionItem]] = {}
+        self._triggers: Dict[str, List[Trigger]] = {}
         self._controls: Dict[str, Control] = {}
         self._widget: Optional[HTMLTag] = None
         self.init_session_data(session_data)
@@ -121,7 +121,9 @@ class Widget:
                     value.attribute,
                     value.format_value,
                 )
-            self._session_items[key] = value
+            if key not in self._session_items:
+                self._session_items[key] = []
+            self._session_items[key].append(value)
         elif isinstance(value, Trigger):
             # Restructure trigger for updates
             if isinstance(value.attribute, str):
@@ -137,7 +139,9 @@ class Widget:
                 value.format_value = {
                     value.attribute[0]: value.format_value
                 }
-            self._triggers[key] = value
+            if key not in self._triggers:
+                self._triggers[key] = []
+            self._triggers[key].append(value)
         elif isinstance(value, Control):
             self._controls[key] = value
         else:
@@ -219,22 +223,22 @@ class Page(Widget):
                     # If so, update the session data
                     widget._session_data[parameter] = value
                     # Get session item
-                    session_item = widget.session_items[parameter]
-                    # Collect attributes to be updated
-                    attributes = {}
-                    formatters = session_item.format_value
-                    for attr_name in session_item.attribute:
-                        attr_value = (
-                            formatters[attr_name](value)
-                            if attr_name in formatters else value
+                    for session_item in widget.session_items[parameter]:
+                        # Collect attributes to be updated
+                        attributes = {}
+                        formatters = session_item.format_value
+                        for attr_name in session_item.attribute:
+                            attr_value = (
+                                formatters[attr_name](value)
+                                if attr_name in formatters else value
+                            )
+                            attributes[attr_name] = attr_value
+                        # Update
+                        renderer.update_attributes(
+                            route=self._route,
+                            parameter=session_item.parameter,
+                            attribute=attributes,
                         )
-                        attributes[attr_name] = attr_value
-                    # Update
-                    renderer.update_attributes(
-                        route=self._route,
-                        parameter=session_item.parameter,
-                        attribute=attributes,
-                    )
 
     def update_trigger_state(
         self: Page,
@@ -245,20 +249,20 @@ class Page(Widget):
             # Check whether the session parameter pertains to the widget
             if widget.acts_on(triggered_event):
                 # Get trigger
-                trigger = widget.triggers[triggered_event]
-                # Collect attributes to be updated
-                attributes = {}
-                getters = trigger.get_value
-                for attr_name in trigger.attribute:
-                    if attr_name in getters:
-                        attr_value = getters[attr_name]()
-                        attributes[attr_name] = attr_value
-                # Update
-                renderer.update_attributes(
-                    route=self._route,
-                    parameter=trigger.event,
-                    attribute=attributes,
-                )
+                for trigger in widget.triggers[triggered_event]:
+                    # Collect attributes to be updated
+                    attributes = {}
+                    getters = trigger.get_value
+                    for attr_name in trigger.attribute:
+                        if attr_name in getters:
+                            attr_value = getters[attr_name]()
+                            attributes[attr_name] = attr_value
+                    # Update
+                    renderer.update_attributes(
+                        route=self._route,
+                        parameter=trigger.event,
+                        attribute=attributes,
+                    )
 
     def register_session_items(
         self: Page,
@@ -266,17 +270,18 @@ class Page(Widget):
         renderer: Any,
     ) -> None:
         # Register session parameters
-        for session_item in widget.session_items.values():
-            # Prevent objects from being registered twice
-            if session_item.registered:
-                continue
-            renderer.register_session_parameter(
-                route=self._route,
-                parameter=session_item.parameter,
-                target=session_item.component,
-                target_level=session_item.target_level,
-            )
-            session_item.registered = True
+        for session_group in widget.session_items.values():
+            for session_item in session_group:
+                # Prevent objects from being registered twice
+                if session_item.registered:
+                    continue
+                renderer.register_session_parameter(
+                    route=self._route,
+                    parameter=session_item.parameter,
+                    target=session_item.component,
+                    target_level=session_item.target_level,
+                )
+                session_item.registered = True
 
     def register_triggers(
         self: Page,
@@ -284,17 +289,18 @@ class Page(Widget):
         renderer: Any,
     ) -> None:
         # Register triggers
-        for trigger in widget.triggers.values():
-            # Prevent objects from being registered twice
-            if trigger.registered:
-                continue
-            renderer.register_session_parameter(
-                route=self._route,
-                parameter=trigger.parameter,
-                target=trigger.component,
-                target_level=trigger.target_level,
-            )
-            trigger.registered = True
+        for trigger_group in widget.triggers.values():
+            for trigger in trigger_group:
+                # Prevent objects from being registered twice
+                if trigger.registered:
+                    continue
+                renderer.register_session_parameter(
+                    route=self._route,
+                    parameter=trigger.parameter,
+                    target=trigger.component,
+                    target_level=trigger.target_level,
+                )
+                trigger.registered = True
 
     def register_callbacks(
         self: Page,

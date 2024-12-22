@@ -1,7 +1,8 @@
 from __future__ import annotations
 import os
 from typing import Any, Optional, List, Dict
-from pyhtmx import Div, Img, Script, Link
+import random
+from pyhtmx import Div, Img, Script, Link, Ul, Li
 from pyhtmx_gui.kit import SessionItem, Widget, Page
 
 
@@ -216,7 +217,7 @@ class WeatherWidget(Widget):
 
 
 class SkillExamplesWidget(Widget):
-    _parameters = ("examples", )
+    _parameters = ("skill_examples", )
 
     def __init__(
         self: SkillExamplesWidget,
@@ -225,35 +226,48 @@ class SkillExamplesWidget(Widget):
         super().__init__(session_data=session_data)
 
         # List of example commands
-        examples_text = '\n'.join(
-            session_data.get("skill_examples", {}).get("examples", [])
-        )
-
-        examples_div = Div(
-            inner_content=examples_text,
-            _id="examples",
-            _class="text-[4vw] text-white font-bold",
-        )
-        self.add_interaction(
-            "examples",
-            SessionItem(
-                parameter="examples",
-                attribute="inner_content",
-                component=examples_div,
-            ),
-        )
+        skill_examples: List[Li] = [
+            Li(
+                inner_content=self.skill_example(),
+                _id=f"skill-example-{i}",
+                _class="font-bold",
+            ) for i in range(5)
+        ]
+        for i, example in enumerate(skill_examples):
+            self.add_interaction(
+                "skill_examples",
+                SessionItem(
+                    parameter=f"example-{i}",
+                    attribute="inner_content",
+                    component=example,
+                    format_value=self.skill_example,
+                ),
+            )
 
         # Widget container
         self._widget: Div = Div(
-            examples_div,
+            Ul(
+                skill_examples,
+                style={"list-style-type": "disc"},
+            ),
             _class=[
                 "p-[1vw]",
+                "text-left",
                 "flex",
                 "flex-col",
                 "justify-start",
                 "items-start",
             ],
         )
+
+    def skill_example(
+        self: SkillExamplesWidget,
+        value: Any = None,
+    ) -> str:
+        data = self._session_data.get("skill_examples", {})
+        examples = data.get("examples", []) if data else []
+        examples = list(map(lambda s: s[0].upper() + s[1:], examples))
+        return random.choice(examples) if examples else ''
 
 
 class HomeScreen(Page):
