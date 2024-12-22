@@ -96,23 +96,30 @@
         hideTabs();
     }
 
+    let isScrolling = false;
+    
     function handleKeyup(event) {
         clearTimeout(tabsVisibleTimeout);
         event.preventDefault();
+    
+        if (isScrolling) return; // Voorkom dat een nieuwe scroll start tijdens een actieve scroll
+    
         let index;
         if (event.code === "ArrowRight") {
             index = Math.min(selectedTab + 1, tabs.length - 1);
-        } else if (event.code == "ArrowLeft") {
+        } else if (event.code === "ArrowLeft") {
             index = Math.max(selectedTab - 1, 0);
         }
-        // Upon unloading the script, carouselItems[index] will be undefined
+    
         if (carouselItems[index]) {
-            // Scroll naar de juiste carousel item op basis van de tab index
+            isScrolling = true; // Markeer dat een scroll bezig is
             const scrollTo = carouselItems[index].offsetLeft;
             carousel.scrollTo({
                 left: scrollTo,
-                behavior: 'smooth' // Zorgt voor een soepele scrollanimatie
+                behavior: 'smooth' // Zorg voor een soepele scrollanimatie
             });
+    
+            setTimeout(() => { isScrolling = false; }, 500); // Wacht tot de animatie voltooid is
             tabsVisibleTimeout = setTimeout(hideTabs, inactivityTimeout);
         }
     }
