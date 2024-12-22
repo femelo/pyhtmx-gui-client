@@ -2,7 +2,7 @@ from __future__ import annotations
 import os
 from typing import Any, Optional, List, Dict
 import random
-from pyhtmx import Div, Img, Script, Link, Ul, Li
+from pyhtmx import Div, Img, Script, Link, Ul, Li, H2
 from pyhtmx_gui.kit import SessionItem, Widget, Page
 
 
@@ -433,7 +433,7 @@ class HomeScreen(Page):
         item2: Div = Div(
             Div(
                 [
-                    Div(
+                    H2(
                         self.clock_time.widget,
                         _class=[
                             *subitem_classes,
@@ -445,7 +445,7 @@ class HomeScreen(Page):
                         [
                             Div(
                                 [
-                                    Div(
+                                    H2(
                                         inner_content="Weather",
                                         _class="modern-title"
                                     ),
@@ -462,7 +462,7 @@ class HomeScreen(Page):
                             ),
                             Div(
                                 [
-                                    Div(
+                                    H2(
                                         inner_content="Alarm clock",
                                         _class="modern-title"
                                     ),
@@ -507,7 +507,7 @@ class HomeScreen(Page):
                 [
                     Div(
                         [
-                            Div(
+                            H2(
                                 inner_content="What is the latest news?",
                                 _class="modern-title",
                             ),
@@ -523,7 +523,7 @@ class HomeScreen(Page):
                     ),
                     Div(
                         [
-                            Div(
+                            H2(
                                 inner_content="Play music on Spotify",
                                 _class="modern-title",
                             ),
@@ -539,7 +539,7 @@ class HomeScreen(Page):
                     ),
                     Div(
                         [
-                            Div(
+                            H2(
                                 inner_content="Tell me a joke",
                                 _class="modern-title",
                             ),
@@ -555,7 +555,7 @@ class HomeScreen(Page):
                     ),
                     Div(
                         [
-                            Div(
+                            H2(
                                 inner_content="Play underwater adventure game",
                                 _class="modern-title",
                             ),
@@ -572,7 +572,7 @@ class HomeScreen(Page):
                     # Skill examples title and widget
                     Div(
                         [
-                            Div(
+                            H2(
                                 inner_content="Skill examples",
                                 _class="modern-title"
                             ),  # Add title "Skill examples"
@@ -597,7 +597,7 @@ class HomeScreen(Page):
         item4: Div = Div(
             Div(
                 [
-                    Div(
+                    H2(
                         inner_content="Another widget",
                         _class="modern-title",
                     ),

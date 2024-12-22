@@ -53,11 +53,11 @@
             tabs.length - 1,
         );
         tabs.forEach((tab, idx) => {
-            // Verwijder de actieve klasse van alle tabs
+            // Remove the active class from all tabs
             tab.classList.remove('tab-active');
             if (idx === selectedTab) {
-                // Voeg de actieve klasse toe aan de tab
-                // die overeenkomt met de scrollpositie
+                // Add the active class to the tab
+                // corresponding to the scroll position
                 tab.classList.add('tab-active');
             }
         });
@@ -65,20 +65,20 @@
 
     // Function to show tabs temporarily and adjust fullscreen image
     function showTabs() {
-        // Verwijder de 'hidden' klassen van de tabs
+        // Remove the ‘hidden’ classes from the tabs
         tabsContainer.classList.remove("tabs-hidden");
-        // Voeg de 'tabs-shown' klasse toe om ze zichtbaar te maken
+        // Add the ‘tabs-shown’ class to make them visible
         tabsContainer.classList.add("tabs-shown");
 
-        // Maak de full-screen afbeelding kleiner
+        // Make the full-screen image smaller
         fullScreenImage.classList.add("small");
     }
 
     function hideTabs() {
-        tabsContainer.classList.remove("tabs-shown"); // Verberg de tabs na 2 seconden
+        tabsContainer.classList.remove("tabs-shown"); // Hide the tabs after 2 seconds
         tabsContainer.classList.add("tabs-hidden");
 
-        // Herstel de grootte van de full-screen afbeelding
+        // Resize the full-screen image
         fullScreenImage.classList.remove("small");
     }
 
@@ -96,23 +96,30 @@
         hideTabs();
     }
 
+    let isScrolling = false;
+    
     function handleKeyup(event) {
         clearTimeout(tabsVisibleTimeout);
         event.preventDefault();
+    
+        if (isScrolling) return; // Prevent a new scroll from starting during an active scroll
+    
         let index;
         if (event.code === "ArrowRight") {
             index = Math.min(selectedTab + 1, tabs.length - 1);
-        } else if (event.code == "ArrowLeft") {
+        } else if (event.code === "ArrowLeft") {
             index = Math.max(selectedTab - 1, 0);
         }
-        // Upon unloading the script, carouselItems[index] will be undefined
+    
         if (carouselItems[index]) {
-            // Scroll naar de juiste carousel item op basis van de tab index
+            isScrolling = true; // Mark that a scroll is in progress
             const scrollTo = carouselItems[index].offsetLeft;
             carousel.scrollTo({
                 left: scrollTo,
-                behavior: 'smooth' // Zorgt voor een soepele scrollanimatie
+                behavior: 'smooth' // Ensure smooth scrolling animation
             });
+    
+            setTimeout(() => { isScrolling = false; }, 500); // Wait for the animation to finish
             tabsVisibleTimeout = setTimeout(hideTabs, inactivityTimeout);
         }
     }
@@ -136,11 +143,11 @@
     tabs.forEach((tab, index) => {
         tab.addEventListener('click', (event) => {
             event.preventDefault();
-            // Scroll naar de juiste carousel item op basis van de tab index
+           // Scroll to the appropriate carousel item based on the tab index
             const scrollTo = carouselItems[index].offsetLeft;
             carousel.scrollTo({
                 left: scrollTo,
-                // Zorgt voor een soepele scrollanimatie
+               // Ensures smooth scrolling animation
                 behavior: 'smooth'
             });
         });
