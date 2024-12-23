@@ -1,7 +1,8 @@
 from __future__ import annotations
 import os
 from typing import Any, Optional, List, Dict
-from pyhtmx import Div, Img, Script, Link, H2
+import random
+from pyhtmx import Div, Img, Script, Link, Ul, Li, H2
 from pyhtmx_gui.kit import SessionItem, Widget, Page
 
 
@@ -137,18 +138,34 @@ class WeatherWidget(Widget):
 
         # Weather icon
         weather_icon: Img = Img(
-            _id="weather_code",
+            _id="weather-icon",  # unique element id
             src=self.weather_icon_src(),
+            alt=self.weather_icon_alt(),
             width="auto",
             height="auto",
         )
+        # NOTE: USE CASE #1: multiplicity of attributes
+        # Description:
+        # A single session parameter must update two or more attributes on an
+        # HTML element.
+        #
+        # Design approach: it's been decided for now, at which point we do not
+        # have enough elements as clear guidance or requirements, that it makes
+        # sense to use the same SessionItem to update the HTML element for as
+        # many attributes as necessary (including inner content).
+        #
+        # Consequence: the complexity of a SessionItem and its parsing must
+        # increase to deal with updates for single or multiple attributes.
         self.add_interaction(
-            "weather_code",
+            "weather_code",  # session data key from OVOS
             SessionItem(
-                parameter="weather_code",
-                attribute="src",
+                parameter="weather-icon",  # message name for the SSE
+                attribute=("src", "alt"),  # two attributes
                 component=weather_icon,
-                format_value=self.weather_icon_src,
+                format_value={  # one formatter per attribute
+                    "src": self.weather_icon_src,
+                    "alt": self.weather_icon_alt,
+                },
                 target_level="outerHTML",
             ),
         )
@@ -161,7 +178,7 @@ class WeatherWidget(Widget):
         # Weather temperature text
         weather_temp_text: Div = Div(
             inner_content=self.weather_temperature(),
-            _id="weather_temp",
+            _id="weather-temp",
             _class=[
                 "text-[4vw]",
                 "leading-[8vw]",
@@ -172,7 +189,7 @@ class WeatherWidget(Widget):
         self.add_interaction(
             "weather_temp",
             SessionItem(
-                parameter="weather_temp",
+                parameter="weather-temp",
                 attribute="inner_content",
                 component=weather_temp_text,
                 format_value=self.weather_temperature,
@@ -207,6 +224,15 @@ class WeatherWidget(Widget):
             return WEATHER_ICONS[weather_code]
         return os.path.join("assets", "icons", "no-internet.svg")
 
+    def weather_icon_alt(self: WeatherWidget, value: Any = None) -> str:
+        weather_code = self._session_data["weather_code"]
+        if weather_code is not None and weather_code in WEATHER_ICONS:
+            weather_alt, _ = os.path.splitext(
+                os.path.basename(WEATHER_ICONS[weather_code])
+            )
+            return weather_alt.title().replace('_', ' ')
+        return "No weather information"
+
     def weather_temperature(self: WeatherWidget, value: Any = None) -> str:
         weather_temp = self._session_data["weather_temp"]
         """Formats the temperature with °C."""
@@ -216,7 +242,7 @@ class WeatherWidget(Widget):
 
 
 class SkillExamplesWidget(Widget):
-    _parameters = ("examples", )
+    _parameters = ("skill_examples", )
 
     def __init__(
         self: SkillExamplesWidget,
@@ -225,35 +251,61 @@ class SkillExamplesWidget(Widget):
         super().__init__(session_data=session_data)
 
         # List of example commands
-        examples_text = '\n'.join(
-            session_data.get("skill_examples", {}).get("examples", [])
-        )
-
-        examples_div = Div(
-            inner_content=examples_text,
-            _id="examples",
-            _class="text-[4vw] text-white font-bold",
-        )
-        self.add_interaction(
-            "examples",
-            SessionItem(
-                parameter="examples",
-                attribute="inner_content",
-                component=examples_div,
-            ),
-        )
+        skill_examples: List[Li] = [
+            Li(
+                inner_content=self.skill_example(),
+                _id=f"skill-example-{i}",
+                _class="font-bold",
+            ) for i in range(5)
+        ]
+        # NOTE: USE CASE #2: multiplicity of elements
+        # Description:
+        # A single session parameter must update two or more HTML elements.
+        #
+        # Design approach: it's been decided for now, at which point we do not
+        # have enough elements as clear guidance or requirements, that it makes
+        # sense to use one SessionItem per HTML element that must be updated,
+        # but all SessionItem's must be mapped to the same session parameter
+        # (from OVOS).
+        #
+        # Consequence: under the hood, the widget must keep track of a list of
+        # SessionItem's per session parameter, and loop through them every time
+        # the update method is called.
+        for i, example in enumerate(skill_examples):
+            self.add_interaction(
+                "skill_examples",  # session data key from OVOS
+                SessionItem(
+                    parameter=f"example-{i}",  # message name for the SSE
+                    attribute="inner_content",  # attribute
+                    component=example,
+                    format_value=self.skill_example,  # formatter
+                ),
+            )
 
         # Widget container
         self._widget: Div = Div(
-            examples_div,
+            Ul(
+                skill_examples,
+                style={"list-style-type": "disc"},
+            ),
             _class=[
                 "p-[1vw]",
+                "text-left",
                 "flex",
                 "flex-col",
                 "justify-start",
                 "items-start",
             ],
         )
+
+    def skill_example(
+        self: SkillExamplesWidget,
+        value: Any = None,
+    ) -> str:
+        data = self._session_data.get("skill_examples", {})
+        examples = data.get("examples", []) if data else []
+        examples = list(map(lambda s: s[0].upper() + s[1:], examples))
+        return random.choice(examples) if examples else ''
 
 
 class HomeScreen(Page):
