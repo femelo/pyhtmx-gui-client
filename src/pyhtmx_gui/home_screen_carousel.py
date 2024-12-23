@@ -138,18 +138,22 @@ class WeatherWidget(Widget):
 
         # Weather icon
         weather_icon: Img = Img(
-            _id="weather_code",
+            _id="weather-icon",
             src=self.weather_icon_src(),
+            alt=self.weather_icon_alt(),
             width="auto",
             height="auto",
         )
         self.add_interaction(
             "weather_code",
             SessionItem(
-                parameter="weather_code",
-                attribute="src",
+                parameter="weather-icon",
+                attribute=("src", "alt"),
                 component=weather_icon,
-                format_value=self.weather_icon_src,
+                format_value={
+                    "src": self.weather_icon_src,
+                    "alt": self.weather_icon_alt,
+                },
                 target_level="outerHTML",
             ),
         )
@@ -162,7 +166,7 @@ class WeatherWidget(Widget):
         # Weather temperature text
         weather_temp_text: Div = Div(
             inner_content=self.weather_temperature(),
-            _id="weather_temp",
+            _id="weather-temp",
             _class=[
                 "text-[4vw]",
                 "leading-[8vw]",
@@ -173,7 +177,7 @@ class WeatherWidget(Widget):
         self.add_interaction(
             "weather_temp",
             SessionItem(
-                parameter="weather_temp",
+                parameter="weather-temp",
                 attribute="inner_content",
                 component=weather_temp_text,
                 format_value=self.weather_temperature,
@@ -207,6 +211,15 @@ class WeatherWidget(Widget):
         if weather_code is not None and weather_code in WEATHER_ICONS:
             return WEATHER_ICONS[weather_code]
         return os.path.join("assets", "icons", "no-internet.svg")
+
+    def weather_icon_alt(self: WeatherWidget, value: Any = None) -> str:
+        weather_code = self._session_data["weather_code"]
+        if weather_code is not None and weather_code in WEATHER_ICONS:
+            weather_alt, _ = os.path.splitext(
+                os.path.basename(WEATHER_ICONS[weather_code])
+            )
+            return weather_alt.title().replace('_', ' ')
+        return "No weather information"
 
     def weather_temperature(self: WeatherWidget, value: Any = None) -> str:
         weather_temp = self._session_data["weather_temp"]
