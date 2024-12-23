@@ -138,19 +138,31 @@ class WeatherWidget(Widget):
 
         # Weather icon
         weather_icon: Img = Img(
-            _id="weather-icon",
+            _id="weather-icon",  # unique element id
             src=self.weather_icon_src(),
             alt=self.weather_icon_alt(),
             width="auto",
             height="auto",
         )
+        # NOTE: USE CASE #1: multiplicity of attributes
+        # Description:
+        # A single session parameter must update two or more attributes on an
+        # HTML element.
+        #
+        # Design approach: it's been decided for now, at which point we do not
+        # have enough elements as clear guidance or requirements, that it makes
+        # sense to use the same SessionItem to update the HTML element for as
+        # many attributes as necessary (including inner content).
+        #
+        # Consequence: the complexity of a SessionItem and its parsing must
+        # increase to deal with updates for single or multiple attributes.
         self.add_interaction(
-            "weather_code",
+            "weather_code",  # session data key from OVOS
             SessionItem(
-                parameter="weather-icon",
-                attribute=("src", "alt"),
+                parameter="weather-icon",  # message name for the SSE
+                attribute=("src", "alt"),  # two attributes
                 component=weather_icon,
-                format_value={
+                format_value={  # one formatter per attribute
                     "src": self.weather_icon_src,
                     "alt": self.weather_icon_alt,
                 },
@@ -246,14 +258,27 @@ class SkillExamplesWidget(Widget):
                 _class="font-bold",
             ) for i in range(5)
         ]
+        # NOTE: USE CASE #2: multiplicity of elements
+        # Description:
+        # A single session parameter must update two or more HTML elements.
+        #
+        # Design approach: it's been decided for now, at which point we do not
+        # have enough elements as clear guidance or requirements, that it makes
+        # sense to use one SessionItem per HTML element that must be updated,
+        # but all SessionItem's must be mapped to the same session parameter
+        # (from OVOS).
+        #
+        # Consequence: under the hood, the widget must keep track of a list of
+        # SessionItem's per session parameter, and loop through them every time
+        # the update method is called.
         for i, example in enumerate(skill_examples):
             self.add_interaction(
-                "skill_examples",
+                "skill_examples",  # session data key from OVOS
                 SessionItem(
-                    parameter=f"example-{i}",
-                    attribute="inner_content",
+                    parameter=f"example-{i}",  # message name for the SSE
+                    attribute="inner_content",  # attribute
                     component=example,
-                    format_value=self.skill_example,
+                    format_value=self.skill_example,  # formatter
                 ),
             )
 
