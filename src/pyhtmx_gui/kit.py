@@ -106,6 +106,9 @@ class Widget:
         value: Union[SessionItem, Trigger, Control],
     ) -> None:
         if isinstance(value, SessionItem):
+            # NOTE: this presetting/restructuring was added here to avoid them
+            # during update execution. This simplifies the update method and is
+            # likely better for performance.
             # Restructure session item for updates
             if isinstance(value.attribute, str):
                 value.attribute = (value.attribute, )
@@ -125,6 +128,9 @@ class Widget:
                 self._session_items[key] = []
             self._session_items[key].append(value)
         elif isinstance(value, Trigger):
+            # NOTE: this presetting/restructuring was added here to avoid them
+            # during update execution. This simplifies the update method and is
+            # likely better for performance.
             # Restructure trigger for updates
             if isinstance(value.attribute, str):
                 value.attribute = (value.attribute, )
