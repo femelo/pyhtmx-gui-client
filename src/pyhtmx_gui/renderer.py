@@ -50,15 +50,11 @@ class Renderer:
         self._root: Div = Div(
             _id="root",
             _class="flex flex-col",
-            # hx_ext="sse",
-            # sse_connect="/updates",
             sse_swap="root",
         )
         self._dialog_root: Dialog = Dialog(
             _id="dialog",
             _class="modal",
-            # hx_ext="sse",
-            # sse_connect="/updates",
             sse_swap="dialog",
             hx_swap="outerHTML",
         )
@@ -115,14 +111,6 @@ class Renderer:
                 target=target,
             )
         )
-        # parameter_full_id: str = (
-        #     f"{route}/"
-        #     f"{parameter}/"
-        #     f"{parameter_id}/"
-        #     f"{target.tag}/"
-        #     f"{target.attributes.get('id', '')}"
-        # )
-        # logger.info(f"Parameter registered: {parameter_full_id}")
 
     def register_callback(
         self: Renderer,
@@ -167,11 +155,6 @@ class Renderer:
                 attributes={
                     "hx-post": f"/global-event/{event_id}",
                     "hx-trigger": event,
-                    # "hx-target": (
-                    #     target.attributes["id"]
-                    #     if target is not None else "none"
-                    # ),
-                    # "hx-swap": "none",
                 }
             )
             callback_mapping = self._global_callbacks
@@ -225,15 +208,6 @@ class Renderer:
                         component.to_string(),
                         event_id=parameter_id,
                     )
-                # parameter_full_id = (
-                #     f"{route}:"
-                #     f"{component.tag}:"
-                #     f"{component.attributes.get('id', 'no-id')}:"
-                #     f"{parameter} -> {attr_value}"
-                # )
-                # logger.debug(
-                #   f"Updated parameter: {parameter_full_id}"
-                # )
 
     def close_dialog(
         self: Renderer,
