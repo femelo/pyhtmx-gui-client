@@ -19,6 +19,7 @@ termination_event: Event = Event()
 
 
 class OVOSGuiClient:
+    # TODO: move id and server_url to config/config.toml
     id: str = "ovos-pyhtmx-gui-client"
     server_url: str = "ws://localhost:18181/gui"
     renderer: Renderer = global_renderer
@@ -221,19 +222,21 @@ class OVOSGuiClient:
         event_name: str,
         parameters: Mapping[str, Any],
      ) -> None:
-        # General event handlers can be added here
         if event_name == EventType.PAGE_GAINED_FOCUS:
+            # Page gained focus: display it
             page_index = parameters.get("number", 0)
             logger.info(f"Focus shifted to page {page_index}")
             if namespace in self._gui_list:
                 self._gui_list[namespace].show(page_index)
         elif namespace == "system" and isinstance(event_name, EventType):
+            # Handle OVOS system event
             logger.info("Status event triggered")
             OVOSGuiClient.renderer.update_status(
-                event=event_name,
+                ovos_event=event_name,
                 data=None,
             )
         else:
+            # Handle general event
             logger.info("General event triggered")
             if namespace in self._gui_list:
                 self._gui_list[namespace].update_state(event_name)

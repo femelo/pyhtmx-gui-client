@@ -138,16 +138,16 @@ class Widget:
             # Restructure trigger for updates
             if isinstance(value.attribute, str):
                 value.attribute = (value.attribute, )
-            value.format_value = value.format_value or {}
-            if isinstance(value.format_value, Callable):
+            value.get_value = value.get_value or {}
+            if isinstance(value.get_value, Callable):
                 if len(value.attribute) > 1:
                     logger.warning(
                         "Single value getter provided for "
                         "multiple attributes in event trigger. "
                         "Only the first attribute will be set."
                     )
-                value.format_value = {
-                    value.attribute[0]: value.format_value
+                value.get_value = {
+                    value.attribute[0]: value.get_value
                 }
             if set(value.attribute) == {"inner_content"}:
                 value.target_level = "innerHTML"
@@ -167,8 +167,8 @@ class Widget:
     def has(self: Widget, parameter: str) -> bool:
         return parameter in self._session_items
 
-    def acts_on(self: Widget, event: str) -> bool:
-        return event in self._triggers
+    def acts_on(self: Widget, ovos_event: str) -> bool:
+        return ovos_event in self._triggers
 
     def init_session_data(
         self: Widget,
@@ -259,20 +259,20 @@ class Page(Widget):
 
     def update_trigger_state(
         self: Page,
-        triggered_event: str,
+        ovos_event: str,
         renderer: Any,
     ) -> None:
         for widget in self._widgets:
             # Check whether the session parameter pertains to the widget
-            if widget.acts_on(triggered_event):
+            if widget.acts_on(ovos_event):
                 # Get trigger
-                for trigger in widget.triggers[triggered_event]:
+                for trigger in widget.triggers[ovos_event]:
                     # Collect attributes to be updated
                     attributes = {}
                     getters = trigger.get_value
                     for attr_name in trigger.attribute:
                         if attr_name in getters:
-                            attr_value = getters[attr_name]()
+                            attr_value = getters[attr_name](ovos_event)
                             attributes[attr_name] = attr_value
                     # Update
                     renderer.update_attributes(

@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Optional, Dict, Any
 from pyhtmx import Div, Img
 from pyhtmx_gui.kit import Page, SessionItem, Trigger
+from .types import EventType
 
 
 class StatusBar(Page):
@@ -20,9 +21,9 @@ class StatusBar(Page):
             _class="text-white",
         )
         self.add_interaction(
-            "status-data",
+            "utterance",
             SessionItem(
-                parameter="utterance",
+                parameter="status-utterance",
                 attribute="inner_content",
                 component=self._utterance,
             ),
@@ -33,16 +34,26 @@ class StatusBar(Page):
             width="auto",
             height="auto",
         )
-        self.add_interaction(
-            "status-trigger",
-            Trigger(
-                event="spinner",
-                attribute="src",
-                component=self._spinner,
-                get_value=self.get_spinner,
-                target_level="outerHTML",
-            )
+        spinner_trigger = Trigger(
+            event="status-spinner",
+            attribute="src",
+            component=self._spinner,
+            get_value=self.get_spinner,
+            target_level="outerHTML",
         )
+        # Register the same trigger for the following OVOS events
+        for ovos_event in [
+            EventType.WAKEWORD,
+            EventType.RECORD_BEGIN,
+            EventType.RECORD_END,
+            EventType.UTTERANCE,
+            EventType.UTTERANCE_HANDLED,
+            EventType.UTTERANCE_CANCELLED,
+        ]:
+            self.add_interaction(
+                ovos_event,
+                spinner_trigger,
+            )
         self._widget = Div(
             [
                 self._utterance,
@@ -61,5 +72,5 @@ class StatusBar(Page):
             ]
         )
 
-    def get_spinner(self: StatusBar, event: str) -> None:
+    def get_spinner(self: StatusBar, ovos_event: str) -> None:
         pass

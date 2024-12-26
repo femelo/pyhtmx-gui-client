@@ -217,6 +217,6 @@ class GuiList(BaseModel):
             logger.warning("Unable to update a page that has not been built.")
             return
         page_object.update_trigger_state(
-            triggered_event=event,
+            ovos_event=event,
             renderer=self.renderer,
         )

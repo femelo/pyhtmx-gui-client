@@ -316,6 +316,22 @@ class Renderer:
         )
         self.update_root()
 
+    def update_status(
+        self: Renderer,
+        ovos_event: str,
+        data: Dict[str, Any],
+    ) -> None:
+        if data:
+            self._status.update_session_data(
+                session_data=data,
+                renderer=self,
+            )
+        else:
+            self._status.update_trigger_state(
+                ovos_event=ovos_event,
+                renderer=self,
+            )
+
     def update_root(self: Renderer) -> None:
         _page = self._pages[-1]
         self._root.text = None
