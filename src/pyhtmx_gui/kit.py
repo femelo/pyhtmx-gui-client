@@ -124,6 +124,10 @@ class Widget:
                     value.attribute,
                     value.format_value,
                 )
+            if set(value.attribute) == {"inner_content"}:
+                value.target_level = "innerHTML"
+            else:
+                value.target_level = "outerHTML"
             if key not in self._session_items:
                 self._session_items[key] = []
             self._session_items[key].append(value)
@@ -145,6 +149,10 @@ class Widget:
                 value.format_value = {
                     value.attribute[0]: value.format_value
                 }
+            if set(value.attribute) == {"inner_content"}:
+                value.target_level = "innerHTML"
+            else:
+                value.target_level = "outerHTML"
             if key not in self._triggers:
                 self._triggers[key] = []
             self._triggers[key].append(value)
@@ -175,6 +183,9 @@ class Widget:
             )
 
 
+# TODO: create a generic class with methods for registering
+# and setting up parameters so that widgets can be rendered
+# without the need for a page
 class Page(Widget):
     _is_page: bool = True  # required class attribute for correct loading
 
@@ -281,7 +292,7 @@ class Page(Widget):
                 # Prevent objects from being registered twice
                 if session_item.registered:
                     continue
-                renderer.register_session_parameter(
+                renderer.register_interaction_parameter(
                     route=self._route,
                     parameter=session_item.parameter,
                     target=session_item.component,
@@ -300,9 +311,9 @@ class Page(Widget):
                 # Prevent objects from being registered twice
                 if trigger.registered:
                     continue
-                renderer.register_session_parameter(
+                renderer.register_interaction_parameter(
                     route=self._route,
-                    parameter=trigger.parameter,
+                    parameter=trigger.event,
                     target=trigger.component,
                     target_level=trigger.target_level,
                 )

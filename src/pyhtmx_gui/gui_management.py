@@ -184,7 +184,7 @@ class GuiList(BaseModel):
             self._pages[position].close()
             self._shown_page = -1  # TODO: think about this logic
 
-    def update(
+    def update_data(
         self: GuiList,
         session_data: Dict[str, Any],
     ) -> None:
@@ -204,3 +204,19 @@ class GuiList(BaseModel):
                 session_data=valid_session_data,
                 renderer=self.renderer,
             )
+
+    def update_state(
+        self: GuiList,
+        event: str,
+    ) -> None:
+        if self._shown_page > len(self._pages):
+            logger.warning("Last shown page out of range.")
+            return
+        page_object = self._pages[self._shown_page].page_object
+        if page_object is None:
+            logger.warning("Unable to update a page that has not been built.")
+            return
+        page_object.update_trigger_state(
+            triggered_event=event,
+            renderer=self.renderer,
+        )

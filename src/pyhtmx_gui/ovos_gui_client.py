@@ -1,13 +1,12 @@
 from __future__ import annotations
 import os
 from typing import Mapping, Dict, List, Optional, Union, Any
-from enum import Enum
 from threading import Thread, Event
 from time import sleep
 import traceback
 from websocket import WebSocket, create_connection
-from pydantic import BaseModel, ConfigDict, Field
 from .logger import logger
+from .types import MessageType, EventType, Message
 from .renderer import Renderer, global_renderer
 from .gui_management import GuiList
 
@@ -17,37 +16,6 @@ CLIENT_DIR = os.path.abspath(os.path.dirname(__file__))
 
 # Termination event
 termination_event: Event = Event()
-
-
-class MessageType(str, Enum):
-    GUI_CONNECTED = "mycroft.gui.connected"
-    GUI_LIST_INSERT = "mycroft.gui.list.insert"
-    GUI_LIST_MOVE = "mycroft.gui.list.move"
-    GUI_LIST_REMOVE = "mycroft.gui.list.remove"
-    EVENT_TRIGGERED = "mycroft.events.triggered"
-    SESSION_SET = "mycroft.session.set"
-    SESSION_DELETE = "mycroft.session.delete"
-    SESSION_LIST_INSERT = "mycroft.session.list.insert"
-    SESSION_LIST_UPDATE = "mycroft.session.list.update"
-    SESSION_LIST_MOVE = "mycroft.session.list.move"
-    SESSION_LIST_REMOVE = "mycroft.session.list.remove"
-
-
-class Message(BaseModel):
-    model_config = ConfigDict(strict=False, populate_by_name=False)
-    type: MessageType
-    namespace: Optional[str] = None
-    gui_id: Optional[str] = None
-    framework: Optional[str] = None  # TODO: remove in the future
-    property: Optional[str] = None
-    position: Optional[int] = None
-    from_position: Optional[int] = Field(alias="from", default=None)
-    to_position: Optional[int] = Field(alias="to", default=None)
-    items_number: Optional[int] = None
-    event_name: Optional[str] = None
-    parameters: Optional[Dict[str, Any]] = None
-    data: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None
-    values: Optional[List[Dict[str, Any]]] = None
 
 
 class OVOSGuiClient:
@@ -60,7 +28,7 @@ class OVOSGuiClient:
         self._thread: Optional[Thread] = self.listen()
         self._session: Dict[str, Any] = {}
         self._active_skills: List[str] = []
-        self._gui_list: Dict[str, List[Dict[str, str]]] = {}
+        self._gui_list: Dict[str, GuiList] = {}
         self.announce()
 
     # Connect to OVOS-GUI WebSocket
@@ -254,11 +222,21 @@ class OVOSGuiClient:
         parameters: Mapping[str, Any],
      ) -> None:
         # General event handlers can be added here
-        if event_name == "page_gained_focus":
+        if event_name == EventType.PAGE_GAINED_FOCUS:
             page_index = parameters.get("number", 0)
-            logger.info(f"Focus shifted to view {page_index}")
+            logger.info(f"Focus shifted to page {page_index}")
             if namespace in self._gui_list:
                 self._gui_list[namespace].show(page_index)
+        elif namespace == "system" and isinstance(event_name, EventType):
+            logger.info("Status event triggered")
+            OVOSGuiClient.renderer.update_status(
+                event=event_name,
+                data=None,
+            )
+        else:
+            logger.info("General event triggered")
+            if namespace in self._gui_list:
+                self._gui_list[namespace].update_state(event_name)
 
     def handle_session_set(
         self: OVOSGuiClient,
@@ -269,7 +247,7 @@ class OVOSGuiClient:
             self._session[namespace] = {}
         self._session[namespace].update(session_data)
         if namespace in self._gui_list:
-            self._gui_list[namespace].update(session_data)
+            self._gui_list[namespace].update_data(session_data)
 
     def handle_session_delete(
         self: OVOSGuiClient,
@@ -292,7 +270,7 @@ class OVOSGuiClient:
         values: Optional[List[Mapping[str, Any]]],
     ) -> None:
         if namespace == "mycroft.system.active_skills":
-            skill = data[0].get("skill_id", None)
+            skill = data[0].get("skill_id", None) if data else None
             if skill:
                 self._active_skills.insert(position, skill)
         else:
@@ -310,7 +288,7 @@ class OVOSGuiClient:
             for item in reversed(values):
                 self._session[namespace][property].insert(position, item)
             if namespace in self._gui_list:
-                self._gui_list[namespace].update(self._session[namespace])
+                self._gui_list[namespace].update_data(self._session[namespace])
 
     def handle_session_list_update(self: OVOSGuiClient) -> None:
         # TODO: Implement me
