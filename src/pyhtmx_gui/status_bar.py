@@ -69,7 +69,18 @@ class StatusBar(Page):
                 "bg-transparent",
                 "text-white",
                 "px-[1vw]",
-            ]
+            ],
+            style={
+                "height": "10%",
+                "width": "100%",
+                "position": "fixed",
+                "z-index": 1,
+                "top": "0",
+                "left": "0",
+                "background-color": "rgba(0, 0, 0, 0)",
+                "overflow-y": "hidden",
+                "transition": "0.5s",
+            },
         )
 
     def get_spinner(self: StatusBar, ovos_event: str) -> None:
