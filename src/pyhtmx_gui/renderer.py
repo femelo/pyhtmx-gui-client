@@ -344,8 +344,8 @@ class Renderer:
         data: str,
         event_id: Optional[str] = None,
     ) -> None:
-        # Don't send message without clients
-        if not self._clients:
+        # Don't send message without clients or data
+        if not self._clients or not data:
             return
         # Format SSE message
         data = data.replace('\n', '')

@@ -32,6 +32,8 @@ class StatusBar(Page):
         )
         self._spinner_style = {
             "visibility": "hidden",
+            "padding": "16px",
+            "margin-left": "auto",
             "width": "10vh",
             "height": "10vh",
         }
@@ -92,20 +94,36 @@ class StatusBar(Page):
                 "left": "0",
                 "background-color": "rgba(0, 0, 0, 0)",
                 "overflow-y": "hidden",
-                "transition": "0.5s",
+                "transition": "1.0s",
             },
         )
 
     def get_spinner(self: StatusBar, ovos_event: str) -> None:
-        if ovos_event == EventType.RECORD_BEGIN:
+        if ovos_event == EventType.WAKEWORD:
+            return "assets/animations/eye.json"
+        elif ovos_event == EventType.RECORD_BEGIN:
             return "assets/animations/spinner.json"
         elif ovos_event == EventType.RECORD_END:
-            return "assets/animations/spinner.json"
+            return ""
         else:
-            return "assets/animations/spinner.json"
+            return ""
 
     def get_spinner_style(self: StatusBar, ovos_event: str) -> None:
-        if ovos_event == EventType.RECORD_BEGIN:
+        if ovos_event == EventType.WAKEWORD:
+            self._spinner_style.update(
+                {
+                    "visibility": "visible",
+                    "filter": (
+                        "invert(43%) "
+                        "sepia(64%) "
+                        "saturate(1780%) "
+                        "hue-rotate(162deg) "
+                        "brightness(96%) "
+                        "contrast(101%)"
+                    ),
+                },
+            )
+        elif ovos_event == EventType.RECORD_BEGIN:
             self._spinner_style.update(
                 {
                     "visibility": "visible",
@@ -120,25 +138,12 @@ class StatusBar(Page):
                 },
             )
         elif ovos_event == EventType.RECORD_END:
-            self._spinner_style.update(
-                {
-                    "visibility": "visible",
-                    "filter": (
-                        "invert(37%) "
-                        "sepia(45%) "
-                        "saturate(4178%) "
-                        "hue-rotate(157deg) "
-                        "brightness(103%) "
-                        "contrast(100%)"
-                    ),
-                },
-            )
-        else:
+            _ = self._spinner_style.pop("filter", None)
             self._spinner_style.update(
                 {
                     "visibility": "hidden",
-                    "filter": "",
                 },
             )
-        print(self._spinner_style)
+        else:
+            pass
         return self._spinner_style
