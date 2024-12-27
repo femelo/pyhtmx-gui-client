@@ -24,10 +24,13 @@ class EventType(str, Enum):
     UTTERANCE = "recognizer_loop:utterance"
     UTTERANCE_HANDLED = "ovos.utterance.handled"
     UTTERANCE_CANCELLED = "ovos.utterance.cancelled"
+    AUDIO_OUTPUT_START = "recognizer_loop:audio_output_start"
+    AUDIO_OUTPUT_END = "recognizer_loop:audio_output_end"
     SKILL_HANDLER_START = "mycroft.skill.handler.start"
     SKILL_HANDLER_COMPLETE = "mycroft.skill.handler.complete"
     INTENT_FAILURE = "complete_intent_failure"
     PAGE_GAINED_FOCUS = "page_gained_focus"
+    BLINK = "enclosure.eyes.blink"
 
 
 class Message(BaseModel):

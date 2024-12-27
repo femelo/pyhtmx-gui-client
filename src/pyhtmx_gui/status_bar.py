@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Optional, Dict, Any
-from pyhtmx import Div, Img
+from pyhtmx.html_tag import HTMLTag
+from pyhtmx import Div
 from pyhtmx_gui.kit import Page, SessionItem, Trigger
 from .types import EventType
 
@@ -17,8 +18,9 @@ class StatusBar(Page):
             session_data=session_data
         )
         self._utterance = Div(
+            "Utterance should appear here.",
             _id="utterance",
-            _class="text-white",
+            _class="text-xl text-white",
         )
         self.add_interaction(
             "utterance",
@@ -28,17 +30,28 @@ class StatusBar(Page):
                 component=self._utterance,
             ),
         )
-        self._spinner = Img(
+        self._spinner_style = {
+            "visibility": "hidden",
+            "width": "10vh",
+            "height": "10vh",
+        }
+        self._spinner = HTMLTag(
+            tag="lottie-player",
             _id="spinner",
-            src="default.svg",
-            width="auto",
-            height="auto",
+            src="",
+            background="transparent",
+            style=self._spinner_style,
+            loop="",
+            autoplay="",
         )
         spinner_trigger = Trigger(
             event="status-spinner",
-            attribute="src",
+            attribute=("src", "style"),
             component=self._spinner,
-            get_value=self.get_spinner,
+            get_value={
+                "src": self.get_spinner,
+                "style": self.get_spinner_style,
+            },
             target_level="outerHTML",
         )
         # Register the same trigger for the following OVOS events
@@ -51,7 +64,7 @@ class StatusBar(Page):
             EventType.UTTERANCE_CANCELLED,
         ]:
             self.add_interaction(
-                ovos_event,
+                ovos_event.value,
                 spinner_trigger,
             )
         self._widget = Div(
@@ -84,4 +97,48 @@ class StatusBar(Page):
         )
 
     def get_spinner(self: StatusBar, ovos_event: str) -> None:
-        pass
+        if ovos_event == EventType.RECORD_BEGIN:
+            return "assets/animations/spinner.json"
+        elif ovos_event == EventType.RECORD_END:
+            return "assets/animations/spinner.json"
+        else:
+            return "assets/animations/spinner.json"
+
+    def get_spinner_style(self: StatusBar, ovos_event: str) -> None:
+        if ovos_event == EventType.RECORD_BEGIN:
+            self._spinner_style.update(
+                {
+                    "visibility": "visible",
+                    "filter": (
+                        "invert(43%) "
+                        "sepia(64%) "
+                        "saturate(1780%) "
+                        "hue-rotate(162deg) "
+                        "brightness(96%) "
+                        "contrast(101%)"
+                    ),
+                },
+            )
+        elif ovos_event == EventType.RECORD_END:
+            self._spinner_style.update(
+                {
+                    "visibility": "visible",
+                    "filter": (
+                        "invert(37%) "
+                        "sepia(45%) "
+                        "saturate(4178%) "
+                        "hue-rotate(157deg) "
+                        "brightness(103%) "
+                        "contrast(100%)"
+                    ),
+                },
+            )
+        else:
+            self._spinner_style.update(
+                {
+                    "visibility": "hidden",
+                    "filter": "",
+                },
+            )
+        print(self._spinner_style)
+        return self._spinner_style

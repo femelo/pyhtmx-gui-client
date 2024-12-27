@@ -86,7 +86,7 @@ class OVOSGuiClient:
                     message = Message.model_validate_json(response)
                     self.process_message(message)
             except Exception:
-                exception_data = traceback.format_exc(limit=5)
+                exception_data = traceback.format_exc(limit=50)
                 logger.error(f"Error processing message:\n{exception_data}")
 
     # General processing of GUI messages
@@ -228,7 +228,7 @@ class OVOSGuiClient:
             logger.info(f"Focus shifted to page {page_index}")
             if namespace in self._gui_list:
                 self._gui_list[namespace].show(page_index)
-        elif namespace == "system" and isinstance(event_name, EventType):
+        elif namespace == "system" and event_name in set(EventType):
             # Handle OVOS system event
             logger.info("Status event triggered")
             OVOSGuiClient.renderer.update_status(

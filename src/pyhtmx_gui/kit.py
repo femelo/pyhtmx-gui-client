@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Tuple, Dict, List, Iterable, Optional, Callable, Union
+from typing import Any, Tuple, Dict, List, Optional, Callable, Union
 from enum import Enum
 from pydantic import BaseModel, ConfigDict
 from secrets import token_hex
@@ -27,7 +27,7 @@ class Registrable(BaseModel):
 
 class SessionItem(Registrable):
     parameter: str
-    attribute: Union[str, Iterable[str]]
+    attribute: Union[str, Tuple[str], List[str]]
     component: HTMLTag
     format_value: Union[Callable, Dict[str, Callable], None] = None
     target_level: Optional[str] = "innerHTML"
@@ -35,7 +35,7 @@ class SessionItem(Registrable):
 
 class Trigger(Registrable):
     event: str
-    attribute: Union[str, Iterable[str]]
+    attribute: Union[str, Tuple[str], List[str]]
     component: HTMLTag
     get_value: Union[Callable, Dict[str, Callable], None] = None
     target_level: Optional[str] = "innerHTML"
@@ -350,7 +350,7 @@ class Page(Widget):
                 dialog_content=widget.widget,
             )
 
-    def set_up(self: Page, renderer: Any) -> None:
+    def set_up(self: Page, renderer: Any) -> Page:
         # Propagate session data from widgets
         self.propagate_session_data()
         for widget in self._widgets:
@@ -362,3 +362,4 @@ class Page(Widget):
             self.register_callbacks(widget, renderer)
             # Register dialog
             self.register_dialog(widget, renderer)
+        return self
