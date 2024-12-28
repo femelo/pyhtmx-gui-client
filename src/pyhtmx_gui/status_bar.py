@@ -73,21 +73,20 @@ class StatusBar(Page):
         self._spinner = HTMLTag(
             tag="lottie-player",
             _id="spinner",
-            src="assets/animations/spinner3.json",  # src wordt niet aangepast
+            src="assets/animations/spinner2.json",
             background="transparent",
             loop="",
             autoplay="",
         )
         spinner_trigger = Trigger(
             event="status-spinner",
-            attribute=("class",),  # Alleen klasse wordt aangepast
+            attribute=("class",),
             component=self._spinner,
             get_value={
-                "class": self.get_spinner_class,  # Alleen de klasse wordt gewijzigd
+                "class": self.get_spinner_class,
             },
             target_level="outerHTML",
         )
-        # Register dezelfde trigger voor de volgende OVOS events
         for ovos_event in [
             EventType.WAKEWORD,
             EventType.RECORD_BEGIN,
@@ -135,13 +134,9 @@ class StatusBar(Page):
         utterance: str = self._session_data.get("utterance")
         return utterance[0].upper() + utterance[1:]
 
-    def get_spinner(self: StatusBar, ovos_event: str) -> str:
-        # src blijft altijd gelijk
-        return "assets/animations/spinner2.json"
-
     def get_spinner_class(self: StatusBar, ovos_event: str) -> str:
-        if ovos_event == EventType.WAKEWORD:
-            return "visible"  # Activeer fade-in
+        if ovos_event in (EventType.WAKEWORD, EventType.RECORD_BEGIN):
+            return "visible"  # Activate fade-in
         elif ovos_event == EventType.RECORD_END:
-            return "fade-out"  # Activeer fade-out
+            return "fade-out"  # Activate fade-out
         return ""
