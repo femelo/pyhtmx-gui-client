@@ -197,10 +197,11 @@ class Renderer:
         for interaction_parameter in self._parameters[route][parameter]:
             parameter_id = interaction_parameter.parameter_id
             component = interaction_parameter.target
-            text_content = attribute.pop("inner_content", None)
+            attributes = dict(attribute)
+            text_content = attributes.pop("inner_content", None)
             component.update_attributes(
                 text_content=text_content,
-                attributes=attribute,
+                attributes=attributes,
             )
             if attribute:
                 self.update(

@@ -182,7 +182,6 @@ class WeatherWidget(Widget):
             _class=[
                 "text-[4vw]",
                 "leading-[8vw]",
-                # "text-white",
                 "font-bold",
             ],
         )
