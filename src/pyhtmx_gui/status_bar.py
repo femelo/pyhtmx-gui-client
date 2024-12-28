@@ -7,6 +7,7 @@ from .types import EventType
 
 
 class StatusBar(Page):
+    _parameters = ("ovos_event", "utterance")
     _is_page = False
 
     def __init__(
@@ -18,9 +19,23 @@ class StatusBar(Page):
             session_data=session_data
         )
         self._utterance = Div(
-            "Utterance should appear here.",
             _id="utterance",
-            _class="text-xl text-white",
+            _class="text-2xl text-white font-bold italic",
+        )
+        self._utterance_style: HTMLTag = HTMLTag(
+            tag="style",
+            inner_content="""
+                #utterance {
+                    margin-left: 0px;
+                    animation: slidein 2s;
+                }
+                @keyframes slidein {
+                    0%   { margin-left: -500px; }
+                    20%  { margin-left: -500px; }
+                    35%  { margin-left: 0px; }
+                    100% { margin-left: 0px; }
+                }
+            """
         )
         self.add_interaction(
             "utterance",
@@ -28,6 +43,7 @@ class StatusBar(Page):
                 parameter="status-utterance",
                 attribute="inner_content",
                 component=self._utterance,
+                format_value=self.get_utterance,
             ),
         )
         self._spinner_style = {
@@ -71,6 +87,7 @@ class StatusBar(Page):
             )
         self._widget = Div(
             [
+                self._utterance_style,
                 self._utterance,
                 self._spinner,
             ],
@@ -98,32 +115,20 @@ class StatusBar(Page):
             },
         )
 
-    def get_spinner(self: StatusBar, ovos_event: str) -> None:
-        if ovos_event == EventType.WAKEWORD:
-            return "assets/animations/eye.json"
-        elif ovos_event == EventType.RECORD_BEGIN:
+    def get_utterance(self: StatusBar, value: Any = None) -> str:
+        utterance: str = self._session_data.get("utterance")
+        return utterance[0].upper() + utterance[1:]
+
+    def get_spinner(self: StatusBar, ovos_event: str) -> str:
+        if ovos_event in (EventType.WAKEWORD, EventType.RECORD_BEGIN):
             return "assets/animations/spinner.json"
         elif ovos_event == EventType.RECORD_END:
             return ""
         else:
             return ""
 
-    def get_spinner_style(self: StatusBar, ovos_event: str) -> None:
-        if ovos_event == EventType.WAKEWORD:
-            self._spinner_style.update(
-                {
-                    "visibility": "visible",
-                    "filter": (
-                        "invert(43%) "
-                        "sepia(64%) "
-                        "saturate(1780%) "
-                        "hue-rotate(162deg) "
-                        "brightness(96%) "
-                        "contrast(101%)"
-                    ),
-                },
-            )
-        elif ovos_event == EventType.RECORD_BEGIN:
+    def get_spinner_style(self: StatusBar, ovos_event: str) -> Dict[str, str]:
+        if ovos_event in (EventType.WAKEWORD, EventType.RECORD_BEGIN):
             self._spinner_style.update(
                 {
                     "visibility": "visible",

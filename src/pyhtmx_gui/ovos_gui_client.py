@@ -231,9 +231,16 @@ class OVOSGuiClient:
         elif namespace == "system" and event_name in set(EventType):
             # Handle OVOS system event
             logger.info("Status event triggered")
+            utterance: Optional[str] = parameters.get("utterance", None)
+            if utterance:
+                data = {"utterance": utterance}
+            elif event_name in (EventType.RECORD_END, ):
+                data = {"utterance": " "}
+            else:
+                data = None
             OVOSGuiClient.renderer.update_status(
                 ovos_event=event_name,
-                data=None,
+                data=data,
             )
         else:
             # Handle general event

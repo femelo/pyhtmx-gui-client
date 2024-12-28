@@ -320,18 +320,18 @@ class Renderer:
     def update_status(
         self: Renderer,
         ovos_event: str,
-        data: Dict[str, Any],
+        data: Optional[Dict[str, Any]],
     ) -> None:
         if data:
+            data.update({"ovos_event": ovos_event})
             self._status.update_session_data(
                 session_data=data,
                 renderer=self,
             )
-        else:
-            self._status.update_trigger_state(
-                ovos_event=ovos_event,
-                renderer=self,
-            )
+        self._status.update_trigger_state(
+            ovos_event=ovos_event,
+            renderer=self,
+        )
 
     def update_root(self: Renderer) -> None:
         _page = self._pages[-1]
@@ -346,7 +346,7 @@ class Renderer:
         event_id: Optional[str] = None,
     ) -> None:
         # Don't send message without clients or data
-        if not self._clients or not data:
+        if not self._clients or data is None:
             return
         # Format SSE message
         data = data.replace('\n', '')
