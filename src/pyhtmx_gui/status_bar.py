@@ -46,33 +46,48 @@ class StatusBar(Page):
                 format_value=self.get_utterance,
             ),
         )
-        self._spinner_style = {
-            "visibility": "hidden",
-            "padding": "16px",
-            "margin-left": "auto",
-            "width": "10vh",
-            "height": "10vh",
-        }
+        spinner_style_tag = HTMLTag(
+            tag="style",
+            inner_content="""
+                #spinner {
+                    visibility: hidden;
+                    opacity: 0;
+                    padding: 16px;
+                    margin-left: auto;
+                    width: 15vh;
+                    height: 15vh;
+                    transition: opacity 0.5s ease-in-out, visibility 0s linear 0.5s;
+                }
+                #spinner.visible {
+                    visibility: visible;
+                    opacity: 1;
+                    transition: opacity 1s ease-in-out, visibility 0s linear 0s;
+                }
+                #spinner.fade-out {
+                    opacity: 0;
+                    transition: opacity 0.5s ease-in-out, visibility 0s linear 0.5s;
+                    visibility: hidden;
+                }
+            """
+        )
         self._spinner = HTMLTag(
             tag="lottie-player",
             _id="spinner",
-            src="",
+            src="assets/animations/spinner3.json",  # src wordt niet aangepast
             background="transparent",
-            style=self._spinner_style,
             loop="",
             autoplay="",
         )
         spinner_trigger = Trigger(
             event="status-spinner",
-            attribute=("src", "style"),
+            attribute=("class",),  # Alleen klasse wordt aangepast
             component=self._spinner,
             get_value={
-                "src": self.get_spinner,
-                "style": self.get_spinner_style,
+                "class": self.get_spinner_class,  # Alleen de klasse wordt gewijzigd
             },
             target_level="outerHTML",
         )
-        # Register the same trigger for the following OVOS events
+        # Register dezelfde trigger voor de volgende OVOS events
         for ovos_event in [
             EventType.WAKEWORD,
             EventType.RECORD_BEGIN,
@@ -87,6 +102,7 @@ class StatusBar(Page):
             )
         self._widget = Div(
             [
+                spinner_style_tag,
                 self._utterance_style,
                 self._utterance,
                 self._spinner,
@@ -103,7 +119,7 @@ class StatusBar(Page):
                 "px-[1vw]",
             ],
             style={
-                "height": "10%",
+                "height": "15%",
                 "width": "100%",
                 "position": "fixed",
                 "z-index": 1,
@@ -120,35 +136,12 @@ class StatusBar(Page):
         return utterance[0].upper() + utterance[1:]
 
     def get_spinner(self: StatusBar, ovos_event: str) -> str:
-        if ovos_event in (EventType.WAKEWORD, EventType.RECORD_BEGIN):
-            return "assets/animations/spinner.json"
-        elif ovos_event == EventType.RECORD_END:
-            return ""
-        else:
-            return ""
+        # src blijft altijd gelijk
+        return "assets/animations/spinner2.json"
 
-    def get_spinner_style(self: StatusBar, ovos_event: str) -> Dict[str, str]:
-        if ovos_event in (EventType.WAKEWORD, EventType.RECORD_BEGIN):
-            self._spinner_style.update(
-                {
-                    "visibility": "visible",
-                    "filter": (
-                        "invert(43%) "
-                        "sepia(64%) "
-                        "saturate(1780%) "
-                        "hue-rotate(162deg) "
-                        "brightness(96%) "
-                        "contrast(101%)"
-                    ),
-                },
-            )
+    def get_spinner_class(self: StatusBar, ovos_event: str) -> str:
+        if ovos_event == EventType.WAKEWORD:
+            return "visible"  # Activeer fade-in
         elif ovos_event == EventType.RECORD_END:
-            _ = self._spinner_style.pop("filter", None)
-            self._spinner_style.update(
-                {
-                    "visibility": "hidden",
-                },
-            )
-        else:
-            pass
-        return self._spinner_style
+            return "fade-out"  # Activeer fade-out
+        return ""
