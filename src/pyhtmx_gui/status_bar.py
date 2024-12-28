@@ -139,4 +139,3 @@ class StatusBar(Page):
             return "visible"  # Activate fade-in
         elif ovos_event == EventType.RECORD_END:
             return "fade-out"  # Activate fade-out
-        return ""
