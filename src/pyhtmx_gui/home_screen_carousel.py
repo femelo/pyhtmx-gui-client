@@ -415,7 +415,7 @@ class HomeScreen(Page):
         self._page.add_child(script_tag)
 
         # extra CSS for carousel
-        style_tag = Link(rel="stylesheet", href="assets/css/styles.css")
+        style_tag = Link(rel="stylesheet", href="assets/css/carousel.css")
         self._page.add_child(style_tag)
 
     def generate_carousel(self: HomeScreen) -> List[Div]:

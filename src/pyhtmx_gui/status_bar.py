@@ -20,22 +20,7 @@ class StatusBar(Page):
         )
         self._utterance = Div(
             _id="utterance",
-            _class="text-2xl text-white font-bold italic",
-        )
-        self._utterance_style: HTMLTag = HTMLTag(
-            tag="style",
-            inner_content="""
-                #utterance {
-                    margin-left: 0px;
-                    animation: slidein 2s;
-                }
-                @keyframes slidein {
-                    0%   { margin-left: -500px; }
-                    20%  { margin-left: -500px; }
-                    35%  { margin-left: 0px; }
-                    100% { margin-left: 0px; }
-                }
-            """
+            _class="text-2xl text-white font-['Roboto'] font-bold italic",
         )
         self.add_interaction(
             "utterance",
@@ -87,7 +72,6 @@ class StatusBar(Page):
             )
         self._widget = Div(
             [
-                self._utterance_style,
                 self._utterance,
                 self._spinner,
             ],

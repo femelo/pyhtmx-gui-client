@@ -1,0 +1,56 @@
+/* Import local fonts */
+@font-face {
+    font-family: 'Inter';
+    src: url('/assets/fonts/Inter-Regular.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Inter';
+    src: url('/assets/fonts/Inter-Bold.woff2') format('woff2');
+    font-weight: bold;
+    font-style: normal;
+}
+
+/* General style */
+html,
+body {
+    height: 100%;
+    margin: 0;
+}
+
+/* Status bar style */
+#utterance {
+    margin-left: 0px;
+    animation: slide-in 2s;
+}
+
+@keyframes slide-in {
+    0%   { margin-left: -500px; }
+    20%  { margin-left: -500px; }
+    35%  { margin-left: 0px; }
+    100% { margin-left: 0px; }
+}
+
+#spinner {
+    visibility: hidden;
+    opacity: 0;
+    padding: 16px;
+    margin-left: auto;
+    width: 15vh;
+    height: 15vh;
+    transition: opacity 0.5s ease-in-out, visibility 0s linear 0.5s;
+}
+
+#spinner.visible {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 1s ease-in-out, visibility 0s linear 0s;
+}
+
+#spinner.fade-out {
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out, visibility 0s linear 0.5s;
+}
