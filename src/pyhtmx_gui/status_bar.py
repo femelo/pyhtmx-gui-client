@@ -31,30 +31,6 @@ class StatusBar(Page):
                 format_value=self.get_utterance,
             ),
         )
-        spinner_style_tag = HTMLTag(
-            tag="style",
-            inner_content="""
-                #spinner {
-                    visibility: hidden;
-                    opacity: 0;
-                    padding: 16px;
-                    margin-left: auto;
-                    width: 15vh;
-                    height: 15vh;
-                    transition: opacity 0.5s ease-in-out, visibility 0s linear 0.5s;
-                }
-                #spinner.visible {
-                    visibility: visible;
-                    opacity: 1;
-                    transition: opacity 1s ease-in-out, visibility 0s linear 0s;
-                }
-                #spinner.fade-out {
-                    opacity: 0;
-                    transition: opacity 0.5s ease-in-out, visibility 0s linear 0.5s;
-                    visibility: hidden;
-                }
-            """
-        )
         self._spinner = HTMLTag(
             tag="lottie-player",
             _id="spinner",
