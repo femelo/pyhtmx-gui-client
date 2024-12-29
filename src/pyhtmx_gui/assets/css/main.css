@@ -23,7 +23,7 @@ body {
 /* Status bar style */
 #utterance {
     margin-left: 0px;
-    animation: slide-in 2s;
+    animation: slide-in 1s;
 }
 
 @keyframes slide-in {
@@ -53,4 +53,75 @@ body {
     visibility: hidden;
     opacity: 0;
     transition: opacity 0.5s ease-in-out, visibility 0s linear 0.5s;
+}
+
+@keyframes fade-in {
+    0%   { opacity: 0.00; }
+    25%  { opacity: 0.25; }
+    50%  { opacity: 0.50; }
+    75%  { opacity: 1.00; }
+    100% { opacity: 1.00; }
+}
+
+@keyframes fade-in-from-left {
+    0%   { opacity: 0.00; margin-left: -100vw; }
+    25%  { opacity: 0.25; margin-left: -100vw; }
+    50%  { opacity: 0.50; margin-left:  -50vw; }
+    75%  { opacity: 1.00; margin-left:    0vw; }
+    100% { opacity: 1.00; margin-left:    0vw; }
+}
+
+@keyframes fade-in-from-right {
+    0%   { opacity: 0.00; margin-left:  100vw; }
+    25%  { opacity: 0.25; margin-left:  100vw; }
+    50%  { opacity: 0.50; margin-left:   50vw; }
+    75%  { opacity: 1.00; margin-left:    0vw; }
+    100% { opacity: 1.00; margin-left:    0vw; }
+}
+
+@keyframes fade-in-from-top {
+    0%   { opacity: 0.00; margin-top: -100vw; }
+    25%  { opacity: 0.25; margin-top: -100vw; }
+    50%  { opacity: 0.50; margin-top:  -50vw; }
+    75%  { opacity: 1.00; margin-top:    0vw; }
+    100% { opacity: 1.00; margin-top:    0vw; }
+}
+
+@keyframes fade-in-from-bottom {
+    0%   { opacity: 0.00; margin-top:  100vw; }
+    25%  { opacity: 0.25; margin-top:  100vw; }
+    50%  { opacity: 0.50; margin-top:   50vw; }
+    75%  { opacity: 1.00; margin-top:    0vw; }
+    100% { opacity: 1.00; margin-top:    0vw; }
+}
+
+.fade-in-from-left {
+    opacity: 1;
+    margin: 0;
+    animation: fade-in-from-left 0.5s ease-in-out;
+}
+
+.fade-in-from-right {
+    opacity: 1;
+    margin: 0;
+    animation: fade-in-from-right 0.5s ease-in-out;
+}
+
+.fade-in-from-top {
+    opacity: 1;
+    margin: 0;
+    animation: fade-in-from-top 0.5s ease-in-out;
+}
+
+.fade-in-from-bottom {
+    opacity: 1;
+    margin: 0;
+    animation: fade-in-from-bottom 0.5s ease-in-out;
+}
+
+/* TODO: how to make this general? */
+#root > div {
+    opacity: 1;
+    margin: 0;
+    animation: fade-in-from-left 0.5s ease-in-out;
 }
