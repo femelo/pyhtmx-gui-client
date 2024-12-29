@@ -60,6 +60,7 @@ class Renderer:
             _id="root",
             _class="flex flex-col",
             sse_swap="root",
+            hx_swap="innerHTML",
         )
         self._dialog_root: Dialog = Dialog(
             _id="dialog",
