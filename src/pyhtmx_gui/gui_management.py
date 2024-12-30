@@ -18,6 +18,9 @@ class PageLoader(BaseModel):
     renderer: Renderer
     _page_object: Optional[Any] = None
 
+    def model_post_init(self: PageLoader, context: Any = None) -> None:
+        self.build()
+
     @property
     def page_object(self: PageLoader) -> Any:
         return self._page_object

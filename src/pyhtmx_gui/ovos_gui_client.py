@@ -51,7 +51,7 @@ class OVOSGuiClient:
                 # TODO: force framework in the message root,
                 # though the bus code must be changed.
                 framework="py-htmx",
-                data={"framework": "py-htmx"}
+                data={"framework": "py-htmx"},
             )
             self._ws.send(message.model_dump_json(exclude_none=True))
 
@@ -339,7 +339,7 @@ class OVOSGuiClient:
                 type=MessageType.EVENT_TRIGGERED,
                 namespace=namespace,
                 event_name="page_gained_focus",
-                data={"number": index}
+                data={"number": index},
             )
             self._ws.send(message.model_dump_json())
 
