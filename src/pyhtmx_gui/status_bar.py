@@ -20,7 +20,7 @@ class StatusBar(Page):
         )
         self._utterance = Div(
             _id="utterance",
-            _class="text-2xl text-white font-['Roboto'] font-bold italic",
+            _class="text-2xl text-white font-['Roboto mono'] font-bold italic",
         )
         self.add_interaction(
             "utterance",
@@ -41,7 +41,7 @@ class StatusBar(Page):
         )
         spinner_trigger = Trigger(
             event="status-spinner",
-            attribute=("class",),
+            attribute=("class", ),
             component=self._spinner,
             get_value={
                 "class": self.get_spinner_class,
@@ -69,9 +69,9 @@ class StatusBar(Page):
             _class=[
                 "flex",
                 "flex-row",
-                "items-center",
+                "items-start",
                 "w-full",
-                "h-[10vh]",
+                # "h-[10vh]",
                 "bg-transparent",
                 "text-white",
                 "px-[1vw]",

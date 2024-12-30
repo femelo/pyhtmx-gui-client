@@ -404,19 +404,17 @@ class HomeScreen(Page):
             },
         )
 
+        # extra CSS for carousel
+        style = Link(rel="stylesheet", href="assets/css/carousel.css")
+        # script for carousel
+        script = Script(src="assets/js/carousel.js")
+
         self._page: Div = Div(
-            main_view,
+            [main_view, style, script],
             _id="home",
             _class="flex flex-col",
             style={"width": "100vw", "height": "100vh"},
         )
-
-        script_tag = Script(src="assets/js/carousel.js")
-        self._page.add_child(script_tag)
-
-        # extra CSS for carousel
-        style_tag = Link(rel="stylesheet", href="assets/css/carousel.css")
-        self._page.add_child(style_tag)
 
     def generate_carousel(self: HomeScreen) -> List[Div]:
         """Genereert carousel-items op basis van de HTML-structuur."""

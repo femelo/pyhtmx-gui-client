@@ -22,6 +22,7 @@ body {
 
 /* Status bar style */
 #utterance {
+    padding: 16px;
     margin-left: 0px;
     animation: slide-in 1s;
 }
