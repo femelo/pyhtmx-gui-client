@@ -51,6 +51,7 @@
   flex-direction: column;
   color: white;
   text-align: center;
+  transition: all 1.0s ease;
 }
 
 .full-screen-image.small {
