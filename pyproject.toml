@@ -6,7 +6,7 @@ dependencies = [
     "fastapi>=0.110.0", 
     "ovos-workshop>=2.4.0",
     "pydantic>=2.7.0",
-    "pyhtmx-lib>=0.0.8",
+    "pyhtmx-lib>=0.0.9",
     "tomli>=2.0.0",
     "typer>=0.15.0",
     "uvicorn>=0.24.0",
@@ -23,6 +23,7 @@ pyhtmx_gui = [
   "assets/css/*.css",
   "assets/icons/*.svg",
   "assets/images/*.jpg",
+  "assets/animations/*.json",
   "assets/fonts/*.woff2",
   "config/*.toml"
 ]

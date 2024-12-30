@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Tuple, Dict, List, Iterable, Optional, Callable, Union
+from typing import Any, Tuple, Dict, List, Optional, Callable, Union
 from enum import Enum
 from pydantic import BaseModel, ConfigDict
 from secrets import token_hex
@@ -27,7 +27,7 @@ class Registrable(BaseModel):
 
 class SessionItem(Registrable):
     parameter: str
-    attribute: Union[str, Iterable[str]]
+    attribute: Union[str, Tuple[str], List[str]]
     component: HTMLTag
     format_value: Union[Callable, Dict[str, Callable], None] = None
     target_level: Optional[str] = "innerHTML"
@@ -35,7 +35,7 @@ class SessionItem(Registrable):
 
 class Trigger(Registrable):
     event: str
-    attribute: Union[str, Iterable[str]]
+    attribute: Union[str, Tuple[str], List[str]]
     component: HTMLTag
     get_value: Union[Callable, Dict[str, Callable], None] = None
     target_level: Optional[str] = "innerHTML"
@@ -124,6 +124,10 @@ class Widget:
                     value.attribute,
                     value.format_value,
                 )
+            if set(value.attribute) == {"inner_content"}:
+                value.target_level = "innerHTML"
+            else:
+                value.target_level = "outerHTML"
             if key not in self._session_items:
                 self._session_items[key] = []
             self._session_items[key].append(value)
@@ -134,17 +138,21 @@ class Widget:
             # Restructure trigger for updates
             if isinstance(value.attribute, str):
                 value.attribute = (value.attribute, )
-            value.format_value = value.format_value or {}
-            if isinstance(value.format_value, Callable):
+            value.get_value = value.get_value or {}
+            if isinstance(value.get_value, Callable):
                 if len(value.attribute) > 1:
                     logger.warning(
                         "Single value getter provided for "
                         "multiple attributes in event trigger. "
                         "Only the first attribute will be set."
                     )
-                value.format_value = {
-                    value.attribute[0]: value.format_value
+                value.get_value = {
+                    value.attribute[0]: value.get_value
                 }
+            if set(value.attribute) == {"inner_content"}:
+                value.target_level = "innerHTML"
+            else:
+                value.target_level = "outerHTML"
             if key not in self._triggers:
                 self._triggers[key] = []
             self._triggers[key].append(value)
@@ -159,8 +167,8 @@ class Widget:
     def has(self: Widget, parameter: str) -> bool:
         return parameter in self._session_items
 
-    def acts_on(self: Widget, event: str) -> bool:
-        return event in self._triggers
+    def acts_on(self: Widget, ovos_event: str) -> bool:
+        return ovos_event in self._triggers
 
     def init_session_data(
         self: Widget,
@@ -175,6 +183,9 @@ class Widget:
             )
 
 
+# TODO: create a generic class with methods for registering
+# and setting up parameters so that widgets can be rendered
+# without the need for a page
 class Page(Widget):
     _is_page: bool = True  # required class attribute for correct loading
 
@@ -248,20 +259,20 @@ class Page(Widget):
 
     def update_trigger_state(
         self: Page,
-        triggered_event: str,
+        ovos_event: str,
         renderer: Any,
     ) -> None:
         for widget in self._widgets:
             # Check whether the session parameter pertains to the widget
-            if widget.acts_on(triggered_event):
+            if widget.acts_on(ovos_event):
                 # Get trigger
-                for trigger in widget.triggers[triggered_event]:
+                for trigger in widget.triggers[ovos_event]:
                     # Collect attributes to be updated
                     attributes = {}
                     getters = trigger.get_value
                     for attr_name in trigger.attribute:
                         if attr_name in getters:
-                            attr_value = getters[attr_name]()
+                            attr_value = getters[attr_name](ovos_event)
                             attributes[attr_name] = attr_value
                     # Update
                     renderer.update_attributes(
@@ -281,7 +292,7 @@ class Page(Widget):
                 # Prevent objects from being registered twice
                 if session_item.registered:
                     continue
-                renderer.register_session_parameter(
+                renderer.register_interaction_parameter(
                     route=self._route,
                     parameter=session_item.parameter,
                     target=session_item.component,
@@ -300,9 +311,9 @@ class Page(Widget):
                 # Prevent objects from being registered twice
                 if trigger.registered:
                     continue
-                renderer.register_session_parameter(
+                renderer.register_interaction_parameter(
                     route=self._route,
-                    parameter=trigger.parameter,
+                    parameter=trigger.event,
                     target=trigger.component,
                     target_level=trigger.target_level,
                 )
@@ -339,7 +350,7 @@ class Page(Widget):
                 dialog_content=widget.widget,
             )
 
-    def set_up(self: Page, renderer: Any) -> None:
+    def set_up(self: Page, renderer: Any) -> Page:
         # Propagate session data from widgets
         self.propagate_session_data()
         for widget in self._widgets:
@@ -351,3 +362,4 @@ class Page(Widget):
             self.register_callbacks(widget, renderer)
             # Register dialog
             self.register_dialog(widget, renderer)
+        return self

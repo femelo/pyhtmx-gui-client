@@ -8,6 +8,8 @@ from pyhtmx import Html, Div, Dialog
 from pyhtmx.html_tag import HTMLTag
 from .logger import logger
 from .master import MASTER_DOCUMENT
+from .kit import Page
+from .status_bar import StatusBar
 from .event_sender import EventSender, global_sender
 
 
@@ -31,7 +33,7 @@ class Callback(BaseModel):
     target_level: str = "innerHTML"
 
 
-class SessionParameter(BaseModel):
+class InteractionParameter(BaseModel):
     model_config = ConfigDict(
         strict=False,
         arbitrary_types_allowed=True,
@@ -47,10 +49,18 @@ class Renderer:
 
     def __init__(self: Renderer):
         self._clients = []
+        self._routes: List[str] = []
+        self._pages: List[HTMLTag] = []
+        self._dialogs: Dict[str, HTMLTag] = {}
+        self._global_callbacks: Dict[str, Callback] = {}
+        self._local_callbacks: Dict[str, Callback] = {}
+        self._parameters: \
+            Dict[str, Dict[str, List[InteractionParameter]]] = {}
         self._root: Div = Div(
             _id="root",
             _class="flex flex-col",
             sse_swap="root",
+            hx_swap="innerHTML",
         )
         self._dialog_root: Dialog = Dialog(
             _id="dialog",
@@ -58,17 +68,12 @@ class Renderer:
             sse_swap="dialog",
             hx_swap="outerHTML",
         )
+        self._status: Page = StatusBar().set_up(self)
         self._master: Html = MASTER_DOCUMENT
         body, = self._master.find_elements_by_tag(tag="body")
+        body.add_child(self._status.widget)
         body.add_child(self._root)
         body.add_child(self._dialog_root)
-        self._routes: List[str] = []
-        self._pages: List[HTMLTag] = []
-        self._dialogs: Dict[str, HTMLTag] = {}
-        self._global_callbacks: Dict[str, Callback] = {}
-        self._local_callbacks: Dict[str, Callback] = {}
-        self._session_parameters: \
-            Dict[str, Dict[str, List[SessionParameter]]] = {}
 
     @property
     def document(self: Renderer) -> Html:
@@ -84,7 +89,7 @@ class Renderer:
             self._clients.remove(client_id)
         logger.info(f"Number of clients in registry: {len(self._clients)}")
 
-    def register_session_parameter(
+    def register_interaction_parameter(
         self: Renderer,
         route: str,
         parameter: str,
@@ -100,12 +105,12 @@ class Renderer:
                 "hx-swap": target_level,
             }
         )
-        if route not in self._session_parameters:
-            self._session_parameters[route] = {}
-        if parameter not in self._session_parameters[route]:
-            self._session_parameters[route][parameter] = []
-        self._session_parameters[route][parameter].append(
-            SessionParameter(
+        if route not in self._parameters:
+            self._parameters[route] = {}
+        if parameter not in self._parameters[route]:
+            self._parameters[route][parameter] = []
+        self._parameters[route][parameter].append(
+            InteractionParameter(
                 parameter_name=parameter,
                 parameter_id=parameter_id,
                 target=target,
@@ -141,7 +146,7 @@ class Renderer:
                     "hx-trigger": event,
                     "hx-target": target.attributes["id"],
                     "hx-swap": target_level,
-                }
+                },
             )
             callback_mapping = self._local_callbacks
         elif context == ContextType.GLOBAL:
@@ -155,7 +160,7 @@ class Renderer:
                 attributes={
                     "hx-post": f"/global-event/{event_id}",
                     "hx-trigger": event,
-                }
+                },
             )
             callback_mapping = self._global_callbacks
         else:
@@ -186,28 +191,29 @@ class Renderer:
         parameter: str,
         attribute: Dict[str, Any],
     ) -> None:
-        if route not in self._routes or route not in self._session_parameters:
+        if route not in self._parameters:
             return
-        if parameter not in self._session_parameters[route]:
+        if parameter not in self._parameters[route]:
             return
-        for session_parameter in self._session_parameters[route][parameter]:
-            for attr_name, attr_value in attribute.items():
-                parameter_id = session_parameter.parameter_id
-                component = session_parameter.target
-                if attr_name == "inner_content":
-                    component.update_attributes(text_content=attr_value)
-                    self.update(
-                        attr_value,
-                        event_id=parameter_id,
-                    )
-                else:
-                    component.update_attributes(
-                        attributes={attr_name: attr_value}
-                    )
-                    self.update(
-                        component.to_string(),
-                        event_id=parameter_id,
-                    )
+        for interaction_parameter in self._parameters[route][parameter]:
+            parameter_id = interaction_parameter.parameter_id
+            component = interaction_parameter.target
+            attributes = dict(attribute)
+            text_content = attributes.pop("inner_content", None)
+            component.update_attributes(
+                text_content=text_content,
+                attributes=attributes,
+            )
+            if attribute:
+                self.update(
+                    component.to_string(),
+                    event_id=parameter_id,
+                )
+            else:
+                self.update(
+                    text_content,
+                    event_id=parameter_id,
+                )
 
     def close_dialog(
         self: Renderer,
@@ -312,6 +318,22 @@ class Renderer:
         )
         self.update_root()
 
+    def update_status(
+        self: Renderer,
+        ovos_event: str,
+        data: Optional[Dict[str, Any]],
+    ) -> None:
+        if data:
+            data.update({"ovos_event": ovos_event})
+            self._status.update_session_data(
+                session_data=data,
+                renderer=self,
+            )
+        self._status.update_trigger_state(
+            ovos_event=ovos_event,
+            renderer=self,
+        )
+
     def update_root(self: Renderer) -> None:
         _page = self._pages[-1]
         self._root.text = None
@@ -324,8 +346,8 @@ class Renderer:
         data: str,
         event_id: Optional[str] = None,
     ) -> None:
-        # Don't send message without clients
-        if not self._clients:
+        # Don't send message without clients or data
+        if not self._clients or data is None:
             return
         # Format SSE message
         data = data.replace('\n', '')
