@@ -24,14 +24,15 @@ body {
 #utterance {
     padding: 16px;
     margin-left: 0px;
-    animation: slide-in 1s;
+    animation: slide-in 0.5s;
 }
 
 @keyframes slide-in {
     0%   { margin-left: -500px; }
-    20%  { margin-left: -500px; }
-    35%  { margin-left: 0px; }
-    100% { margin-left: 0px; }
+    25%  { margin-left: -375px; }
+    50%  { margin-left: -250px; }
+    75%  { margin-left: -125px; }
+    100% { margin-left:    0px; }
 }
 
 #spinner {
