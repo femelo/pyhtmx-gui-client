@@ -102,6 +102,19 @@ class PageLoader(BaseModel):
         # NOTE: this method is assumed as implemented
         self._page_object.update_session_data(session_data, self.renderer)
 
+    def insert(self: PageLoader) -> None:
+        if self._page_object is None:
+            self.build()
+        self.renderer.insert(
+            self.route,
+            self.page,
+        )
+
+    def remove(self: PageLoader) -> None:
+        self.renderer.remove(
+            self.route,
+        )
+
     def show(self: PageLoader) -> None:
         if self._page_object is None:
             self.build()
@@ -143,6 +156,7 @@ class GuiList(BaseModel):
                     renderer=self.renderer,
                 )
             )
+            self._pages[position].insert()
 
     def move(
         self: GuiList,
@@ -164,6 +178,7 @@ class GuiList(BaseModel):
         position = min(position, len(self._pages))
         for _ in range(items_number):
             if position < len(self._pages):
+                self._pages[position].remove()
                 del self._pages[position]
 
     def get_page(self: GuiList, position: int) -> Optional[PageLoader]:

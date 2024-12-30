@@ -49,11 +49,15 @@ class Renderer:
 
     def __init__(self: Renderer):
         self._clients = []
+        # TODO: create a new class/structure to hold route-specific objects
         self._routes: List[str] = []
         self._pages: List[HTMLTag] = []
+        self._dialog_ids: Dict[str, List[str]] = {}
         self._dialogs: Dict[str, HTMLTag] = {}
         self._global_callbacks: Dict[str, Callback] = {}
         self._local_callbacks: Dict[str, Callback] = {}
+        self._global_events: Dict[str, List[str]] = {}
+        self._local_events: Dict[str, List[str]] = {}
         self._parameters: \
             Dict[str, Dict[str, List[InteractionParameter]]] = {}
         self._root: Div = Div(
@@ -103,7 +107,7 @@ class Renderer:
             attributes={
                 "sse-swap": parameter_id,
                 "hx-swap": target_level,
-            }
+            },
         )
         if route not in self._parameters:
             self._parameters[route] = {}
@@ -119,8 +123,9 @@ class Renderer:
 
     def register_callback(
         self: Renderer,
-        context: Union[str, ContextType],
+        route: str,
         event: str,
+        context: Union[str, ContextType],
         fn: Callable,
         source: HTMLTag,
         target: Optional[HTMLTag] = None,
@@ -138,7 +143,7 @@ class Renderer:
                 target.update_attributes(
                     attributes={
                         "id": target_id,
-                    }
+                    },
                 )
             source.update_attributes(
                 attributes={
@@ -149,12 +154,13 @@ class Renderer:
                 },
             )
             callback_mapping = self._local_callbacks
+            event_mapping = self._local_events
         elif context == ContextType.GLOBAL:
             # Add necessary attributes to elements for global action
             target.update_attributes(
                 attributes={
                     "sse-swap": event_id,
-                }
+                },
             )
             source.update_attributes(
                 attributes={
@@ -163,6 +169,7 @@ class Renderer:
                 },
             )
             callback_mapping = self._global_callbacks
+            event_mapping = self._global_events
         else:
             logger.warning("Unknown context type. Callback not registered.")
             return
@@ -176,12 +183,19 @@ class Renderer:
             target=target,
             target_level=target_level,
         )
+        if route not in event_mapping:
+            event_mapping[route] = []
+        event_mapping[route].append(event_id)
 
     def register_dialog(
         self: Renderer,
+        route: str,
         dialog_id: str,
         dialog_content: HTMLTag,
     ) -> None:
+        if route not in self._dialog_ids:
+            self._dialog_ids[route] = []
+        self._dialog_ids[route].append(dialog_id)
         if dialog_id not in self._dialogs:
             self._dialogs[dialog_id] = dialog_content
 
@@ -220,7 +234,7 @@ class Renderer:
         dialog_id: str,
     ) -> None:
         if dialog_id not in self._dialogs:
-            logger.warning("Dialog '{dialog_id}' not registered.")
+            logger.warning(f"Dialog '{dialog_id}' not registered.")
             return
         self._dialog_root.text = None
         _ = self._dialog_root.detach_children()
@@ -232,7 +246,7 @@ class Renderer:
         dialog_id: str,
     ) -> None:
         if dialog_id not in self._dialogs:
-            logger.warning("Dialog '{dialog_id}' not registered.")
+            logger.warning(f"Dialog '{dialog_id}' not registered.")
             return
         self._dialog_root.text = None
         _ = self._dialog_root.detach_children()
@@ -240,6 +254,49 @@ class Renderer:
         dialog = deepcopy(self._dialog_root)
         dialog.update_attributes(attributes={"open": ''})
         self.update(dialog.to_string(), event_id="dialog")
+
+    def insert(
+        self: Renderer,
+        route: str,
+        page: HTMLTag,
+    ) -> None:
+        if route not in self._routes:
+            self._routes.insert(0, route)
+            self._pages.insert(0, page)
+            logger.info(
+                f"Page added to renderer: {route}. "
+                "Page ready to be displayed."
+            )
+        else:
+            logger.info(
+                f"Page already exists: {route}. "
+                "Page will not be inserted."
+            )
+
+    def remove(
+        self: Renderer,
+        route: str,
+    ) -> None:
+        if route == self._routes[-1]:
+            self.close()
+        elif route in self._routes:
+            index = self._routes.index(route)
+            _ = self._routes.pop(index)
+            _ = self._pages.pop(index)
+            logger.info(
+                f"Page removed from renderer: {route}."
+            )
+        else:
+            logger.info(
+                f"Page no longer exists: {route}. "
+                "Nothing to remove."
+            )
+        # Remove associated parameters, events and dialogs
+        _ = self._parameters.pop(route, None)
+        _ = self._local_events.pop(route, None)
+        _ = self._global_events.pop(route, None)
+        for dialog_id in self._dialog_ids.pop(route, []):
+            _ = self._dialogs.pop(dialog_id, None)
 
     def show(
         self: Renderer,
