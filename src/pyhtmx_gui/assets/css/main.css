@@ -56,11 +56,11 @@ body {
 }
 
 @keyframes fade-in {
-    0%   { opacity: 0.00; margin-top:   0vh; transform: scale(1.00); }
-    25%  { opacity: 0.25; margin-top: 2.5vh; transform: scale(1.05); }
-    50%  { opacity: 0.50; margin-top:   5vh; transform: scale(1.10); }
-    75%  { opacity: 1.00; margin-top: 2.5vh; transform: scale(1.05); }
-    100% { opacity: 1.00; margin-top:   0vh; transform: scale(1.00); }
+    0%   { opacity: 0.00; transform: scale(1.02); }
+    25%  { opacity: 0.25; transform: scale(1.06); }
+    50%  { opacity: 0.50; transform: scale(1.10); }
+    75%  { opacity: 1.00; transform: scale(1.06); }
+    100% { opacity: 1.00; transform: scale(1.02); }
 }
 
 @keyframes fade-in-from-left {
