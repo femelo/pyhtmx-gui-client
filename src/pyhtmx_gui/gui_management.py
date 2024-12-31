@@ -103,18 +103,18 @@ class PageLoader(BaseModel):
         # NOTE: this method is assumed as implemented
         self._page_object.update_session_data(session_data, self.renderer)
 
-    def insert(self: PageLoader) -> None:
+    def insert(self: PageLoader, position: int) -> None:
         if self._page_object is None:
             self.build()
         self.renderer.insert(
             self.namespace,
             self.route,
+            position,
             self.page,
         )
 
     def remove(self: PageLoader) -> None:
         self.renderer.remove(
-            # TODO: namespace here?
             self.route,
         )
 
@@ -122,7 +122,7 @@ class PageLoader(BaseModel):
         if self._page_object is None:
             self.build()
         self.renderer.show(
-            # TODO: namespace here?
+            self.namespace,
             self.route,
             self.page,
         )
@@ -130,7 +130,6 @@ class PageLoader(BaseModel):
     def close(self: PageLoader) -> None:
         if self._page_object:
             self.renderer.close(
-                # TODO: namespace here?
                 self.route,
             )
 
@@ -162,7 +161,7 @@ class GuiList(BaseModel):
                     renderer=self.renderer,
                 ),
             )
-            self._pages[position].insert()
+            self._pages[position].insert(position)
 
     def move(
         self: GuiList,
@@ -175,6 +174,7 @@ class GuiList(BaseModel):
         for _ in range(items_number):
             item = self._pages.pop(from_pos)
             self._pages.insert(to_pos + 1, item)
+            # TODO: propagate to renderer classes
 
     def remove(
         self: GuiList,

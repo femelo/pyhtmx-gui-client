@@ -302,6 +302,7 @@ class Page(Widget):
                 if session_item.registered:
                     continue
                 renderer.register_interaction_parameter(
+                    namespace=self._namespace,
                     route=self._route,
                     parameter=session_item.parameter,
                     target=session_item.component,
@@ -321,6 +322,7 @@ class Page(Widget):
                 if trigger.registered:
                     continue
                 renderer.register_interaction_parameter(
+                    namespace=self._namespace,
                     route=self._route,
                     parameter=trigger.event,
                     target=trigger.component,
@@ -339,6 +341,7 @@ class Page(Widget):
             if control.registered:
                 continue
             renderer.register_callback(
+                namespace=self._namespace,
                 route=self._route,
                 event=control.event,
                 context=control.context,
@@ -356,6 +359,7 @@ class Page(Widget):
     ) -> None:
         if widget.type == WidgetType.DIALOG:
             renderer.register_dialog(
+                namespace=self._namespace,
                 route=self._route,
                 dialog_id=widget.id,
                 dialog_content=widget.widget,
