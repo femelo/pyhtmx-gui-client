@@ -3,6 +3,7 @@ from typing import Union, Optional, List, Dict, Callable, Any
 from secrets import token_hex
 from copy import deepcopy
 from enum import Enum
+from threading import Lock
 from pydantic import BaseModel, ConfigDict
 from pyhtmx import Html, Div, Dialog
 from pyhtmx.html_tag import HTMLTag
@@ -54,6 +55,7 @@ class Renderer:
         self._pages: List[HTMLTag] = []
         self._dialog_ids: Dict[str, List[str]] = {}
         self._dialogs: Dict[str, HTMLTag] = {}
+        self._callback_lock: Lock = Lock()
         self._global_callbacks: Dict[str, Callback] = {}
         self._local_callbacks: Dict[str, Callback] = {}
         self._global_events: Dict[str, List[str]] = {}
@@ -174,15 +176,16 @@ class Renderer:
             logger.warning("Unknown context type. Callback not registered.")
             return
         # Register callback
-        callback_mapping[event_id] = Callback(
-            context=context,
-            event_name=event,
-            event_id=event_id,
-            fn=fn,
-            source=source,
-            target=target,
-            target_level=target_level,
-        )
+        with self._callback_lock:
+            callback_mapping[event_id] = Callback(
+                context=context,
+                event_name=event,
+                event_id=event_id,
+                fn=fn,
+                source=source,
+                target=target,
+                target_level=target_level,
+            )
         if route not in event_mapping:
             event_mapping[route] = []
         event_mapping[route].append(event_id)
@@ -278,7 +281,7 @@ class Renderer:
         route: str,
     ) -> None:
         if route == self._routes[-1]:
-            self.close()
+            self.close(route)
         elif route in self._routes:
             index = self._routes.index(route)
             _ = self._routes.pop(index)
@@ -293,8 +296,12 @@ class Renderer:
             )
         # Remove associated parameters, events and dialogs
         _ = self._parameters.pop(route, None)
-        _ = self._local_events.pop(route, None)
-        _ = self._global_events.pop(route, None)
+        with self._callback_lock:
+            for event_id in self._local_events.pop(route, []):
+                _ = self._local_callbacks.pop(event_id, None)
+        with self._callback_lock:
+            for event_id in self._global_events.pop(route, []):
+                _ = self._global_callbacks.pop(event_id, None)
         for dialog_id in self._dialog_ids.pop(route, []):
             _ = self._dialogs.pop(dialog_id, None)
 
@@ -423,9 +430,10 @@ class Renderer:
         else:
             callback_mapping = self._global_callbacks
         content: Optional[Union[HTMLTag, str]] = None
-        if event_id in callback_mapping:
-            # Call
-            content = callback_mapping[event_id].fn()
+        with self._callback_lock:
+            if event_id in callback_mapping:
+                # Call
+                content = callback_mapping[event_id].fn()
         return content
 
 
