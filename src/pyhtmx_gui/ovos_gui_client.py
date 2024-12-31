@@ -1,5 +1,6 @@
 from __future__ import annotations
 import os
+import gc
 from typing import Mapping, Dict, List, Optional, Union, Any
 from threading import Thread, Event
 from time import sleep
@@ -197,7 +198,7 @@ class OVOSGuiClient:
         to_pos: int,
         items_number: int,
     ) -> None:
-        if namespace not in self._gui_list:
+        if namespace in self._gui_list:
             self._gui_list[namespace].move(
                 from_pos=from_pos,
                 to_pos=to_pos,
@@ -210,11 +211,12 @@ class OVOSGuiClient:
         position: int,
         items_number: int,
     ) -> None:
-        if namespace not in self._gui_list:
+        if namespace in self._gui_list:
             self._gui_list[namespace].remove(
                 position=position,
                 items_number=items_number,
             )
+        gc.collect()
 
     def handle_event_triggered(
         self: OVOSGuiClient,
@@ -264,12 +266,14 @@ class OVOSGuiClient:
         namespace: str,
         property: str,
     ) -> None:
+        # NOTE: Session parameters are destroyed in the renderer upon
+        # destroying the associated page
         if (
             namespace in self._session and
             property in self._session[namespace]
         ):
             del self._session[namespace][property]
-            # TODO: handle session parameter delete in the renderer
+        gc.collect()
 
     def handle_session_list_insert(
         self: OVOSGuiClient,
@@ -285,20 +289,17 @@ class OVOSGuiClient:
                 self._active_skills.insert(position, skill)
         else:
             if namespace not in self._session:
-                self._session[namespace] = {}
+                self._session[namespace] = session_data = {}
             if position is None:
                 position = 0
-            if (
-                property is not None and
-                property not in self._session[namespace]
-            ):
-                self._session[namespace][property] = [
+            if property:
+                session_data[property] = [
                     None for _ in range(position)
                 ]
             for item in reversed(values):
-                self._session[namespace][property].insert(position, item)
+                session_data[property].insert(position, item)
             if namespace in self._gui_list:
-                self._gui_list[namespace].update_data(self._session[namespace])
+                self._gui_list[namespace].update_data(session_data)
 
     def handle_session_list_update(self: OVOSGuiClient) -> None:
         # TODO: Implement me
@@ -323,10 +324,9 @@ class OVOSGuiClient:
                 if skill_id in self._gui_list:
                     self._gui_list[skill_id].close(position)
         else:
-            if namespace not in self._session:
-                self._session[namespace] = {}
-            if property is not None and property in self._session[namespace]:
-                del self._session[namespace][property]
+            session_data = self._session.get(namespace, {})
+            if property is not None and property in session_data:
+                del session_data[property]
 
     # Send an event to OVOS-GUI
     def send_focus_event(

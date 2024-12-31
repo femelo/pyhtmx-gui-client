@@ -176,6 +176,8 @@ class GuiList(BaseModel):
         items_number: int = 1,
     ) -> None:
         position = min(position, len(self._pages))
+        if self._shown_page == position:
+            self._shown_page = -1
         for _ in range(items_number):
             if position < len(self._pages):
                 self._pages[position].remove()
