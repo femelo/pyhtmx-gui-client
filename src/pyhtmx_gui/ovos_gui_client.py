@@ -167,6 +167,7 @@ class OVOSGuiClient:
                 },
             ]
 
+        data = [data] if isinstance(data, dict) else data
         show = len(self._gui_list) == 0
 
         if namespace not in self._gui_list:
@@ -175,17 +176,13 @@ class OVOSGuiClient:
                 renderer=OVOSGuiClient.renderer,
             )
 
-        if position is None:
-            position = 0
-
-        if namespace in self._session:
-            session_data = self._session[namespace]
-        else:
-            session_data = {}
+        position = position or 0
+        values = values or data or []
+        session_data = self._session.get(namespace, {})
 
         self._gui_list[namespace].insert(
             position=position,
-            values=values if values is not None else data,
+            values=values,
             session_data=session_data,
         )
         if show:
