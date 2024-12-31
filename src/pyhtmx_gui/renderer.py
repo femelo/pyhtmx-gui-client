@@ -267,12 +267,11 @@ class Renderer:
             self._routes.insert(0, route)
             self._pages.insert(0, page)
             logger.info(
-                f"Page added to renderer: {route}. "
-                "Page ready to be displayed."
+                f"Page inserted in the renderer catalog: {route}. "
             )
         else:
             logger.info(
-                f"Page already exists: {route}. "
+                f"Page already in the renderer catalog: {route}. "
                 "Page will not be inserted."
             )
 
@@ -287,11 +286,11 @@ class Renderer:
             _ = self._routes.pop(index)
             _ = self._pages.pop(index)
             logger.info(
-                f"Page removed from renderer: {route}."
+                f"Page removed from the renderer catalog: {route}."
             )
         else:
             logger.info(
-                f"Page no longer exists: {route}. "
+                f"Page no longer exists in the catalog: {route}. "
                 "Nothing to remove."
             )
         # Remove associated parameters, events and dialogs
@@ -319,20 +318,20 @@ class Renderer:
             _page = self._pages.pop(index)
             self._pages.append(_page)
             logger.info(
-                f"Retrieved page in history: {route}. "
-                "Page ready to be displayed."
+                f"Page activated from the catalog: {route}. "
+                "Sending to display."
             )
         elif route not in self._routes:
             self._routes.append(route)
             self._pages.append(page)
             logger.info(
-                f"Page added to renderer: {route}. "
-                "Page ready to be displayed."
+                f"Page appended to the renderer catalog: {route}. "
+                "Sending to display."
             )
         else:
             logger.info(
-                f"Page already exists: {route}. "
-                "Page ready to be displayed."
+                f"Active page: {route}. "
+                "Sending to display."
             )
             pass
         self.update_root()
@@ -343,12 +342,16 @@ class Renderer:
         if not self._routes or route != self._routes[-1]:
             logger.warning(f"Page {route} is not active, nothing to close.")
             return
-
-        _ = self._routes.pop()
-        _ = self._pages.pop()
+        # Deactivate current page and activate previous page
+        current_route: str = self._routes.pop()
+        current_page: HTMLTag = self._pages.pop()
+        self._routes.insert(-1, current_route)
+        self._pages.insert(-1, current_page)
+        active_route: str = self._routes[-1]
         logger.info(
-            f"Removed page {route} from renderer. "
-            "Previous page in history ready to be shown."
+            f"Page deactivated: {route}. "
+            f"Previous page activated: {active_route}. "
+            "Sending to display."
         )
         self.update_root()
 
@@ -359,13 +362,11 @@ class Renderer:
         # Move route
         route = self._routes.pop(index)
         self._routes.append(route)
-        # Move root page
+        # Move page
         _page = self._pages.pop(index)
         self._pages.append(_page)
-        # Move shown pages
         logger.info(
-            f"Routed to page: {route}. "
-            "Page ready to be displayed."
+            f"Page activated: {route}. Sending to display."
         )
         self.update_root()
 
@@ -373,12 +374,12 @@ class Renderer:
         # Move route
         route = self._routes.pop(level - 1)
         self._routes.append(route)
-        # Move root page
+        # Move page
         _page = self._pages.pop(level - 1)
         self._pages.append(_page)
         logger.info(
-            f"Routed back to page: {route}. "
-            "Page ready to be displayed."
+            f"Previous page activated: {route}. "
+            "Sending to display."
         )
         self.update_root()
 
@@ -407,7 +408,7 @@ class Renderer:
 
     def update(
         self: Renderer,
-        data: str,
+        data: Optional[str],
         event_id: Optional[str] = None,
     ) -> None:
         # Don't send message without clients or data
