@@ -199,9 +199,18 @@ class Page(Widget):
             name=name or f"page-{token_hex(4)}",
             session_data=session_data,
         )
+        self._namespace: str = f"{self.id}-namespace"
         self._route: str = f"/{self.id}"
         self._widgets: List[Widget] = [self]
         self._page: HTMLTag = HTMLTag("div")
+
+    @property
+    def namespace(self: Page) -> str:
+        return self._namespace
+
+    @namespace.setter
+    def namespace(self: Page, value: str) -> None:
+        self._namespace = value
 
     @property
     def page(self: Page) -> HTMLTag:
@@ -352,7 +361,9 @@ class Page(Widget):
                 dialog_content=widget.widget,
             )
 
-    def set_up(self: Page, renderer: Any) -> Page:
+    def set_up(self: Page, namespace: str, renderer: Any) -> Page:
+        # Set namespace
+        self._namespace = namespace
         # Propagate session data from widgets
         self.propagate_session_data()
         for widget in self._widgets:
