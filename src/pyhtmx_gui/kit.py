@@ -330,8 +330,9 @@ class Page(Widget):
             if control.registered:
                 continue
             renderer.register_callback(
-                context=control.context,
+                route=self._route,
                 event=control.event,
+                context=control.context,
                 fn=partial(control.callback, renderer),
                 source=control.source,
                 target=control.target,
@@ -346,6 +347,7 @@ class Page(Widget):
     ) -> None:
         if widget.type == WidgetType.DIALOG:
             renderer.register_dialog(
+                route=self._route,
                 dialog_id=widget.id,
                 dialog_content=widget.widget,
             )
