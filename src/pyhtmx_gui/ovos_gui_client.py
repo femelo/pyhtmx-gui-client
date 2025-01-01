@@ -224,12 +224,10 @@ class OVOSGuiClient:
         if event_name == EventType.PAGE_GAINED_FOCUS:
             # Page gained focus: display it
             page_index = parameters.get("number", 0)
-            logger.info(f"Focus shifted to page {page_index}")
             if namespace in self._gui_list:
                 self._gui_list[namespace].show(page_index)
         elif namespace == "system" and event_name in set(EventType):
             # Handle OVOS system event
-            logger.info("Status event triggered")
             utterance: Optional[str] = parameters.get("utterance", None)
             if utterance:
                 data = {"utterance": utterance}
@@ -243,7 +241,6 @@ class OVOSGuiClient:
             )
         else:
             # Handle general event
-            logger.info("General event triggered")
             if namespace in self._gui_list:
                 self._gui_list[namespace].update_state(event_name)
 
