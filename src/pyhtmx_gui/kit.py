@@ -199,9 +199,18 @@ class Page(Widget):
             name=name or f"page-{token_hex(4)}",
             session_data=session_data,
         )
+        self._namespace: str = f"{self.id}-ns"
         self._route: str = f"/{self.id}"
         self._widgets: List[Widget] = [self]
         self._page: HTMLTag = HTMLTag("div")
+
+    @property
+    def namespace(self: Page) -> str:
+        return self._namespace
+
+    @property
+    def route(self: Page) -> str:
+        return self._route
 
     @property
     def page(self: Page) -> HTMLTag:
@@ -293,6 +302,7 @@ class Page(Widget):
                 if session_item.registered:
                     continue
                 renderer.register_interaction_parameter(
+                    namespace=self._namespace,
                     route=self._route,
                     parameter=session_item.parameter,
                     target=session_item.component,
@@ -312,6 +322,7 @@ class Page(Widget):
                 if trigger.registered:
                     continue
                 renderer.register_interaction_parameter(
+                    namespace=self._namespace,
                     route=self._route,
                     parameter=trigger.event,
                     target=trigger.component,
@@ -330,6 +341,7 @@ class Page(Widget):
             if control.registered:
                 continue
             renderer.register_callback(
+                namespace=self._namespace,
                 route=self._route,
                 event=control.event,
                 context=control.context,
@@ -347,12 +359,15 @@ class Page(Widget):
     ) -> None:
         if widget.type == WidgetType.DIALOG:
             renderer.register_dialog(
+                namespace=self._namespace,
                 route=self._route,
                 dialog_id=widget.id,
                 dialog_content=widget.widget,
             )
 
-    def set_up(self: Page, renderer: Any) -> Page:
+    def set_up(self: Page, namespace: Optional[str], renderer: Any) -> Page:
+        # Set namespace
+        self._namespace = namespace
         # Propagate session data from widgets
         self.propagate_session_data()
         for widget in self._widgets:

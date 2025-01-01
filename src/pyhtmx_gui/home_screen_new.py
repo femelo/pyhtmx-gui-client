@@ -135,8 +135,8 @@ class HomeScreen(Page):
             )
         return f"background-image: url({wallpaper_url});"
 
-    def set_up(self: HomeScreen, renderer: Any) -> None:
-        super().set_up(renderer)
+    def set_up(self: HomeScreen, namespace: str, renderer: Any) -> None:
+        super().set_up(namespace, renderer)
 
         # Update time
         def update_time():

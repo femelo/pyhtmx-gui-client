@@ -12,6 +12,7 @@ from .logger import logger
 
 class PageLoader(BaseModel):
     model_config = ConfigDict(strict=False, arbitrary_types_allowed=True)
+    namespace: str
     name: str
     uri: str
     session_data: Dict[str, Any] = {}
@@ -94,21 +95,24 @@ class PageLoader(BaseModel):
             else:
                 self._page_object = page_object
             logger.debug(f"Object {self._page_object} built.")
-            if hasattr(page_object, "set_up"):
-                self._page_object.set_up(self.renderer)
 
     def update(self: PageLoader, session_data: Dict[str, Any]) -> None:
         self.session_data.update(session_data)
         # NOTE: this method is assumed as implemented
         self._page_object.update_session_data(session_data, self.renderer)
 
-    def insert(self: PageLoader) -> None:
+    def insert(self: PageLoader, position: int) -> None:
         if self._page_object is None:
             self.build()
         self.renderer.insert(
+            self.namespace,
             self.route,
+            position,
             self.page,
         )
+        # Setting up must happen after insertion
+        if hasattr(self._page_object, "set_up"):
+            self._page_object.set_up(self.namespace, self.renderer)
 
     def remove(self: PageLoader) -> None:
         self.renderer.remove(
@@ -119,6 +123,7 @@ class PageLoader(BaseModel):
         if self._page_object is None:
             self.build()
         self.renderer.show(
+            self.namespace,
             self.route,
             self.page,
         )
@@ -150,13 +155,14 @@ class GuiList(BaseModel):
             self._pages.insert(
                 position,
                 PageLoader(
+                    namespace=self.namespace,
                     name=item.get("page", f"{prefix}_{token}"),
                     uri=item.get("url"),
                     session_data=session_data,
                     renderer=self.renderer,
-                )
+                ),
             )
-            self._pages[position].insert()
+            self._pages[position].insert(position)
 
     def move(
         self: GuiList,
@@ -169,6 +175,7 @@ class GuiList(BaseModel):
         for _ in range(items_number):
             item = self._pages.pop(from_pos)
             self._pages.insert(to_pos + 1, item)
+            # TODO: propagate to renderer classes
 
     def remove(
         self: GuiList,
