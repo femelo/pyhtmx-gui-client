@@ -125,6 +125,16 @@ class PageGroup(BaseModel):
     routes: List[str] = []
     pages: Dict[str, PageItemCollection] = {}
 
+    def validate_position(self: PageGroup, position: int) -> int:
+        length = len(self.routes)
+        if abs(position) > length:
+            logger.warning(
+                "Provided position out of range. "
+                "Setting it at nearest bound."
+            )
+            return max(min(position, length), -length)
+        return position
+
     def insert_page(
         self: PageGroup,
         route: str,
@@ -132,13 +142,17 @@ class PageGroup(BaseModel):
         page: HTMLTag,
     ) -> None:
         if route not in self.routes:
-            length = len(self.routes)
-            position = max(min(position, length), -length)
+            position = self.validate_position(position)
             self.routes.insert(position, route)
         else:
-            logger.warning(
+            index = self.routes.index(route)
+            if index != position:
+                route = self.routes.pop(index)
+                position = self.validate_position(position)
+                self.routes.insert(position, route)
+            logger.info(
                 f"Item collection for page '{route}' already exists. "
-                f"Collection will be overriden."
+                f"Collection will be updated."
             )
         self.pages[route] = PageItemCollection(route=route, page=page)
 
@@ -596,7 +610,7 @@ class Renderer:
         else:
             logger.info(
                 f"Page already in the renderer catalog: {route}. "
-                "Page overriden."
+                "Page updated."
             )
 
     def remove(
