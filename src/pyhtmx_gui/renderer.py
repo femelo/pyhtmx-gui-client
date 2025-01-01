@@ -19,9 +19,9 @@ class ContextType(str, Enum):
     GLOBAL = "global"
 
 
-class PageItem(str, Enum):
+class PageItemType(str, Enum):
     DIALOG = "dialog"
-    PARAMETER_LIST = "parameter_list"
+    PARAMETER = "parameter"
     LOCAL_CALLBACK = "local_callback"
     GLOBAL_CALLBACK = "global_callback"
 
@@ -64,6 +64,55 @@ class PageItemCollection(BaseModel):
     parameters: Dict[str, List[InteractionParameter]] = {}
     global_callbacks: Dict[str, Callback] = {}
     local_callbacks: Dict[str, Callback] = {}
+    _item_map: Dict[
+        PageItemType,
+        Union[HTMLTag, List[InteractionParameter], Callback]
+    ] = {}
+
+    def model_post_init(self: PageItemCollection, __context: Any) -> None:
+        self._item_map[PageItemType.DIALOG] = self.dialogs
+        self._item_map[PageItemType.PARAMETER] = self.parameters
+        self._item_map[PageItemType.LOCAL_CALLBACK] = self.local_callbacks
+        self._item_map[PageItemType.GLOBAL_CALLBACK] = self.global_callbacks
+
+    def set_item(
+        self: PageItemCollection,
+        item_type: PageItemType,
+        key: str,
+        value: Union[HTMLTag, InteractionParameter, Callback],
+    ) -> None:
+        item = self._item_map.get(item_type, None)
+        if not item:
+            logger.warning(
+                f"Unknown page group item: {item_type}. "
+                f"Pair ({key}, {value}) not set."
+            )
+            return
+        if item_type == PageItemType.PARAMETER:
+            if key not in item:
+                item[key] = []
+            item.append(value)
+        else:
+            item[key] = value
+
+    def get_item(
+        self: PageItemCollection,
+        item_type: PageItemType,
+        key: str
+    ) -> Union[HTMLTag, List[InteractionParameter], Callback, None]:
+        item = self._item_map.get(item_type, {})
+        value = item.get(key, None)
+        if not item:
+            logger.warning(
+                f"Unknown page group item: {item_type}."
+            )
+        elif not value:
+            logger.warning(
+                f"Key '{key}' for item '{item_type}' not found."
+            )
+        else:
+            pass
+        return value
 
 
 class PageGroup(BaseModel):
@@ -75,24 +124,6 @@ class PageGroup(BaseModel):
     namespace: str
     routes: List[str] = []
     pages: Dict[str, PageItemCollection] = []
-
-    def in_group(self: PageGroup, route: str) -> bool:
-        return route in self.routes
-
-    def append_page(
-        self: PageGroup,
-        route: str,
-        page: HTMLTag,
-    ) -> None:
-        self.insert_page(
-            route=route,
-            position=-1,
-            page=page,
-        )
-
-    def get_page(self: PageGroup, route: str) -> Optional[HTMLTag]:
-        page_items = self.pages.get(route, None)
-        return page_items.page if page_items else None
 
     def insert_page(
         self: PageGroup,
@@ -111,11 +142,21 @@ class PageGroup(BaseModel):
             )
         self.pages[route] = PageItemCollection(route=route, page=page)
 
+    def get_page(self: PageGroup, route: str) -> Optional[HTMLTag]:
+        page_items = self.pages.get(route, None)
+        if not page_items:
+            logger.warning(
+                f"Route '{route}' not in page group '{self.namespace}'. "
+                f"Page not retrieved."
+            )
+            return
+        return page_items.page
+
     def remove_page(
         self: PageGroup,
         route: str,
     ) -> None:
-        if self.in_group(route):
+        if route not in self.routes:
             self.routes.remove(route)
             del self.pages[route]
         else:
@@ -127,51 +168,33 @@ class PageGroup(BaseModel):
     def add_to_page(
         self: PageGroup,
         route: str,
+        item_type: PageItemType,
         key: str,
         value: Union[HTMLTag, InteractionParameter, Callback],
     ) -> None:
-        if not self.in_group(route):
+        page_items = self.pages.get(route, None)
+        if not page_items:
             logger.warning(
                 f"Route '{route}' not in page group '{self.namespace}'. "
-                f"Pair ({key}, {value}) not added to group."
+                f"Pair ({key}, {value}) not added."
             )
             return
-        page_items = self.pages[route]
-        if isinstance(value, HTMLTag):
-            page_items.dialogs[key] = value
-        elif isinstance(value, InteractionParameter):
-            if key not in page_items.parameters:
-                page_items.parameters[key] = []
-            page_items.parameters[key].append(value)
-        elif isinstance(value, Callback):
-            if value.context == ContextType.LOCAL:
-                page_items.local_callbacks[key] = value
-            else:
-                page_items.global_callbacks[key] = value
-        else:
-            pass
+        page_items.set_item(item_type=item_type, key=key, value=value)
 
     def get_from_page(
         self: PageGroup,
         route: str,
-        attribute: PageItem,
+        item_type: PageItemType,
         key: str,
     ) -> Union[HTMLTag, List[InteractionParameter], Callback, None]:
         page_items = self.pages.get(route, None)
         if not page_items:
-            return None
-        item: Union[HTMLTag, List[InteractionParameter], Callback, None] = None
-        if attribute == PageItem.DIALOG:
-            item = page_items.dialogs.get(key, None)
-        elif attribute == PageItem.PARAMETER_LIST:
-            item = page_items.parameters.get(key, None)
-        elif attribute == PageItem.LOCAL_CALLBACK:
-            item = page_items.local_callbacks.get(key, None)
-        elif attribute == PageItem.GLOBAL_CALLBACK:
-            item = page_items.global_callbacks.get(key, None)
-        else:
-            logger.warning(f"Unknown page group attribute: {attribute}")
-        return item
+            logger.warning(
+                f"Route '{route}' not in page group '{self.namespace}'. "
+                f"Value for '{key}' not retrieved."
+            )
+            return
+        return page_items.get_item(item_type=item_type, key=key)
 
 
 class Renderer:
@@ -225,6 +248,26 @@ class Renderer:
         with self._lock:
             self._group_catalog[namespace] = PageGroup(namespace=namespace)
 
+    def list_events(self: Renderer, route: Optional[str]) -> List[str]:
+        if route:
+            return [e for e, r in self._event_map.items() if r == route]
+        else:
+            return self._event_map.keys()
+
+    def list_dialogs(self: Renderer, route: Optional[str]) -> List[str]:
+        if route:
+            return [d for d, r in self._dialog_map.items() if r == route]
+        else:
+            return self._dialog_map.keys()
+
+    def remove_events(self: Renderer, route: str) -> None:
+        for event_id in self.list_events(route):
+            del self._event_map[event_id]
+
+    def remove_dialogs(self: Renderer, route: str) -> None:
+        for dialog_id in self.list_dialogs(route):
+            del self._dialog_map[dialog_id]
+
     def insert_into_page_group(
         self: Renderer,
         namespace: str,
@@ -254,14 +297,9 @@ class Renderer:
                     self._group_catalog[namespace].remove_page(
                         route=route,
                     )
-
-        events = [e for e, r in self._event_map.items() if r == route]
-        for event_id in events:
-            del self._event_map[event_id]
-
-        dialogs = [d for d, r in self._event_map.items() if r == route]
-        for dialog_id in dialogs:
-            del self._dialog_map[dialog_id]
+        # Remove registered events and dialogs from maps
+        self.remove_events(route)
+        self.remove_dialogs(route)
 
     def add_to_page_group(
         self: Renderer,
@@ -287,14 +325,14 @@ class Renderer:
         self: Renderer,
         namespace: str,
         route: str,
-        attribute: PageItem,
+        item_type: PageItemType,
         key: str,
     ) -> Union[HTMLTag, List[InteractionParameter], Callback, None]:
         item: Union[HTMLTag, List[InteractionParameter], Callback, None] = None
         with self._lock:
             item = self._group_catalog[namespace].get_from_page(
                 route=route,
-                attribute=attribute,
+                item_type=item_type,
                 key=key,
             )
         return item
@@ -446,7 +484,7 @@ class Renderer:
         ] = self.get_from_page_group(
             namespace=namespace,
             route=route,
-            attribute=PageItem.PARAMETER_LIST,
+            item_type=PageItemType.PARAMETER,
             key=parameter,
         )
         if not parameter_list:
@@ -478,8 +516,8 @@ class Renderer:
         self: Renderer,
         dialog_id: str,
     ) -> None:
-        route: str = self._dialog_map.get(dialog_id, "unknown")
-        namespace: str = self._group_map.get(route, "unknown")
+        route = self._dialog_map.get(dialog_id, "unknown")
+        namespace = self._group_map.get(route, "unknown")
         if not self.in_catalog(namespace):
             logger.warning(f"Dialog '{dialog_id}' not properly registered.")
             return
@@ -493,16 +531,16 @@ class Renderer:
         self: Renderer,
         dialog_id: str,
     ) -> None:
-        route: str = self._dialog_map.get(dialog_id, "unknown")
-        namespace: str = self._group_map.get(route, "unknown")
+        route = self._dialog_map.get(dialog_id, "unknown")
+        namespace = self._group_map.get(route, "unknown")
         if not self.in_catalog(namespace):
             logger.warning(f"Dialog '{dialog_id}' not properly registered.")
             return
         # Retrieve dialog content
-        dialog_content: Optional[HTMLTag] = self.get_from_page_group(
+        dialog_content = self.get_from_page_group(
             namespace=namespace,
             route=route,
-            attribute=PageItem.DIALOG,
+            item_type=PageItemType.DIALOG,
             key=dialog_id,
         )
         # Update dialog root and show
@@ -652,15 +690,15 @@ class Renderer:
         )
 
     def update_root(self: Renderer) -> None:
-        route: str = self._page_stack[-1]
-        namespace: str = self._group_map.get(route, "unknown")
+        route = self._page_stack[-1]
+        namespace = self._group_map.get(route, "unknown")
         if not self.in_catalog(namespace):
             logger.warning(
                 f"No valid namespace for page with route '{route}'. "
                 "Display will not be updated."
             )
             return
-        page: HTMLTag = self._group_catalog[namespace].get_page(route)
+        page = self._group_catalog[namespace].get_page(route)
         self._root.text = None
         _ = self._root.detach_children()
         self._root.add_child(page)
@@ -691,15 +729,15 @@ class Renderer:
         if not self.in_catalog(namespace):
             logger.warning(f"Event '{event_id}' not properly registered.")
             return
-        # Set attribute type
-        attribute: PageItem = PageItem.GLOBAL_CALLBACK
-        if context == ContextType.LOCAL:
-            attribute = PageItem.LOCAL_CALLBACK
         # Retrieve callback
-        callback: Optional[Callback] = self.get_from_page_group(
+        callback = self.get_from_page_group(
             namespace=namespace,
             route=route,
-            attribute=attribute,
+            item_type=(
+                PageItemType.LOCAL_CALLBACK
+                if context == ContextType.LOCAL
+                else PageItemType.GLOBAL_CALLBACK
+            ),
             key=event_id,
         )
         # Call and return content
