@@ -95,8 +95,6 @@ class PageLoader(BaseModel):
             else:
                 self._page_object = page_object
             logger.debug(f"Object {self._page_object} built.")
-            if hasattr(page_object, "set_up"):
-                self._page_object.set_up(self.namespace, self.renderer)
 
     def update(self: PageLoader, session_data: Dict[str, Any]) -> None:
         self.session_data.update(session_data)
@@ -112,6 +110,9 @@ class PageLoader(BaseModel):
             position,
             self.page,
         )
+        # Setting up must happen after insertion
+        if hasattr(self._page_object, "set_up"):
+            self._page_object.set_up(self.namespace, self.renderer)
 
     def remove(self: PageLoader) -> None:
         self.renderer.remove(
