@@ -77,7 +77,7 @@ class PageGroup(BaseModel):
     pages: Dict[str, PageItemCollection] = []
 
     def in_group(self: PageGroup, route: str) -> bool:
-        route in self.routes
+        return route in self.routes
 
     def append_page(
         self: PageGroup,
