@@ -7,6 +7,7 @@ from time import sleep
 import traceback
 from websocket import WebSocket, create_connection
 from .logger import logger
+from .config import config_data
 from .types import MessageType, EventType, Message
 from .renderer import Renderer, global_renderer
 from .gui_management import GuiList
@@ -20,13 +21,18 @@ termination_event: Event = Event()
 
 
 class OVOSGuiClient:
-    # TODO: move id and server_url to config/config.toml
-    id: str = "ovos-pyhtmx-gui-client"
-    server_url: str = "ws://localhost:18181/gui"
+    id: str = config_data.get(
+        "client-id",
+        "pyhtmx-gui-client",
+    )
     renderer: Renderer = global_renderer
 
     def __init__(self: OVOSGuiClient):
-        self._ws: Optional[WebSocket] = OVOSGuiClient.connect()
+        self.server_url: str = config_data.get(
+            "ovos-server-url",
+            "ws://localhost:18181/gui",
+        )
+        self._ws: Optional[WebSocket] = self.connect()
         self._thread: Optional[Thread] = self.listen()
         self._session: Dict[str, Any] = {}
         self._active_skills: List[str] = []
@@ -34,10 +40,9 @@ class OVOSGuiClient:
         self.announce()
 
     # Connect to OVOS-GUI WebSocket
-    @staticmethod
-    def connect() -> Optional[WebSocket]:
+    def connect(self: OVOSGuiClient) -> Optional[WebSocket]:
         try:
-            ws = create_connection(OVOSGuiClient.server_url)
+            ws = create_connection(self.server_url)
             logger.info("Connected to ovos-gui websocket")
             return ws
         except Exception as e:
