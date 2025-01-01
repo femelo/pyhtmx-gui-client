@@ -69,7 +69,7 @@ class PageItemCollection(BaseModel):
         Union[HTMLTag, List[InteractionParameter], Callback]
     ] = {}
 
-    def model_post_init(self: PageItemCollection, __context: Any) -> None:
+    def model_post_init(self: PageItemCollection, context: Any = None) -> None:
         self._item_map[PageItemType.DIALOG] = self.dialogs
         self._item_map[PageItemType.PARAMETER] = self.parameters
         self._item_map[PageItemType.LOCAL_CALLBACK] = self.local_callbacks
@@ -82,7 +82,7 @@ class PageItemCollection(BaseModel):
         value: Union[HTMLTag, InteractionParameter, Callback],
     ) -> None:
         item = self._item_map.get(item_type, None)
-        if not item:
+        if item is None:
             logger.warning(
                 f"Unknown page group item: {item_type}. "
                 f"Pair ({key}, {value}) not set."
@@ -91,7 +91,7 @@ class PageItemCollection(BaseModel):
         if item_type == PageItemType.PARAMETER:
             if key not in item:
                 item[key] = []
-            item.append(value)
+            item[key].append(value)
         else:
             item[key] = value
 
@@ -123,7 +123,7 @@ class PageGroup(BaseModel):
     )
     namespace: str
     routes: List[str] = []
-    pages: Dict[str, PageItemCollection] = []
+    pages: Dict[str, PageItemCollection] = {}
 
     def insert_page(
         self: PageGroup,
@@ -131,7 +131,7 @@ class PageGroup(BaseModel):
         position: int,
         page: HTMLTag,
     ) -> None:
-        if not self.in_group(route):
+        if route not in self.routes:
             length = len(self.routes)
             position = max(min(position, length), -length)
             self.routes.insert(position, route)
@@ -220,7 +220,14 @@ class Renderer:
             sse_swap="dialog",
             hx_swap="outerHTML",
         )
-        self._status: Page = StatusBar().set_up("status-namespace", self)
+        status_bar: Page = StatusBar()
+        self.insert(
+            namespace=status_bar.namespace,
+            route=status_bar.route,
+            position=0,
+            page=status_bar.page,
+        )
+        self._status: Page = status_bar.set_up(status_bar.namespace, self)
         self._master: Html = MASTER_DOCUMENT
         body, = self._master.find_elements_by_tag(tag="body")
         body.add_child(self._status.widget)
@@ -305,18 +312,23 @@ class Renderer:
         self: Renderer,
         namespace: str,
         route: str,
+        item_type: PageItemType,
         key: str,
         value: Union[HTMLTag, InteractionParameter, Callback],
     ) -> None:
         with self._lock:
             self._group_catalog[namespace].add_to_page(
                 route=route,
+                item_type=item_type,
                 key=key,
                 value=value,
             )
-        if isinstance(value, HTMLTag):
+        if item_type == PageItemType.DIALOG:
             self._dialog_map[key] = route
-        elif isinstance(value, Callback):
+        elif item_type in (
+            PageItemType.LOCAL_CALLBACK,
+            PageItemType.GLOBAL_CALLBACK,
+        ):
             self._event_map[key] = route
         else:
             pass
@@ -371,6 +383,7 @@ class Renderer:
         self.add_to_page_group(
             namespace=namespace,
             route=route,
+            item_type=PageItemType.PARAMETER,
             key=parameter,
             value=interaction_parameter,
         )
@@ -415,6 +428,7 @@ class Renderer:
                     "hx-swap": target_level,
                 },
             )
+            item_type = PageItemType.LOCAL_CALLBACK
         elif context == ContextType.GLOBAL:
             # Add necessary attributes to elements for global action
             target.update_attributes(
@@ -428,6 +442,7 @@ class Renderer:
                     "hx-trigger": event,
                 },
             )
+            item_type = PageItemType.GLOBAL_CALLBACK
         else:
             logger.warning("Unknown context type. Callback not registered.")
             return
@@ -445,6 +460,7 @@ class Renderer:
         self.add_to_page_group(
             namespace=namespace,
             route=route,
+            item_type=item_type,
             key=event_id,
             value=callback,
         )
@@ -463,11 +479,14 @@ class Renderer:
                 f"Dialog '{route}::{dialog_id}' not registered."
             )
             return
-        if route not in self._dialog_ids:
-            self._dialog_ids[route] = []
-        self._dialog_ids[route].append(dialog_id)
-        if dialog_id not in self._dialogs:
-            self._dialogs[dialog_id] = dialog_content
+        # Register callback
+        self.add_to_page_group(
+            namespace=namespace,
+            route=route,
+            item_type=PageItemType.DIALOG,
+            key=dialog_id,
+            value=dialog_content,
+        )
 
     def update_attributes(
         self: Renderer,
