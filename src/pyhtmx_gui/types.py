@@ -1,6 +1,7 @@
-from typing import Any, List, Dict, Union, Optional
+from typing import Any, List, Dict, Union, Optional, Callable
 from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field
+from pyhtmx.html_tag import HTMLTag
 
 
 class MessageType(str, Enum):
@@ -48,3 +49,39 @@ class Message(BaseModel):
     parameters: Optional[Dict[str, Any]] = None
     data: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None
     values: Optional[List[Dict[str, Any]]] = None
+
+
+class CallbackContext(str, Enum):
+    LOCAL = "local"
+    GLOBAL = "global"
+
+
+class PageItem(str, Enum):
+    DIALOG = "dialog"
+    PARAMETER = "parameter"
+    LOCAL_CALLBACK = "local_callback"
+    GLOBAL_CALLBACK = "global_callback"
+
+
+class Callback(BaseModel):
+    model_config = ConfigDict(
+        strict=False,
+        arbitrary_types_allowed=True,
+    )
+    context: CallbackContext
+    event_name: str
+    event_id: str
+    fn: Callable
+    source: HTMLTag
+    target: Optional[HTMLTag] = None
+    target_level: str = "innerHTML"
+
+
+class InteractionParameter(BaseModel):
+    model_config = ConfigDict(
+        strict=False,
+        arbitrary_types_allowed=True,
+    )
+    parameter_name: str
+    parameter_id: str
+    target: HTMLTag

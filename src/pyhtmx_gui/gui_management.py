@@ -1,249 +1,240 @@
 from __future__ import annotations
-# import sys
 from typing import Any, Union, Optional, List, Dict
 from pydantic import BaseModel, ConfigDict
-import secrets
-import inspect
-import importlib.util
-from pyhtmx.html_tag import HTMLTag
-from .renderer import Renderer
+from secrets import token_hex
+from .renderer import Renderer, global_renderer
+from .page_group import PageGroup
 from .logger import logger
 
 
-class PageLoader(BaseModel):
+class GuiManager(BaseModel):
     model_config = ConfigDict(strict=False, arbitrary_types_allowed=True)
-    namespace: str
-    name: str
-    uri: str
-    session_data: Dict[str, Any] = {}
-    renderer: Renderer
-    _page_object: Optional[Any] = None
+    _active_namespace: List[str] = []
+    _active_page: List[Optional[str]] = []
+    _catalog: Dict[str, PageGroup] = {}
+    _renderer: Renderer = global_renderer
 
-    def model_post_init(self: PageLoader, context: Any = None) -> None:
-        self.build()
-
-    @property
-    def page_object(self: PageLoader) -> Any:
-        return self._page_object
-
-    @property
-    def route(self: PageLoader) -> Union[HTMLTag, None]:
-        if isinstance(self._page_object, HTMLTag):
-            return f"/{secrets.token_hex(4)}"
-        elif hasattr(self._page_object, "_route"):
-            return self._page_object._route
-        else:
-            return f"/{secrets.token_hex(4)}"
-
-    @property
-    def page(self: PageLoader) -> Union[HTMLTag, None]:
-        if isinstance(self._page_object, HTMLTag):
-            return self._page_object
-        elif hasattr(self._page_object, "_page"):
-            return self._page_object._page
-        else:
-            return None
-
-    def build(self: PageLoader) -> None:
-        # Load module
-        spec = importlib.util.spec_from_file_location(self.name, self.uri)
-        module = importlib.util.module_from_spec(spec)
-        # sys.modules[self.name] = module
-        spec.loader.exec_module(module)
-        objects = []
-        # Get relevant objects
-        object_names = filter(
-            lambda name: (
-                not name.startswith("__")
-                and hasattr(getattr(module, name), "__module__")
-                and getattr(module, name).__module__ == self.name
-            ),
-            dir(module),
+    def is_active_page(
+        self: GuiManager,
+        namespace: str,
+        page_id: Optional[str] = None,
+    ) -> bool:
+        return (
+            namespace == self._active_namespace[0] and
+            page_id == self._active_page[0]
         )
-        # Save just views or wrappers with class attribute '_is_page'
-        for obj_name in object_names:
-            obj = getattr(module, obj_name)
-            if isinstance(obj, HTMLTag):
-                objects.append(obj)
-            elif inspect.isclass(obj) and HTMLTag in obj.__bases__:
-                objects.append(obj)
-            elif (
-                inspect.isclass(obj) and
-                hasattr(obj, "_is_page") and
-                obj._is_page
-            ):
-                objects.append(obj)
-            else:
-                pass
 
-        # No objects found
-        if len(objects) == 0:
-            raise IOError(
-                f"No page view defined on '{self.uri}'. "
-                "Make sure wrapping classes have the class "
-                "attribute _is_page = True"
+    def update_active_page(
+        self: GuiManager,
+        namespace: str,
+        page_id: Optional[str] = None,
+        position: int = 0,
+    ) -> None:
+        if namespace in self._active_namespace:
+            index = self._active_namespace.index(namespace)
+            self._active_namespace.pop(index)
+            self._active_page.pop(index)
+        # Validate position
+        length = len(self._active_namespace)
+        if abs(position) > length:
+            position = max(min(position, length), -length)
+        # Insert
+        self._active_namespace.insert(position, namespace)
+        self._active_page.insert(position, page_id)
+
+    def remove_active_page(
+        self: GuiManager,
+        namespace: Optional[str] = None,
+        page_id: Optional[str] = None,
+    ) -> None:
+        if namespace and namespace in self._active_namespace:
+            index = self._active_namespace.index(namespace)
+        elif page_id and page_id in self._active_page:
+            index = self._active_page.index(page_id)
+        else:
+            return
+        self._active_namespace.pop(index)
+        self._active_page.pop(index)
+
+    def insert_namespace(
+        self: GuiManager,
+        namespace: str,
+        position: int,
+    ) -> None:
+        # Add page group
+        if namespace not in self._catalog:
+            self._catalog[namespace] = PageGroup(
+                gui_manager=self,
+                namespace=namespace,
             )
-        else:
-            if len(objects) > 1:
-                logger.warning(
-                    f"Multiple page views defined on {self.uri}. "
-                    "Using the first object found."
-                )
-            page_object = objects[0]
-            if inspect.isclass(page_object):
-                self._page_object = page_object(session_data=self.session_data)
-            else:
-                self._page_object = page_object
-            logger.debug(f"Object {self._page_object} built.")
+        self.update_active_page(namespace=namespace, position=position)
 
-    def update(self: PageLoader, session_data: Dict[str, Any]) -> None:
-        self.session_data.update(session_data)
-        # NOTE: this method is assumed as implemented
-        self._page_object.update_session_data(session_data, self.renderer)
-
-    def insert(self: PageLoader, position: int) -> None:
-        if self._page_object is None:
-            self.build()
-        self.renderer.insert(
-            self.namespace,
-            self.route,
-            position,
-            self.page,
-        )
-        # Setting up must happen after insertion
-        if hasattr(self._page_object, "set_up"):
-            self._page_object.set_up(self.namespace, self.renderer)
-
-    def remove(self: PageLoader) -> None:
-        self.renderer.remove(
-            self.route,
-        )
-
-    def show(self: PageLoader) -> None:
-        if self._page_object is None:
-            self.build()
-        self.renderer.show(
-            self.namespace,
-            self.route,
-            self.page,
-        )
-
-    def close(self: PageLoader) -> None:
-        if self._page_object:
-            self.renderer.close(
-                self.route,
+    def remove_namespace(
+        self: GuiManager,
+        namespace: str,
+        position: int,
+    ) -> None:
+        if namespace not in self._active_namespace:
+            logger.info(
+                f"Namespace '{namespace}' no longer active. "
+                "Nothing to remove."
             )
-
-
-class GuiList(BaseModel):
-    model_config = ConfigDict(strict=False, arbitrary_types_allowed=True)
-    namespace: Optional[str]
-    renderer: Renderer
-    _shown_page: int = 0
-    _pages: List[PageLoader] = []
+            return
+        # Remove namespace
+        self.remove_active_page(namespace=namespace)
+        # Remove from catalog
+        if namespace in self._catalog:
+            del self._catalog[namespace]
 
     def insert(
-        self: GuiList,
-        position: int,
-        values: List[Dict[str, str]],
+        self: GuiManager,
+        namespace: str,
+        page_args: List[Dict[str, str]],
         session_data: Dict[str, Any],
+        position: int,
     ) -> None:
-        position = min(position, len(self._pages))
-        prefix = self.namespace.replace('.', '_')
-        for item in reversed(values):
-            token = secrets.token_hex(4)
-            self._pages.insert(
-                position,
-                PageLoader(
-                    namespace=self.namespace,
-                    name=item.get("page", f"{prefix}_{token}"),
-                    uri=item.get("url"),
-                    session_data=session_data,
-                    renderer=self.renderer,
-                ),
+        if namespace not in self._catalog:
+            self._catalog[namespace] = PageGroup(
+                gui_manager=self,
+                namespace=namespace,
             )
-            self._pages[position].insert(position)
-
-    def move(
-        self: GuiList,
-        from_pos: int,
-        to_pos: int,
-        items_number: int = 1,
-    ) -> None:
-        from_pos = min(from_pos, len(self._pages) - 1)
-        to_pos = min(to_pos, len(self._pages))
-        for _ in range(items_number):
-            item = self._pages.pop(from_pos)
-            self._pages.insert(to_pos + 1, item)
-            # TODO: propagate to renderer classes
+        else:
+            logger.info(
+                f"Page group for '{namespace}' already exists. "
+                "Page group will be updated."
+            )
+        prefix = self.namespace.replace('.', '_')
+        for item in reversed(page_args):
+            token = token_hex(4)
+            self._catalog[namespace].insert_page(
+                page_id=item.get("page", f"{prefix}_{token}"),
+                uri=item.get("url"),
+                session_data=session_data,
+                position=position,
+            )
 
     def remove(
-        self: GuiList,
+        self: GuiManager,
+        namespace: str,
         position: int,
         items_number: int = 1,
     ) -> None:
-        position = min(position, len(self._pages))
-        if self._shown_page == position:
-            self._shown_page = -1
+        if namespace not in self._catalog:
+            logger.warning(
+                f"Page group for '{namespace}' not in catalog. "
+                "Nothing to remove."
+            )
+            return
+        # Remove pages
         for _ in range(items_number):
-            if position < len(self._pages):
-                self._pages[position].remove()
-                del self._pages[position]
+            page_id = self._catalog[namespace].get_page_id(position)
+            if self.is_active_page(namespace, page_id):
+                self.close(namespace, page_id)
+            self._catalog[namespace].remove_page(position)
 
-    def get_page(self: GuiList, position: int) -> Optional[PageLoader]:
-        if 0 <= position < len(self._pages):
-            return self._pages[position]
-        return None
-
-    def show(
-        self: GuiList,
-        position: int,
+    def move(
+        self: GuiManager,
+        namespace: str,
+        from_position: int,
+        to_position: int,
+        items_number: int = 1,
     ) -> None:
-        if 0 <= position < len(self._pages):
-            self._pages[position].show()
-            self._shown_page = position
-
-    def close(
-        self: GuiList,
-        position: int,
-    ) -> None:
-        if 0 <= position < len(self._pages):
-            self._pages[position].close()
-            self._shown_page = -1  # TODO: think about this logic
-
-    def update_data(
-        self: GuiList,
-        session_data: Dict[str, Any],
-    ) -> None:
-        if self._shown_page > len(self._pages):
-            logger.warning("Last shown page out of range.")
+        if namespace not in self._catalog:
+            logger.warning(
+                f"Page group for '{namespace}' not in catalog. "
+                "Nothing to move."
+            )
             return
-        page_object = self._pages[self._shown_page].page_object
-        if page_object is None:
-            logger.warning("Unable to update a page that has not been built.")
-            return
-        valid_session_data = {}
-        for key in session_data.keys():
-            if key in page_object._session_data:
-                valid_session_data[key] = session_data[key]
-        if valid_session_data:
-            page_object.update_session_data(
-                session_data=valid_session_data,
-                renderer=self.renderer,
+        # Move pages
+        for _ in range(items_number):
+            self._catalog[namespace].move_page(
+                from_position,
+                to_position,
             )
 
+    def navigate(
+        self: GuiManager,
+        namespace: str,
+        id: Union[str, int],
+    ) -> None:
+        self.show(namespace=namespace, id=id)
+
+    def show(
+        self: GuiManager,
+        namespace: str,
+        id: Union[str, int],
+    ) -> None:
+        if namespace not in self._catalog:
+            logger.warning(
+                f"Page group for '{namespace}' not in catalog. "
+                "Nothing to show."
+            )
+            return
+        # Get page id
+        if isinstance(id, int):
+            page_id = self._catalog[namespace].get_page_id(id)
+        else:
+            page_id = id
+        # Show page
+        if page_id in self.page_ids:
+            self.update_active_page(namespace=namespace, page_id=page_id)
+            self._catalog[namespace].show(page_id)
+        else:
+            logger.warning(
+                f"Page '{page_id}' not in group for '{namespace}'. "
+                f"Nothing to show."
+            )
+
+    def close(
+        self: GuiManager,
+        namespace: str,
+        id: Union[str, int],
+    ) -> None:
+        if namespace not in self._catalog:
+            logger.warning(
+                f"Page group for '{namespace}' not in catalog. "
+                "Nothing to show."
+            )
+            return
+        # Get page id
+        if isinstance(id, int):
+            page_id = self._catalog[namespace].get_page_id(id)
+        else:
+            page_id = id
+        # Close page
+        if page_id in self.page_ids:
+            self._catalog[namespace].close(page_id)
+            self.remove_active_page(namespace=namespace, page_id=page_id)
+        else:
+            logger.warning(
+                f"Page '{page_id}' not in group for '{namespace}'. "
+                f"Nothing to close."
+            )
+
+    def update_data(
+        self: GuiManager,
+        namespace: str,
+        session_data: Dict[str, Any],
+    ) -> None:
+        if namespace not in self._catalog:
+            logger.warning(
+                f"Page group for '{namespace}' not in catalog. "
+                "Nothing to update."
+            )
+            return
+        # Update data
+        self._catalog[namespace].update_data(session_data)
+
     def update_state(
-        self: GuiList,
+        self: GuiManager,
+        namespace: str,
         event: str,
     ) -> None:
-        if self._shown_page > len(self._pages):
-            logger.warning("Last shown page out of range.")
+        if namespace not in self._catalog:
+            logger.warning(
+                f"Page group for '{namespace}' not in catalog. "
+                "Nothing to update."
+            )
             return
-        page_object = self._pages[self._shown_page].page_object
-        if page_object is None:
-            logger.warning("Unable to update a page that has not been built.")
-            return
-        page_object.update_trigger_state(
-            ovos_event=event,
-            renderer=self.renderer,
-        )
+        # Update event
+        self._catalog[namespace].update_state(event)
