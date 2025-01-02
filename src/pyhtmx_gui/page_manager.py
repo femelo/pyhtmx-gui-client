@@ -329,6 +329,6 @@ class PageManager(BaseModel):
 
     def update_state(
         self: PageManager,
-        session_data: Dict[str, Any],
+        ovos_event: str,
     ) -> None:
         pass
