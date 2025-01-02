@@ -321,14 +321,21 @@ class PageManager(BaseModel):
             page_id=page_id,
         )
 
+    # TODO: is that the best option?
     def update_data(
         self: PageManager,
         session_data: Dict[str, Any],
     ) -> None:
-        pass
+        self._page.update_session_data(
+            session_data=session_data,
+            page_manager=self,
+        )
 
     def update_state(
         self: PageManager,
         ovos_event: str,
     ) -> None:
-        pass
+        self._page.update_trigger_state(
+            ovos_event=ovos_event,
+            page_manager=self,
+        )
