@@ -1,6 +1,6 @@
 from __future__ import annotations
-from typing import Any, Type, Union, Optional, List, Dict, Callable
-from pydantic import BaseModel, ConfigDict
+from typing import Any, Type, Union, Optional, List, Dict, Callable, ClassVar
+from pydantic import BaseModel, ConfigDict, PrivateAttr
 from secrets import token_hex
 from functools import partial
 from .types import InteractionParameter, Callback, PageItem, CallbackContext
@@ -12,8 +12,6 @@ from pyhtmx.html_tag import HTMLTag
 
 
 class PageManagementInterface:
-    renderer: Renderer = global_renderer
-
     @staticmethod
     def register_interaction_parameter(
         cls: PageManager,
@@ -123,81 +121,6 @@ class PageManagementInterface:
             value=dialog_content,
         )
 
-    @staticmethod
-    def update_attributes(
-        cls: PageManager,
-        parameter: str,
-        attribute: Dict[str, Any],
-    ) -> None:
-        parameter_list: Optional[
-            List[InteractionParameter]
-        ] = cls.get_item(
-            item_type=PageItem.PARAMETER,
-            key=parameter,
-        )
-        if not parameter_list:
-            logger.warning(
-                f"Parameter '{cls.page_id}::{parameter}' not registered."
-            )
-            return
-        for interaction_parameter in parameter_list:
-            parameter_id = interaction_parameter.parameter_id
-            component = interaction_parameter.target
-            attributes = dict(attribute)
-            text_content = attributes.pop("inner_content", None)
-            component.update_attributes(
-                text_content=text_content,
-                attributes=attributes,
-            )
-            if attribute:
-                PageManagementInterface.renderer.update(
-                    component.to_string(),
-                    event_id=parameter_id,
-                )
-            else:
-                PageManagementInterface.renderer.update(
-                    text_content,
-                    event_id=parameter_id,
-                )
-
-    @staticmethod
-    def trigger_callback(
-        cls: PageManager,
-        context: CallbackContext,
-        event_id: str
-    ) -> Optional[Union[HTMLTag, str]]:
-        # Retrieve callback
-        callback = cls.get_item(
-            item_type=(
-                PageItem.LOCAL_CALLBACK
-                if context == CallbackContext.LOCAL
-                else PageItem.GLOBAL_CALLBACK
-            ),
-            key=event_id,
-        )
-        # Call and return content
-        content: Optional[Union[HTMLTag, str]] = None
-        if callback:
-            content = callback.fn()
-        return content
-
-    @staticmethod
-    def show(
-        cls: PageManager,
-    ) -> None:
-        PageManagementInterface.renderer.show(
-            cls.page_id,
-            cls.page,
-        )
-
-    @staticmethod
-    def close(
-        cls: PageManager,
-    ) -> None:
-        PageManagementInterface.renderer.close(
-            cls.page_id,
-        )
-
 
 class PageManager(BaseModel):
     model_config = ConfigDict(strict=False, arbitrary_types_allowed=True)
@@ -209,17 +132,18 @@ class PageManager(BaseModel):
     parameters: Dict[str, List[InteractionParameter]] = {}
     global_callbacks: Dict[str, Callback] = {}
     local_callbacks: Dict[str, Callback] = {}
-    _route: Optional[str] = None
-    _page: Optional[Union[Page, HTMLTag]] = None
-    _interface: Type[PageManagementInterface] = PageManagementInterface
-    _item_map: Dict[
-        PageItem,
-        Union[HTMLTag, List[InteractionParameter], Callback]
+    route: Optional[str] = None
+    _page: PrivateAttr[Optional[Union[Page, HTMLTag]]] = None
+    _item_map: PrivateAttr[
+        Dict[
+            PageItem,
+            Union[HTMLTag, List[InteractionParameter], Callback],
+        ]
     ] = {}
-
-    @property
-    def route(self: PageManager) -> str:
-        return self._route
+    renderer: ClassVar[Renderer] = global_renderer
+    interface: ClassVar[
+        Type[PageManagementInterface]
+    ] = PageManagementInterface
 
     @property
     def page(self: PageManager) -> HTMLTag:
@@ -231,22 +155,25 @@ class PageManager(BaseModel):
             pass
 
     def __getattr__(self: PageManager, name: str) -> Any:
-        # Share interface methods with the manager
-        if hasattr(self._interface, name):
-            return partial(getattr(self._interface, name), self)
-        return self[name]
+        # Borrow methods from page management interface and renderer
+        if hasattr(PageManager.interface, name):
+            return partial(getattr(PageManager.interface, name), self)
+        elif hasattr(PageManager.renderer, name):
+            return getattr(PageManager.renderer, name)
+        else:
+            return self[name]
 
     def model_post_init(self: PageManager, context: Any = None) -> None:
         self.build_page()
         self.set_route()
         self.post_set_up()
-        self.init_item_map()
+        self.set_item_map()
 
     def set_route(self: PageManager) -> None:
         if hasattr(self._page, "_route"):
-            self._route = self._page.route
+            self.route = self._page.route
         else:
-            self._route = f"/{self.page_id}"
+            self.route = f"/{self.page_id}"
 
     def build_page(self: PageManager) -> None:
         self._page = build_page(
@@ -265,7 +192,7 @@ class PageManager(BaseModel):
         if hasattr(self._page, "set_up"):
             self._page.set_up(self)
 
-    def init_item_map(self: PageManager) -> None:
+    def set_item_map(self: PageManager) -> None:
         self._item_map[PageItem.DIALOG] = self.dialogs
         self._item_map[PageItem.PARAMETER] = self.parameters
         self._item_map[PageItem.LOCAL_CALLBACK] = self.local_callbacks
@@ -309,33 +236,3 @@ class PageManager(BaseModel):
         else:
             pass
         return value
-
-    def navigate(
-        self: PageManager,
-        namespace: str,
-        page_id: str,
-    ) -> None:
-        # Forward up navigation request to page group context
-        self.page_group.navigate(
-            namespace=namespace,
-            page_id=page_id,
-        )
-
-    # TODO: is that the best option?
-    def update_data(
-        self: PageManager,
-        session_data: Dict[str, Any],
-    ) -> None:
-        self._page.update_session_data(
-            session_data=session_data,
-            page_manager=self,
-        )
-
-    def update_state(
-        self: PageManager,
-        ovos_event: str,
-    ) -> None:
-        self._page.update_trigger_state(
-            ovos_event=ovos_event,
-            page_manager=self,
-        )
