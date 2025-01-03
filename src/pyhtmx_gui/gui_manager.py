@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Any, Union, Optional, List, Dict
 from secrets import token_hex
+from pyhtmx.html_tag import HTMLTag
 from .renderer import Renderer, global_renderer
 from .page_group import PageGroup
 from .tools.utils import validate_position, fix_position
@@ -19,12 +20,24 @@ class GuiManager:
     def num_namespaces(self: GuiManager) -> int:
         return len(self._namespaces)
 
+    def in_catalog(self: GuiManager, namespace: str) -> bool:
+        return namespace in self._catalog
+
     def get_active_namespace(
         self: GuiManager,
     ) -> Optional[str]:
         if not self._namespaces:
             return None
         return self._namespaces[0]
+
+    def activate_namespace(
+        self: GuiManager,
+        namespace: int,
+    ) -> None:
+        self.insert_namespace(
+            namespace=namespace,
+            position=0,
+        )
 
     def insert_namespace(
         self: GuiManager,
@@ -40,7 +53,7 @@ class GuiManager:
         # Insert
         self._namespaces.insert(position, namespace)
         # Add page group
-        if namespace not in self._catalog:
+        if not self.in_catalog(namespace):
             self._catalog[namespace] = PageGroup(
                 namespace=namespace,
             )
@@ -59,7 +72,7 @@ class GuiManager:
                 "Nothing to remove."
             )
         # Remove from catalog
-        if namespace in self._catalog:
+        if self.in_catalog(namespace):
             del self._catalog[namespace]
 
     def insert_pages(
@@ -69,7 +82,7 @@ class GuiManager:
         session_data: Dict[str, Any],
         position: int,
     ) -> None:
-        if namespace not in self._catalog:
+        if not self.in_catalog(namespace):
             self._catalog[namespace] = PageGroup(
                 namespace=namespace,
             )
@@ -91,7 +104,7 @@ class GuiManager:
         position: int,
         items_number: int = 1,
     ) -> None:
-        if namespace not in self._catalog:
+        if not self.in_catalog(namespace):
             logger.warning(
                 f"Page group for '{namespace}' not in catalog. "
                 "Nothing to remove."
@@ -110,7 +123,7 @@ class GuiManager:
         to_position: int,
         items_number: int = 1,
     ) -> None:
-        if namespace not in self._catalog:
+        if not self.in_catalog(namespace):
             logger.warning(
                 f"Page group for '{namespace}' not in catalog. "
                 "Nothing to move."
@@ -122,6 +135,36 @@ class GuiManager:
                 from_position,
                 to_position,
             )
+
+    def get_active_page_id(
+        self: GuiManager,
+        namespace: str,
+    ) -> Optional[str]:
+        if not self.in_catalog(namespace):
+            return None
+        return self._catalog[namespace].get_active_page_id()
+
+    def get_active_page(
+        self: GuiManager,
+        namespace: str,
+    ) -> Optional[HTMLTag]:
+        if not self.in_catalog(namespace):
+            return None
+        return self._catalog[namespace].get_active_page()
+
+    def activate_page(
+        self: GuiManager,
+        namespace: str,
+        id: Union[int, str],
+    ) -> None:
+        if not self.in_catalog(namespace):
+            logger.warning(
+                f"Page group for '{namespace}' not in catalog. "
+                "Nothing to move."
+            )
+            return
+        self.activate_namespace(namespace=namespace)
+        self._catalog[namespace].activate_page(id=id)
 
     def show(
         self: GuiManager,
@@ -171,25 +214,35 @@ class GuiManager:
         namespace: str,
         session_data: Dict[str, Any],
     ) -> None:
-        if namespace not in self._catalog:
+        if not self.in_catalog(namespace):
             logger.warning(
                 f"Page group for '{namespace}' not in catalog. "
                 "Nothing to update."
             )
             return
         # Update data
-        self._catalog[namespace].update_data(session_data)
+        page_id = self._catalog[namespace].get_active_page_id()
+        if page_id:
+            self._catalog[namespace].update_data(
+                page_id=page_id,
+                session_data=session_data,
+            )
 
     def update_state(
         self: GuiManager,
         namespace: str,
         ovos_event: str,
     ) -> None:
-        if namespace not in self._catalog:
+        if not self.in_catalog(namespace):
             logger.warning(
                 f"Page group for '{namespace}' not in catalog. "
                 "Nothing to update."
             )
             return
         # Update event
-        self._catalog[namespace].update_state(ovos_event)
+        page_id = self._catalog[namespace].get_active_page_id()
+        if page_id:
+            self._catalog[namespace].update_state(
+                page_id=page_id,
+                ovos_event=ovos_event,
+            )

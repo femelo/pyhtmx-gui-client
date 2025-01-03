@@ -52,7 +52,7 @@ class PageGroup(BaseModel):
             return None
         return self.page_ids[position]
 
-    def get_page(self: PageGroup, page_id: str) -> Optional[HTMLTag]:
+    def get_page(self: PageGroup, page_id: str) -> Optional[Any]:
         page_items = self.pages.get(page_id, None)
         if not page_items:
             logger.warning(
@@ -61,6 +61,16 @@ class PageGroup(BaseModel):
             )
             return
         return page_items.page
+
+    def get_page_tag(self: PageGroup, page_id: str) -> Optional[HTMLTag]:
+        page_items = self.pages.get(page_id, None)
+        if not page_items:
+            logger.warning(
+                f"Page '{page_id}' not in page group '{self.namespace}'. "
+                f"Page not retrieved."
+            )
+            return
+        return page_items.page_tag
 
     def remove_page(
         self: PageGroup,
@@ -156,3 +166,41 @@ class PageGroup(BaseModel):
             )
             return
         return page_items.get_item(item_type=item_type, key=key)
+
+    def update_data(
+        self: PageGroup,
+        page_id: str,
+        session_data: Dict[str, Any],
+    ) -> None:
+        page_items = self.pages.get(page_id, None)
+        if not page_items:
+            logger.warning(
+                f"Page '{page_id}' not in page group '{self.namespace}'. "
+                f"Nothing to update."
+            )
+            return
+        page_object = page_items.page
+        if hasattr(page_object, "update_session_data"):
+            page_object.update_session_data(
+                session_data=session_data,
+                page_manager=self,
+            )
+
+    def update_state(
+        self: PageGroup,
+        page_id: str,
+        ovos_event: str,
+    ) -> None:
+        page_items = self.pages.get(page_id, None)
+        if not page_items:
+            logger.warning(
+                f"Page '{page_id}' not in page group '{self.namespace}'. "
+                f"Nothing to update."
+            )
+            return
+        page_object = page_items.page
+        if hasattr(page_object, "update_trigger_state"):
+            page_object.update_trigger_state(
+                ovos_event=ovos_event,
+                page_manager=self,
+            )

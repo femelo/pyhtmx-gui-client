@@ -145,7 +145,11 @@ class PageManager(BaseModel):
     ] = PageRegistrationInterface
 
     @property
-    def page(self: PageManager) -> HTMLTag:
+    def page(self: PageManager) -> Any:
+        return self._page
+
+    @property
+    def page_tag(self: PageManager) -> HTMLTag:
         if isinstance(self._page, HTMLTag):
             return self._page
         elif hasattr(self._page, Page):
