@@ -3,6 +3,7 @@ from typing import Any, Union, Optional, List, Dict
 from pydantic import BaseModel, ConfigDict
 from pyhtmx.html_tag import HTMLTag
 from .types import InteractionParameter, Callback, PageItem
+from .tools.utils import validate_position, fix_position
 from .page_manager import PageManager
 from .logger import logger
 
@@ -11,23 +12,8 @@ class PageGroup(BaseModel):
     model_config = ConfigDict(strict=False, arbitrary_types_allowed=True)
     gui_manager: Any
     namespace: str
-    ids: List[str] = []
+    page_ids: List[str] = []
     pages: Dict[str, PageManager] = {}
-
-    def validate_position(
-        self: PageGroup,
-        position: int,
-    ) -> bool:
-        length = len(self.ids)
-        valid = abs(position) <= length
-        if not valid:
-            logger.warning("Provided position out of range.")
-        return valid
-
-    def fix_position(self: PageGroup, position: int) -> int:
-        length = len(self.ids)
-        logger.info("Position set to nearest bound.")
-        return max(min(position, length), -length)
 
     def insert_page(
         self: PageGroup,
@@ -95,23 +81,26 @@ class PageGroup(BaseModel):
         id: Union[int, str],
         to_position: int,
     ) -> None:
+        length = len(self.page_ids)
         if isinstance(id, str):
             from_position = self.get_page_id(id)
             invalid_position = from_position is None
         else:
             from_position = id
-            invalid_position = not self.validate_position(from_position + 1)
+            invalid_position = not validate_position(
+                from_position, 0, length - 1
+            )
         if invalid_position:
             logger.warning(
                 f"Item collection for page '{id}' does not exist. "
                 f"Nothing to move."
             )
             return
-        if not self.validate_position(to_position):
-            to_position = self.fix_position(to_position)
+        if not validate_position(to_position, 0, length):
+            to_position = fix_position(to_position, 0, length)
         # Switch position
         item = self.page_ids.pop(from_position)
-        self.page_ids.insert(to_position - 1, item)
+        self.page_ids.insert(to_position, item)
 
     def add_to_page(
         self: PageGroup,
@@ -143,54 +132,3 @@ class PageGroup(BaseModel):
             )
             return
         return page_items.get_item(item_type=item_type, key=key)
-
-    def navigate(
-        self: PageGroup,
-        namespace: str,
-        page_id: str,
-    ) -> None:
-        # Forward up navigation request to GUI manager context
-        self.gui_manager.navigate(
-            namespace=namespace,
-            page_id=page_id,
-        )
-
-    def show(
-        self: PageGroup,
-        page_id: str,
-    ) -> None:
-        page_items = self.pages.get(page_id, None)
-        if not page_items:
-            logger.warning(
-                f"Page '{page_id}' not in page group '{self.namespace}'. "
-                f"Nothing to show."
-            )
-            return
-        page_items.show()
-
-    def close(
-        self: PageGroup,
-        page_id: str,
-    ) -> None:
-        page_items = self.pages.get(page_id, None)
-        if not page_items:
-            logger.warning(
-                f"Page '{page_id}' not in page group '{self.namespace}'. "
-                f"Nothing to close."
-            )
-            return
-        page_items.close()
-
-    def update_data(
-        self: PageGroup,
-        session_data: Dict[str, Any],
-    ) -> None:
-        for page_items in self.pages.values():
-            page_items.update_data(session_data)
-
-    def update_state(
-        self: PageGroup,
-        ovos_event: str,
-    ) -> None:
-        for page_items in self.pages.values():
-            page_items.update_state(ovos_event)

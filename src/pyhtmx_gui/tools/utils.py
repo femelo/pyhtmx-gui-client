@@ -62,3 +62,15 @@ def build_page(
             page_instance = page_object
         logger.debug(f"Object {page_instance} built.")
     return page_object
+
+
+def validate_position(position: int, lb: int, ub: int) -> bool:
+    valid = lb <= position <= ub
+    if not valid:
+        logger.warning("Provided position out of range.")
+    return valid
+
+
+def fix_position(position: int, lb: int, ub: int) -> int:
+    logger.info("Position set to nearest bound.")
+    return max(min(position, ub), lb)
