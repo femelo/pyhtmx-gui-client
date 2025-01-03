@@ -11,7 +11,7 @@ from .logger import logger
 from pyhtmx.html_tag import HTMLTag
 
 
-class PageManagementInterface:
+class PageRegistrationInterface:
     @staticmethod
     def register_interaction_parameter(
         cls: PageManager,
@@ -52,7 +52,7 @@ class PageManagementInterface:
         target_level: str = "innerHTML",
     ) -> None:
         # Set root container if target was not specified
-        target = target if target else PageManagementInterface.renderer._root
+        target = target if target else global_renderer._root
         # Set new id
         _id: str = token_hex(4)
         event_id = '-'.join([*event.split(), _id])
@@ -142,8 +142,8 @@ class PageManager(BaseModel):
     ] = {}
     renderer: ClassVar[Renderer] = global_renderer
     interface: ClassVar[
-        Type[PageManagementInterface]
-    ] = PageManagementInterface
+        Type[PageRegistrationInterface]
+    ] = PageRegistrationInterface
 
     @property
     def page(self: PageManager) -> HTMLTag:
@@ -155,7 +155,7 @@ class PageManager(BaseModel):
             pass
 
     def __getattr__(self: PageManager, name: str) -> Any:
-        # Borrow methods from page management interface and renderer
+        # Borrow methods from page registration interface and renderer
         if hasattr(PageManager.interface, name):
             return partial(getattr(PageManager.interface, name), self)
         elif hasattr(PageManager.renderer, name):
