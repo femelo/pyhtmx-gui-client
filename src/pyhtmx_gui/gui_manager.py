@@ -1,92 +1,68 @@
 from __future__ import annotations
 from typing import Any, Union, Optional, List, Dict
-from pydantic import BaseModel, ConfigDict
 from secrets import token_hex
 from .renderer import Renderer, global_renderer
 from .page_group import PageGroup
+from .tools.utils import validate_position, fix_position
 from .logger import logger
 
 
-class GuiManager(BaseModel):
-    model_config = ConfigDict(strict=False, arbitrary_types_allowed=True)
-    _active_namespace: List[str] = []
-    _active_page: List[Optional[str]] = []
-    _catalog: Dict[str, PageGroup] = {}
-    _renderer: Renderer = global_renderer
+class GuiManager:
+    renderer: Renderer = global_renderer
 
-    def is_active_page(
-        self: GuiManager,
-        namespace: str,
-        page_id: Optional[str] = None,
-    ) -> bool:
-        return (
-            namespace == self._active_namespace[0] and
-            page_id == self._active_page[0]
-        )
+    def __init__(self: GuiManager) -> None:
+        self._namespaces: List[str] = []
+        self._catalog: Dict[str, PageGroup] = {}
+        GuiManager.renderer.set_gui_manager(self)
 
-    def update_active_page(
-        self: GuiManager,
-        namespace: str,
-        page_id: Optional[str] = None,
-        position: int = 0,
-    ) -> None:
-        if namespace in self._active_namespace:
-            index = self._active_namespace.index(namespace)
-            self._active_namespace.pop(index)
-            self._active_page.pop(index)
-        # Validate position
-        length = len(self._active_namespace)
-        if abs(position) > length:
-            position = max(min(position, length), -length)
-        # Insert
-        self._active_namespace.insert(position, namespace)
-        self._active_page.insert(position, page_id)
+    @property
+    def num_namespaces(self: GuiManager) -> int:
+        return len(self._namespaces)
 
-    def remove_active_page(
+    def get_active_namespace(
         self: GuiManager,
-        namespace: Optional[str] = None,
-        page_id: Optional[str] = None,
-    ) -> None:
-        if namespace and namespace in self._active_namespace:
-            index = self._active_namespace.index(namespace)
-        elif page_id and page_id in self._active_page:
-            index = self._active_page.index(page_id)
-        else:
-            return
-        self._active_namespace.pop(index)
-        self._active_page.pop(index)
+    ) -> Optional[str]:
+        if not self._namespaces:
+            return None
+        return self._namespaces[0]
 
     def insert_namespace(
         self: GuiManager,
         namespace: str,
         position: int,
     ) -> None:
+        if namespace in self._namespaces:
+            index = self._namespaces.index(namespace)
+            self._namespaces.pop(index)
+        # Validate position
+        if not validate_position(position, self.num_namespaces - 1):
+            position = fix_position(position, self.num_namespaces - 1)
+        # Insert
+        self._namespaces.insert(position, namespace)
         # Add page group
         if namespace not in self._catalog:
             self._catalog[namespace] = PageGroup(
-                gui_manager=self,
                 namespace=namespace,
             )
-        self.update_active_page(namespace=namespace, position=position)
 
     def remove_namespace(
         self: GuiManager,
         namespace: str,
-        position: int,
     ) -> None:
-        if namespace not in self._active_namespace:
+        if namespace in self._namespaces:
+            if namespace == self.get_active_namespace():
+                self.close(namespace=namespace)
+            self._namespaces.remove(namespace)
+        else:
             logger.info(
-                f"Namespace '{namespace}' no longer active. "
+                f"Namespace '{namespace}' no longer exists. "
                 "Nothing to remove."
             )
-            return
-        # Remove namespace
-        self.remove_active_page(namespace=namespace)
         # Remove from catalog
         if namespace in self._catalog:
             del self._catalog[namespace]
 
-    def insert(
+    def insert_pages(
         self: GuiManager,
         namespace: str,
         page_args: List[Dict[str, str]],
@@ -95,13 +71,7 @@ class GuiManager(BaseModel):
     ) -> None:
         if namespace not in self._catalog:
             self._catalog[namespace] = PageGroup(
-                gui_manager=self,
                 namespace=namespace,
-            )
-        else:
-            logger.info(
-                f"Page group for '{namespace}' already exists. "
-                "Page group will be updated."
             )
         prefix = self.namespace.replace('.', '_')
         for item in reversed(page_args):
@@ -112,8 +82,10 @@ class GuiManager(BaseModel):
                 session_data=session_data,
                 position=position,
             )
+        if set(self._namespaces) == {namespace}:
+            self.show(namespace=namespace)
 
-    def remove(
+    def remove_pages(
         self: GuiManager,
         namespace: str,
         position: int,
@@ -127,12 +99,11 @@ class GuiManager(BaseModel):
             return
         # Remove pages
         for _ in range(items_number):
-            page_id = self._catalog[namespace].get_page_id(position)
-            if self.is_active_page(namespace, page_id):
-                self.close(namespace, page_id)
+            if position == self._catalog[namespace].active_index:
+                self.close(namespace, position)
             self._catalog[namespace].remove_page(position)
 
-    def move(
+    def move_pages(
         self: GuiManager,
         namespace: str,
         from_position: int,
@@ -152,64 +123,48 @@ class GuiManager(BaseModel):
                 to_position,
             )
 
-    def navigate(
-        self: GuiManager,
-        namespace: str,
-        id: Union[str, int],
-    ) -> None:
-        self.show(namespace=namespace, id=id)
-
     def show(
         self: GuiManager,
         namespace: str,
-        id: Union[str, int],
+        id: Union[str, int, None] = None,
     ) -> None:
-        if namespace not in self._catalog:
-            logger.warning(
-                f"Page group for '{namespace}' not in catalog. "
-                "Nothing to show."
-            )
-            return
         # Get page id
         if isinstance(id, int):
             page_id = self._catalog[namespace].get_page_id(id)
         else:
             page_id = id
         # Show page
-        if page_id in self.page_ids:
-            self.update_active_page(namespace=namespace, page_id=page_id)
-            self._catalog[namespace].show(page_id)
-        else:
-            logger.warning(
-                f"Page '{page_id}' not in group for '{namespace}'. "
-                f"Nothing to show."
-            )
+        GuiManager.renderer.show(
+            namespace=namespace,
+            page_id=page_id,
+        )
 
     def close(
         self: GuiManager,
         namespace: str,
-        id: Union[str, int],
+        id: Union[str, int, None] = None,
     ) -> None:
-        if namespace not in self._catalog:
-            logger.warning(
-                f"Page group for '{namespace}' not in catalog. "
-                "Nothing to show."
-            )
-            return
         # Get page id
         if isinstance(id, int):
             page_id = self._catalog[namespace].get_page_id(id)
         else:
             page_id = id
         # Close page
-        if page_id in self.page_ids:
-            self._catalog[namespace].close(page_id)
-            self.remove_active_page(namespace=namespace, page_id=page_id)
-        else:
-            logger.warning(
-                f"Page '{page_id}' not in group for '{namespace}'. "
-                f"Nothing to close."
-            )
+        GuiManager.renderer.close(
+            namespace=namespace,
+            page_id=page_id,
+        )
+
+    def update_status(
+        self: GuiManager,
+        ovos_event: str,
+        data: Optional[Dict[str, Any]],
+    ) -> None:
+        # Update status
+        GuiManager.renderer.update_status(
+            ovos_event=ovos_event,
+            data=data,
+        )
 
     def update_data(
         self: GuiManager,
@@ -228,7 +183,7 @@ class GuiManager(BaseModel):
     def update_state(
         self: GuiManager,
         namespace: str,
-        event: str,
+        ovos_event: str,
     ) -> None:
         if namespace not in self._catalog:
             logger.warning(
@@ -237,4 +192,4 @@ class GuiManager(BaseModel):
             )
             return
         # Update event
-        self._catalog[namespace].update_state(event)
+        self._catalog[namespace].update_state(ovos_event)

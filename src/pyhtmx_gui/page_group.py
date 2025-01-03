@@ -15,6 +15,10 @@ class PageGroup(BaseModel):
     pages: Dict[str, PageManager] = {}
     active_index: Optional[int] = None
 
+    @property
+    def num_pages(self: PageGroup) -> int:
+        return len(self.page_ids)
+
     def insert_page(
         self: PageGroup,
         page_id: str,
@@ -22,20 +26,20 @@ class PageGroup(BaseModel):
         session_data: Dict[str, Any],
         position: int,
     ) -> None:
-        if page_id not in self.ids:
-            if not self.validate_position(position):
+        if page_id not in self.page_ids:
+            if not validate_position(position, self.num_pages - 1):
                 position = self.fix_position(position)
             self.ids.insert(position, page_id)
         else:
             index = self.ids.index(page_id)
             if index != position:
                 page_id = self.ids.pop(index)
-                if not self.validate_position(position):
-                    position = self.fix_position(position)
+                if not validate_position(position, self.num_pages - 1):
+                    position = fix_position(position, self.num_pages - 1)
                 self.ids.insert(position, page_id)
             logger.info(
-                f"Manager for page '{page_id}' already exists. "
-                f"Manager will be updated."
+                f"Page '{page_id}' already exists. "
+                f"Page manager will be updated."
             )
         self.pages[page_id] = PageManager(
             page_id=page_id,
@@ -43,12 +47,8 @@ class PageGroup(BaseModel):
             session_data=session_data,
         )
 
-    @property
-    def num_pages(self: PageGroup) -> int:
-        return len(self.page_ids)
-
     def get_page_id(self: PageGroup, position: int) -> Optional[str]:
-        if not validate_position(position, 0, self.num_pages - 1):
+        if not validate_position(position, self.num_pages - 1):
             return None
         return self.page_ids[position]
 
@@ -61,17 +61,6 @@ class PageGroup(BaseModel):
             )
             return
         return page_items.page
-
-    def get_active_page_id(self: PageGroup) -> Optional[str]:
-        if self.active_index:
-            return self.get_page_id(self.active_index)
-        return None
-
-    def get_active_page(self: PageGroup) -> Optional[HTMLTag]:
-        if self.active_index:
-            active_page_id = self.get_page_id(self.active_index)
-            return self.get_page(active_page_id)
-        return None
 
     def remove_page(
         self: PageGroup,
@@ -86,7 +75,7 @@ class PageGroup(BaseModel):
             del self.pages[page_id]
         else:
             logger.warning(
-                f"Item collection for page '{page_id}' does not exist. "
+                f"Page '{page_id}' does not exist. "
                 f"Nothing to remove."
             )
 
@@ -101,19 +90,41 @@ class PageGroup(BaseModel):
         else:
             from_position = id
             invalid_position = not validate_position(
-                from_position, 0, self.num_pages - 1
+                from_position, self.num_pages - 1
             )
         if invalid_position:
             logger.warning(
-                f"Item collection for page '{id}' does not exist. "
+                f"Page '{id}' does not exist. "
                 f"Nothing to move."
             )
             return
-        if not validate_position(to_position, 0, self.num_pages):
-            to_position = fix_position(to_position, 0, self.num_pages)
+        if not validate_position(to_position, self.num_pages):
+            to_position = fix_position(to_position, self.num_pages)
         # Switch position
         item = self.page_ids.pop(from_position)
         self.page_ids.insert(to_position, item)
+
+    def activate_page(self: PageGroup, id: Union[int, str]) -> None:
+        if isinstance(id, int) and validate_position(id, self.num_pages - 1):
+            self.active_index = id
+        elif isinstance(id, str) and id in self.page_ids:
+            self.active_index = self.page_ids.index(id)
+        else:
+            logger.warning(
+                f"Page '{id}' does not exist. "
+                f"Nothing to activate."
+            )
+
+    def get_active_page_id(self: PageGroup) -> Optional[str]:
+        if self.active_index:
+            return self.get_page_id(self.active_index)
+        return None
+
+    def get_active_page(self: PageGroup) -> Optional[HTMLTag]:
+        if self.active_index:
+            active_page_id = self.get_page_id(self.active_index)
+            return self.get_page(active_page_id)
+        return None
 
     def add_to_page(
         self: PageGroup,
