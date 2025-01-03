@@ -104,6 +104,51 @@ class Renderer:
         self.remove_events(route)
         self.remove_dialogs(route)
 
+    # NOTE: this belongs here for the sake of behavior towards updating the display
+    # TODO: refactor it
+    def update_attributes(
+        self: Renderer,
+        route: str,
+        parameter: str,
+        attribute: Dict[str, Any],
+    ) -> None:
+        namespace: str = self._group_map.get(route, "unknown")
+        if not self.in_catalog(namespace):
+            logger.warning(f"Page with '{route}' not properly inserted.")
+            return
+        parameter_list: Optional[
+            List[InteractionParameter]
+        ] = self.get_from_page_group(
+            namespace=namespace,
+            route=route,
+            item_type=PageItemType.PARAMETER,
+            key=parameter,
+        )
+        if not parameter_list:
+            logger.warning(
+                f"Parameter '{route}::{parameter}' not properly registered."
+            )
+            return
+        for interaction_parameter in parameter_list:
+            parameter_id = interaction_parameter.parameter_id
+            component = interaction_parameter.target
+            attributes = dict(attribute)
+            text_content = attributes.pop("inner_content", None)
+            component.update_attributes(
+                text_content=text_content,
+                attributes=attributes,
+            )
+            if attribute:
+                self.update(
+                    component.to_string(),
+                    event_id=parameter_id,
+                )
+            else:
+                self.update(
+                    text_content,
+                    event_id=parameter_id,
+                )
+
     def close_dialog(
         self: Renderer,
         dialog_id: str,
@@ -171,6 +216,7 @@ class Renderer:
             self._page_stack.append(active_page)
             self.update_root()
 
+    # TODO: finish refactoring
     def close(
         self: Renderer,
         namespace: str,
