@@ -240,7 +240,7 @@ class Page(Widget):
     def update_session_data(
         self: Page,
         session_data: Dict[str, Any],
-        renderer: Any,
+        page_manager: Any,
     ) -> None:
         for parameter, value in session_data.items():
             for widget in self._widgets:
@@ -260,7 +260,7 @@ class Page(Widget):
                             )
                             attributes[attr_name] = attr_value
                         # Update
-                        renderer.update_attributes(
+                        page_manager.update_attributes(
                             route=self._route,
                             parameter=session_item.parameter,
                             attribute=attributes,
@@ -269,7 +269,7 @@ class Page(Widget):
     def update_trigger_state(
         self: Page,
         ovos_event: str,
-        renderer: Any,
+        page_manager: Any,
     ) -> None:
         for widget in self._widgets:
             # Check whether the session parameter pertains to the widget
@@ -284,7 +284,7 @@ class Page(Widget):
                             attr_value = getters[attr_name](ovos_event)
                             attributes[attr_name] = attr_value
                     # Update
-                    renderer.update_attributes(
+                    page_manager.update_attributes(
                         route=self._route,
                         parameter=trigger.event,
                         attribute=attributes,
@@ -293,7 +293,7 @@ class Page(Widget):
     def register_session_items(
         self: Page,
         widget: Widget,
-        renderer: Any,
+        page_manager: Any,
     ) -> None:
         # Register session parameters
         for session_group in widget.session_items.values():
@@ -301,9 +301,7 @@ class Page(Widget):
                 # Prevent objects from being registered twice
                 if session_item.registered:
                     continue
-                renderer.register_interaction_parameter(
-                    namespace=self._namespace,
-                    route=self._route,
+                page_manager.register_interaction_parameter(
                     parameter=session_item.parameter,
                     target=session_item.component,
                     target_level=session_item.target_level,
@@ -313,7 +311,7 @@ class Page(Widget):
     def register_triggers(
         self: Page,
         widget: Widget,
-        renderer: Any,
+        page_manager: Any,
     ) -> None:
         # Register triggers
         for trigger_group in widget.triggers.values():
@@ -321,9 +319,7 @@ class Page(Widget):
                 # Prevent objects from being registered twice
                 if trigger.registered:
                     continue
-                renderer.register_interaction_parameter(
-                    namespace=self._namespace,
-                    route=self._route,
+                page_manager.register_interaction_parameter(
                     parameter=trigger.event,
                     target=trigger.component,
                     target_level=trigger.target_level,
@@ -333,19 +329,17 @@ class Page(Widget):
     def register_callbacks(
         self: Page,
         widget: Widget,
-        renderer: Any,
+        page_manager: Any,
     ) -> None:
         # Register callbacks
         for control in widget.controls.values():
             # Prevent objects from being registered twice
             if control.registered:
                 continue
-            renderer.register_callback(
-                namespace=self._namespace,
-                route=self._route,
+            page_manager.register_callback(
                 event=control.event,
                 context=control.context,
-                fn=partial(control.callback, renderer),
+                fn=partial(control.callback, page_manager),
                 source=control.source,
                 target=control.target,
                 target_level=control.target_level,
@@ -355,28 +349,24 @@ class Page(Widget):
     def register_dialog(
         self: Page,
         widget: Widget,
-        renderer: Any,
+        page_manager: Any,
     ) -> None:
         if widget.type == WidgetType.DIALOG:
-            renderer.register_dialog(
-                namespace=self._namespace,
-                route=self._route,
+            page_manager.register_dialog(
                 dialog_id=widget.id,
                 dialog_content=widget.widget,
             )
 
-    def set_up(self: Page, namespace: Optional[str], renderer: Any) -> Page:
-        # Set namespace
-        self._namespace = namespace
+    def set_up(self: Page, page_manager: Any) -> Page:
         # Propagate session data from widgets
         self.propagate_session_data()
         for widget in self._widgets:
             # Register session parameters
-            self.register_session_items(widget, renderer)
+            self.register_session_items(widget, page_manager)
             # Register triggers
-            self.register_triggers(widget, renderer)
+            self.register_triggers(widget, page_manager)
             # Register callbacks
-            self.register_callbacks(widget, renderer)
+            self.register_callbacks(widget, page_manager)
             # Register dialog
-            self.register_dialog(widget, renderer)
+            self.register_dialog(widget, page_manager)
         return self
