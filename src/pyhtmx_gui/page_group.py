@@ -10,10 +10,10 @@ from .logger import logger
 
 class PageGroup(BaseModel):
     model_config = ConfigDict(strict=False, arbitrary_types_allowed=True)
-    gui_manager: Any
     namespace: str
     page_ids: List[str] = []
     pages: Dict[str, PageManager] = {}
+    active_index: Optional[int] = None
 
     def insert_page(
         self: PageGroup,
@@ -38,16 +38,19 @@ class PageGroup(BaseModel):
                 f"Manager will be updated."
             )
         self.pages[page_id] = PageManager(
-            page_group=self,
             page_id=page_id,
             uri=uri,
             session_data=session_data,
         )
 
+    @property
+    def num_pages(self: PageGroup) -> int:
+        return len(self.page_ids)
+
     def get_page_id(self: PageGroup, position: int) -> Optional[str]:
-        if not self.validate_position(position + 1):
+        if not validate_position(position, 0, self.num_pages - 1):
             return None
-        return self.ids[position]
+        return self.page_ids[position]
 
     def get_page(self: PageGroup, page_id: str) -> Optional[HTMLTag]:
         page_items = self.pages.get(page_id, None)
@@ -58,6 +61,17 @@ class PageGroup(BaseModel):
             )
             return
         return page_items.page
+
+    def get_active_page_id(self: PageGroup) -> Optional[str]:
+        if self.active_index:
+            return self.get_page_id(self.active_index)
+        return None
+
+    def get_active_page(self: PageGroup) -> Optional[HTMLTag]:
+        if self.active_index:
+            active_page_id = self.get_page_id(self.active_index)
+            return self.get_page(active_page_id)
+        return None
 
     def remove_page(
         self: PageGroup,
@@ -81,14 +95,13 @@ class PageGroup(BaseModel):
         id: Union[int, str],
         to_position: int,
     ) -> None:
-        length = len(self.page_ids)
         if isinstance(id, str):
             from_position = self.get_page_id(id)
             invalid_position = from_position is None
         else:
             from_position = id
             invalid_position = not validate_position(
-                from_position, 0, length - 1
+                from_position, 0, self.num_pages - 1
             )
         if invalid_position:
             logger.warning(
@@ -96,8 +109,8 @@ class PageGroup(BaseModel):
                 f"Nothing to move."
             )
             return
-        if not validate_position(to_position, 0, length):
-            to_position = fix_position(to_position, 0, length)
+        if not validate_position(to_position, 0, self.num_pages):
+            to_position = fix_position(to_position, 0, self.num_pages)
         # Switch position
         item = self.page_ids.pop(from_position)
         self.page_ids.insert(to_position, item)

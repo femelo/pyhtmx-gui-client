@@ -124,7 +124,6 @@ class PageRegistrationInterface:
 
 class PageManager(BaseModel):
     model_config = ConfigDict(strict=False, arbitrary_types_allowed=True)
-    page_group: Any
     page_id: str
     uri: str
     session_data: Dict[str, Any] = {}
