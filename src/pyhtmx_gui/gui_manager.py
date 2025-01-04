@@ -70,6 +70,7 @@ class GUIManager:
         if not self.in_catalog(namespace):
             self._catalog[namespace] = PageGroup(
                 namespace=namespace,
+                renderer=GUIManager.renderer,
             )
 
     def remove_namespace(
@@ -99,6 +100,7 @@ class GUIManager:
         if not self.in_catalog(namespace):
             self._catalog[namespace] = PageGroup(
                 namespace=namespace,
+                renderer=GUIManager.renderer,
             )
         prefix = self.namespace.replace('.', '_')
         for item in reversed(page_args):

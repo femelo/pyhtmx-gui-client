@@ -6,7 +6,7 @@ from functools import partial
 from .types import InteractionParameter, Callback, PageItem, CallbackContext
 from .kit import Page
 from .utils import build_page
-from .renderer import Renderer, global_renderer
+from .renderer import Renderer
 from .logger import logger
 from pyhtmx.html_tag import HTMLTag
 
@@ -52,7 +52,7 @@ class PageRegistrationInterface:
         target_level: str = "innerHTML",
     ) -> None:
         # Set root container if target was not specified
-        target = target if target else global_renderer._root
+        target = target if target else cls.renderer._root
         # Set new id
         _id: str = token_hex(4)
         event_id = '-'.join([*event.split(), _id])
@@ -125,13 +125,14 @@ class PageRegistrationInterface:
 class PageManager(BaseModel):
     model_config = ConfigDict(strict=False, arbitrary_types_allowed=True)
     page_id: str
-    uri: str
+    page_src: Union[str, Page, HTMLTag]
+    renderer: Renderer
     session_data: Dict[str, Any] = {}
-    dialogs: Dict[str, HTMLTag] = {}
-    parameters: Dict[str, List[InteractionParameter]] = {}
-    global_callbacks: Dict[str, Callback] = {}
-    local_callbacks: Dict[str, Callback] = {}
     route: Optional[str] = None
+    _dialogs: PrivateAttr[Dict[str, HTMLTag]] = {}
+    _parameters: PrivateAttr[Dict[str, List[InteractionParameter]]] = {}
+    _global_callbacks: PrivateAttr[Dict[str, Callback]] = {}
+    _local_callbacks: PrivateAttr[Dict[str, Callback]] = {}
     _page: PrivateAttr[Optional[Union[Page, HTMLTag]]] = None
     _item_map: PrivateAttr[
         Dict[
@@ -139,7 +140,6 @@ class PageManager(BaseModel):
             Union[HTMLTag, List[InteractionParameter], Callback],
         ]
     ] = {}
-    renderer: ClassVar[Renderer] = global_renderer
     interface: ClassVar[
         Type[PageRegistrationInterface]
     ] = PageRegistrationInterface
@@ -179,11 +179,14 @@ class PageManager(BaseModel):
             self.route = f"/{self.page_id}"
 
     def build_page(self: PageManager) -> None:
-        self._page = build_page(
-            file_path=self.uri,
-            module_name=self.page_id,
-            session_data=self.session_data,
-        )
+        if isinstance(self.page_src, (Page, HTMLTag)):
+            self._page = self.page_src
+        else:
+            self._page = build_page(
+                file_path=self.page_src,
+                module_name=self.page_id,
+                session_data=self.session_data,
+            )
 
     def post_set_up(self: PageManager) -> None:
         if self._page is None:
@@ -196,10 +199,10 @@ class PageManager(BaseModel):
             self._page.set_up(self)
 
     def set_item_map(self: PageManager) -> None:
-        self._item_map[PageItem.DIALOG] = self.dialogs
-        self._item_map[PageItem.PARAMETER] = self.parameters
-        self._item_map[PageItem.LOCAL_CALLBACK] = self.local_callbacks
-        self._item_map[PageItem.GLOBAL_CALLBACK] = self.global_callbacks
+        self._item_map[PageItem.DIALOG] = self._dialogs
+        self._item_map[PageItem.PARAMETER] = self._parameters
+        self._item_map[PageItem.LOCAL_CALLBACK] = self._local_callbacks
+        self._item_map[PageItem.GLOBAL_CALLBACK] = self._global_callbacks
 
     def set_item(
         self: PageManager,
@@ -247,7 +250,7 @@ class PageManager(BaseModel):
         if hasattr(self._page, "update_session_data"):
             self._page.update_session_data(
                 session_data=session_data,
-                renderer=PageManager.renderer,
+                renderer=self.renderer,
             )
 
     def update_state(
@@ -257,5 +260,5 @@ class PageManager(BaseModel):
         if hasattr(self._page, "update_trigger_state"):
             self._page.update_trigger_state(
                 ovos_event=ovos_event,
-                renderer=PageManager.renderer,
+                renderer=self.renderer,
             )

@@ -5,22 +5,24 @@ from pyhtmx.html_tag import HTMLTag
 from .types import InteractionParameter, Callback, PageItem
 from .utils import validate_position, fix_position
 from .page_manager import PageManager
+from .renderer import Renderer
 from .logger import logger
 
 
 class PageGroup(BaseModel):
     model_config = ConfigDict(strict=False, arbitrary_types_allowed=True)
     namespace: str
-    page_ids: List[str] = []
-    pages: Dict[str, PageManager] = {}
+    renderer: Renderer
+    _page_ids: PrivateAttr[List[str]] = []
+    _pages: PrivateAttr[Dict[str, PageManager]] = {}
     _active_indexes: PrivateAttr[List[int]] = []
 
     @property
     def num_pages(self: PageGroup) -> int:
-        return len(self.page_ids)
+        return len(self._page_ids)
 
     def in_group(self: PageGroup, page_id: str) -> bool:
-        return page_id in self.page_ids
+        return page_id in self._page_ids
 
     def insert_page(
         self: PageGroup,
@@ -29,34 +31,35 @@ class PageGroup(BaseModel):
         session_data: Dict[str, Any],
         position: int,
     ) -> None:
-        if page_id not in self.page_ids:
+        if page_id not in self._page_ids:
             if not validate_position(position, self.num_pages - 1):
                 position = self.fix_position(position)
-            self.page_ids.insert(position, page_id)
+            self._page_ids.insert(position, page_id)
         else:
-            index = self.page_ids.index(page_id)
+            index = self._page_ids.index(page_id)
             if index != position:
-                page_id = self.page_ids.pop(index)
+                page_id = self._page_ids.pop(index)
                 if not validate_position(position, self.num_pages - 1):
                     position = fix_position(position, self.num_pages - 1)
-                self.page_ids.insert(position, page_id)
+                self._page_ids.insert(position, page_id)
             logger.info(
                 f"Page '{page_id}' already exists. "
                 f"Page manager will be updated."
             )
-        self.pages[page_id] = PageManager(
+        self._pages[page_id] = PageManager(
             page_id=page_id,
-            uri=uri,
+            page_src=uri,
+            renderer=self.renderer,
             session_data=session_data,
         )
 
     def get_page_id(self: PageGroup, position: int) -> Optional[str]:
         if not validate_position(position, self.num_pages - 1):
             return None
-        return self.page_ids[position]
+        return self._page_ids[position]
 
     def get_page(self: PageGroup, page_id: str) -> Optional[Any]:
-        page_items = self.pages.get(page_id, None)
+        page_items = self._pages.get(page_id, None)
         if not page_items:
             logger.warning(
                 f"Page '{page_id}' not in page group '{self.namespace}'. "
@@ -66,7 +69,7 @@ class PageGroup(BaseModel):
         return page_items.page
 
     def get_page_tag(self: PageGroup, page_id: str) -> Optional[HTMLTag]:
-        page_items = self.pages.get(page_id, None)
+        page_items = self._pages.get(page_id, None)
         if not page_items:
             logger.warning(
                 f"Page '{page_id}' not in page group '{self.namespace}'. "
@@ -83,9 +86,9 @@ class PageGroup(BaseModel):
             page_id = self.get_page_id(id)
         else:
             page_id = id
-        if page_id in self.page_ids:
-            self.page_ids.remove(page_id)
-            del self.pages[page_id]
+        if page_id in self._page_ids:
+            self._page_ids.remove(page_id)
+            del self._pages[page_id]
         else:
             logger.warning(
                 f"Page '{page_id}' does not exist. "
@@ -114,8 +117,8 @@ class PageGroup(BaseModel):
         if not validate_position(to_position, self.num_pages):
             to_position = fix_position(to_position, self.num_pages)
         # Switch position
-        item = self.page_ids.pop(from_position)
-        self.page_ids.insert(to_position, item)
+        item = self._page_ids.pop(from_position)
+        self._page_ids.insert(to_position, item)
 
     def deactivate_page(self: PageGroup) -> None:
         if not self._active_indexes:
@@ -126,8 +129,8 @@ class PageGroup(BaseModel):
     def activate_page(self: PageGroup, id: Union[int, str]) -> None:
         if isinstance(id, int) and validate_position(id, self.num_pages - 1):
             self._active_indexes.insert(0, id)
-        elif isinstance(id, str) and id in self.page_ids:
-            self._active_indexes.insert(0, self.page_ids.index(id))
+        elif isinstance(id, str) and id in self._page_ids:
+            self._active_indexes.insert(0, self._page_ids.index(id))
         else:
             logger.warning(
                 f"Page '{id}' does not exist. "
@@ -158,7 +161,7 @@ class PageGroup(BaseModel):
         key: str,
         value: Union[HTMLTag, InteractionParameter, Callback],
     ) -> None:
-        page_items = self.pages.get(page_id, None)
+        page_items = self._pages.get(page_id, None)
         if not page_items:
             logger.warning(
                 f"Page '{page_id}' not in page group '{self.namespace}'. "
@@ -173,7 +176,7 @@ class PageGroup(BaseModel):
         item_type: PageItem,
         key: str,
     ) -> Union[HTMLTag, List[InteractionParameter], Callback, None]:
-        page_items = self.pages.get(page_id, None)
+        page_items = self._pages.get(page_id, None)
         if not page_items:
             logger.warning(
                 f"Page '{page_id}' not in page group '{self.namespace}'. "
@@ -187,7 +190,7 @@ class PageGroup(BaseModel):
         page_id: str,
         session_data: Dict[str, Any],
     ) -> None:
-        page_items = self.pages.get(page_id, None)
+        page_items = self._pages.get(page_id, None)
         if not page_items:
             logger.warning(
                 f"Page '{page_id}' not in page group '{self.namespace}'. "
@@ -203,7 +206,7 @@ class PageGroup(BaseModel):
         page_id: str,
         ovos_event: str,
     ) -> None:
-        page_items = self.pages.get(page_id, None)
+        page_items = self._pages.get(page_id, None)
         if not page_items:
             logger.warning(
                 f"Page '{page_id}' not in page group '{self.namespace}'. "

@@ -9,6 +9,7 @@ from .master import MASTER_DOCUMENT
 from .kit import Page
 from .status_bar import StatusBar
 from .gui_manager import GUIManager
+from .page_manager import PageManager
 from .event_sender import EventSender, global_sender
 
 
@@ -33,7 +34,12 @@ class Renderer:
             sse_swap="dialog",
             hx_swap="outerHTML",
         )
-        self._status: Page = StatusBar()  # TODO: what here?
+        self._status_manager = PageManager(
+            page_id="status-bar",
+            page_src=StatusBar(),
+            renderer=self,
+        )
+        self._status: Page = self._status_manager.page
         self._master: Html = MASTER_DOCUMENT
         body, = self._master.find_elements_by_tag(tag="body")
         body.add_child(self._status.widget)
