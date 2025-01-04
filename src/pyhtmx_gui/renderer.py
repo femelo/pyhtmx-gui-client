@@ -112,16 +112,17 @@ class Renderer:
                 text_content=text_content,
                 attributes=attributes,
             )
-            if attribute:
-                self.update(
-                    component.to_string(),
-                    event_id=parameter_id,
-                )
-            else:
-                self.update(
-                    text_content,
-                    event_id=parameter_id,
-                )
+            if (namespace, page_id) == self._last_shown:
+                if attribute:
+                    self.update(
+                        component.to_string(),
+                        event_id=parameter_id,
+                    )
+                else:
+                    self.update(
+                        text_content,
+                        event_id=parameter_id,
+                    )
 
     def close_dialog(
         self: Renderer,
@@ -163,7 +164,8 @@ class Renderer:
         self._dialog_root.add_child(dialog_content)
         dialog = deepcopy(self._dialog_root)
         dialog.update_attributes(attributes={"open": ''})
-        self.update(dialog.to_string(), event_id="dialog")
+        if (namespace, page_id) == self._last_shown:
+            self.update(dialog.to_string(), event_id="dialog")
 
     def show(
         self: Renderer,
