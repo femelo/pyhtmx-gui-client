@@ -18,7 +18,10 @@ def init_logger(
 
     # Create a formatter with colors
     formatter = ColoredFormatter(
-        fmt="%(log_color)s[%(name)s : %(levelname)-8s] %(message)s%(reset)s",
+        fmt=(
+            "%(log_color)s[%(filename)-12s @ L%(lineno)-04d] "
+            "%(message)s%(reset)s"
+        ),
         datefmt=None,
         reset=True,
         log_colors={
