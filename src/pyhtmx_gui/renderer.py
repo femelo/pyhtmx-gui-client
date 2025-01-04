@@ -64,44 +64,6 @@ class Renderer:
             self._clients.remove(client_id)
         logger.info(f"Number of clients in registry: {len(self._clients)}")
 
-    def list_events(self: Renderer, route: Optional[str]) -> List[str]:
-        if route:
-            return [e for e, r in self._event_map.items() if r == route]
-        else:
-            return self._event_map.keys()
-
-    def list_dialogs(self: Renderer, route: Optional[str]) -> List[str]:
-        if route:
-            return [d for d, r in self._dialog_map.items() if r == route]
-        else:
-            return self._dialog_map.keys()
-
-    def remove_events(self: Renderer, route: str) -> None:
-        for event_id in self.list_events(route):
-            del self._event_map[event_id]
-
-    def remove_dialogs(self: Renderer, route: str) -> None:
-        for dialog_id in self.list_dialogs(route):
-            del self._dialog_map[dialog_id]
-
-    def remove_from_page_group(
-        self: Renderer,
-        route: str,
-    ) -> None:
-        if route in self._queue:
-            self._queue.remove(route)
-
-        if route in self._group_map:
-            namespace = self._group_map.pop(route)
-            if self.in_catalog(namespace):
-                with self._lock:
-                    self._group_catalog[namespace].remove_page(
-                        route=route,
-                    )
-        # Remove registered events and dialogs from maps
-        self.remove_events(route)
-        self.remove_dialogs(route)
-
     def update_attributes(
         self: Renderer,
         namespace: Optional[str],

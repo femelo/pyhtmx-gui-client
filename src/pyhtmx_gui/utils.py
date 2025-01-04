@@ -1,8 +1,8 @@
 from typing import Optional, Union, Dict, Any
 import importlib
 import inspect
-from ..kit import Page
-from ..logger import logger
+from .kit import Page
+from .logger import logger
 from pyhtmx.html_tag import HTMLTag
 
 
