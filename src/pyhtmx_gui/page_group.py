@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Any, Union, Optional, List, Dict
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, PrivateAttr
 from pyhtmx.html_tag import HTMLTag
 from .types import InteractionParameter, Callback, PageItem
 from .utils import validate_position, fix_position
@@ -13,11 +13,15 @@ class PageGroup(BaseModel):
     namespace: str
     page_ids: List[str] = []
     pages: Dict[str, PageManager] = {}
-    active_index: Optional[int] = None
+    previous_index: PrivateAttr[Optional[int]] = None
+    active_index: PrivateAttr[Optional[int]] = None
 
     @property
     def num_pages(self: PageGroup) -> int:
         return len(self.page_ids)
+
+    def in_group(self: PageGroup, page_id: str) -> bool:
+        return page_id in self.page_ids
 
     def insert_page(
         self: PageGroup,
@@ -29,14 +33,14 @@ class PageGroup(BaseModel):
         if page_id not in self.page_ids:
             if not validate_position(position, self.num_pages - 1):
                 position = self.fix_position(position)
-            self.ids.insert(position, page_id)
+            self.page_ids.insert(position, page_id)
         else:
-            index = self.ids.index(page_id)
+            index = self.page_ids.index(page_id)
             if index != position:
-                page_id = self.ids.pop(index)
+                page_id = self.page_ids.pop(index)
                 if not validate_position(position, self.num_pages - 1):
                     position = fix_position(position, self.num_pages - 1)
-                self.ids.insert(position, page_id)
+                self.page_ids.insert(position, page_id)
             logger.info(
                 f"Page '{page_id}' already exists. "
                 f"Page manager will be updated."
@@ -114,10 +118,17 @@ class PageGroup(BaseModel):
         item = self.page_ids.pop(from_position)
         self.page_ids.insert(to_position, item)
 
+    def deactivate_page(self: PageGroup) -> None:
+        previous_index = self.previous_index
+        self.previous_index = self.active_index
+        self.active_index = previous_index
+
     def activate_page(self: PageGroup, id: Union[int, str]) -> None:
         if isinstance(id, int) and validate_position(id, self.num_pages - 1):
+            self.previous_index = self.active_index
             self.active_index = id
         elif isinstance(id, str) and id in self.page_ids:
+            self.previous_index = self.active_index
             self.active_index = self.page_ids.index(id)
         else:
             logger.warning(
@@ -130,10 +141,16 @@ class PageGroup(BaseModel):
             return self.get_page_id(self.active_index)
         return None
 
-    def get_active_page(self: PageGroup) -> Optional[HTMLTag]:
+    def get_active_page(self: PageGroup) -> Optional[Any]:
         if self.active_index:
             active_page_id = self.get_page_id(self.active_index)
             return self.get_page(active_page_id)
+        return None
+
+    def get_active_page_tag(self: PageGroup) -> Optional[HTMLTag]:
+        if self.active_index:
+            active_page_id = self.get_page_id(self.active_index)
+            return self.get_page_tag(active_page_id)
         return None
 
     def add_to_page(

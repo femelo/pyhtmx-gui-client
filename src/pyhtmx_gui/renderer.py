@@ -188,22 +188,37 @@ class Renderer:
 
     def show(
         self: Renderer,
-        namespace: str,
+        namespace: Optional[str] = None,
         page_id: Optional[str] = None,
     ) -> None:
+        # If namespace was not provided, use active namespace
+        active_namespace = self._gui_manager.get_active_namespace()
+        namespace = namespace or active_namespace
         if not self._gui_manager.in_catalog(namespace):
             logger.info(
                 f"Namespace {namespace} not available in the catalog. "
                 "Nothing to display."
             )
             return
-        if namespace != self._gui_manager.get_active_namespace():
+        if namespace != active_namespace:
             self._gui_manager.activate_namespace(namespace=namespace)
+            logger.info(f"Namespace activated: {namespace}")
+
         # If page was not provided, get the active page
-        page_id = page_id or self._gui_manager.get_active_page_id()
-        if page_id != self._gui_manager.get_active_page_id():
+        active_page_id = self._gui_manager.get_active_page_id()
+        page_id = page_id or active_page_id
+        if not self._gui_manager.in_page_group(namespace, page_id):
+            logger.info(
+                f"Page '{page_id}' not available for namespace '{namespace}'. "
+                "Nothing to display."
+            )
+            return
+        if page_id != active_page_id:
             self._gui_manager.activate_page(namespace=namespace, id=page_id)
-        active_page = self._gui_manager.get_active_page(namespace=namespace)
+        # Get page
+        active_page = self._gui_manager.get_active_page_tag(
+            namespace=namespace,
+        )
         if active_page:
             logger.info(
                 f"Page activated from the catalog: {namespace}::{page_id}. "
@@ -215,19 +230,30 @@ class Renderer:
     # TODO: finish refactoring
     def close(
         self: Renderer,
-        namespace: str,
+        namespace: Optional[str] = None,
         page_id: Optional[str] = None,
     ) -> None:
+        # If namespace was not provided, use active namespace
+        active_namespace = self._gui_manager.get_active_namespace()
+        namespace = namespace or active_namespace
         if not self._gui_manager.in_catalog(namespace):
             logger.info(
-                f"Namespace {namespace} not available in the catalog."
-            )
-            # TODO: remove namespace from list _namespaces and activate anothe one
-            namespace = self._gui_manager.get_active_namespace()
-        if not namespace:
-            logger.info(
                 f"Namespace {namespace} not available in the catalog. "
+                "Nothing to close."
             )
+        if namespace != active_namespace:
+            logger.info(f"Namespace '{namespace}' no longer active.")
+
+        # If page was not provided, get the active page
+        active_page_id = self._gui_manager.get_active_page_id()
+        page_id = page_id or active_page_id
+        if not self._gui_manager.in_page_group(namespace, page_id):
+            logger.info(
+                f"Page '{page_id}' not available for namespace '{namespace}'. "
+                "Nothing to display."
+            )
+        if page_id != active_page_id:
+            logger.info(f"Page '{namespace}::{page_id}' no longer active.")
 
         if route is None:
             route = self._page_stack[-1]

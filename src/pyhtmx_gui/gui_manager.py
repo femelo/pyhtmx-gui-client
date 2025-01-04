@@ -23,6 +23,12 @@ class GUIManager:
     def in_catalog(self: GUIManager, namespace: str) -> bool:
         return namespace in self._catalog
 
+    def in_page_group(self: GUIManager, namespace: str, page_id: str) -> bool:
+        return (
+            self.in_catalog(namespace) and
+            self._catalog[namespace].in_group(page_id)
+        )
+
     def get_active_namespace(
         self: GUIManager,
     ) -> Optional[str]:
@@ -37,6 +43,15 @@ class GUIManager:
         self.insert_namespace(
             namespace=namespace,
             position=0,
+        )
+
+    def deactivate_namespace(
+        self: GUIManager,
+        namespace: int,
+    ) -> None:
+        self.insert_namespace(
+            namespace=namespace,
+            position=1,
         )
 
     def insert_namespace(
@@ -138,8 +153,9 @@ class GUIManager:
 
     def get_active_page_id(
         self: GUIManager,
-        namespace: str,
+        namespace: Optional[str] = None,
     ) -> Optional[str]:
+        namespace = namespace or self.get_active_namespace()
         if not self.in_catalog(namespace):
             return None
         return self._catalog[namespace].get_active_page_id()
@@ -165,6 +181,18 @@ class GUIManager:
             return
         self.activate_namespace(namespace=namespace)
         self._catalog[namespace].activate_page(id=id)
+
+    def dectivate_page(
+        self: GUIManager,
+        namespace: str,
+    ) -> None:
+        if not self.in_catalog(namespace):
+            logger.warning(
+                f"Page group for '{namespace}' not in catalog. "
+                "Nothing to move."
+            )
+            return
+        self._catalog[namespace].deactivate_page()
 
     def show(
         self: GUIManager,
