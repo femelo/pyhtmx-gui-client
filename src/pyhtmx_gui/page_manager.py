@@ -5,7 +5,7 @@ from secrets import token_hex
 from functools import partial
 from .types import InteractionParameter, Callback, PageItem, CallbackContext
 from .kit import Page
-from .tools.utils import build_page
+from .utils import build_page
 from .renderer import Renderer, global_renderer
 from .logger import logger
 from pyhtmx.html_tag import HTMLTag

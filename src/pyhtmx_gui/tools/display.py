@@ -10,7 +10,7 @@ from starlette.responses import HTMLResponse
 import uvicorn
 from pyhtmx import HTMLTag
 from .dummy_document import DUMMY_DOCUMENT
-from .utils import build_page
+from ..tools.utils import build_page
 
 
 BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))

@@ -1,17 +1,13 @@
 from __future__ import annotations
-from typing import Union, Optional, List, Dict, Callable, Any
-from secrets import token_hex
+from typing import Optional, List, Dict, Any
 from copy import deepcopy
-from enum import Enum
 from threading import Lock
-from pydantic import BaseModel, ConfigDict
 from pyhtmx import Html, Div, Dialog
-from pyhtmx.html_tag import HTMLTag
 from .logger import logger
 from .master import MASTER_DOCUMENT
 from .kit import Page
 from .status_bar import StatusBar
-from .gui_manager import GuiManager
+from .gui_manager import GUIManager
 from .event_sender import EventSender, global_sender
 
 
@@ -20,7 +16,7 @@ class Renderer:
 
     def __init__(self: Renderer):
         self._clients = []
-        self._gui_manager: Optional[GuiManager] = None
+        self._gui_manager: Optional[GUIManager] = None
         self._page_stack: List[str] = []
         self._lock: Lock = Lock()
         self._root: Div = Div(
@@ -53,7 +49,7 @@ class Renderer:
     def document(self: Renderer) -> Html:
         return self._master
 
-    def set_gui_manager(self: Renderer, gui_manager: GuiManager) -> None:
+    def set_gui_manager(self: Renderer, gui_manager: GUIManager) -> None:
         self._gui_manager = gui_manager
 
     def register_client(self: Renderer, client_id: str) -> None:

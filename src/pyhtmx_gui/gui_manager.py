@@ -4,34 +4,34 @@ from secrets import token_hex
 from pyhtmx.html_tag import HTMLTag
 from .renderer import Renderer, global_renderer
 from .page_group import PageGroup
-from .tools.utils import validate_position, fix_position
+from .utils import validate_position, fix_position
 from .logger import logger
 
 
-class GuiManager:
+class GUIManager:
     renderer: Renderer = global_renderer
 
-    def __init__(self: GuiManager) -> None:
+    def __init__(self: GUIManager) -> None:
         self._namespaces: List[str] = []
         self._catalog: Dict[str, PageGroup] = {}
-        GuiManager.renderer.set_gui_manager(self)
+        GUIManager.renderer.set_gui_manager(self)
 
     @property
-    def num_namespaces(self: GuiManager) -> int:
+    def num_namespaces(self: GUIManager) -> int:
         return len(self._namespaces)
 
-    def in_catalog(self: GuiManager, namespace: str) -> bool:
+    def in_catalog(self: GUIManager, namespace: str) -> bool:
         return namespace in self._catalog
 
     def get_active_namespace(
-        self: GuiManager,
+        self: GUIManager,
     ) -> Optional[str]:
         if not self._namespaces:
             return None
         return self._namespaces[0]
 
     def activate_namespace(
-        self: GuiManager,
+        self: GUIManager,
         namespace: int,
     ) -> None:
         self.insert_namespace(
@@ -40,7 +40,7 @@ class GuiManager:
         )
 
     def insert_namespace(
-        self: GuiManager,
+        self: GUIManager,
         namespace: str,
         position: int,
     ) -> None:
@@ -59,7 +59,7 @@ class GuiManager:
             )
 
     def remove_namespace(
-        self: GuiManager,
+        self: GUIManager,
         namespace: str,
     ) -> None:
         if namespace in self._namespaces:
@@ -76,7 +76,7 @@ class GuiManager:
             del self._catalog[namespace]
 
     def insert_pages(
-        self: GuiManager,
+        self: GUIManager,
         namespace: str,
         page_args: List[Dict[str, str]],
         session_data: Dict[str, Any],
@@ -99,7 +99,7 @@ class GuiManager:
             self.show(namespace=namespace)
 
     def remove_pages(
-        self: GuiManager,
+        self: GUIManager,
         namespace: str,
         position: int,
         items_number: int = 1,
@@ -117,7 +117,7 @@ class GuiManager:
             self._catalog[namespace].remove_page(position)
 
     def move_pages(
-        self: GuiManager,
+        self: GUIManager,
         namespace: str,
         from_position: int,
         to_position: int,
@@ -137,7 +137,7 @@ class GuiManager:
             )
 
     def get_active_page_id(
-        self: GuiManager,
+        self: GUIManager,
         namespace: str,
     ) -> Optional[str]:
         if not self.in_catalog(namespace):
@@ -145,7 +145,7 @@ class GuiManager:
         return self._catalog[namespace].get_active_page_id()
 
     def get_active_page(
-        self: GuiManager,
+        self: GUIManager,
         namespace: str,
     ) -> Optional[HTMLTag]:
         if not self.in_catalog(namespace):
@@ -153,7 +153,7 @@ class GuiManager:
         return self._catalog[namespace].get_active_page()
 
     def activate_page(
-        self: GuiManager,
+        self: GUIManager,
         namespace: str,
         id: Union[int, str],
     ) -> None:
@@ -167,7 +167,7 @@ class GuiManager:
         self._catalog[namespace].activate_page(id=id)
 
     def show(
-        self: GuiManager,
+        self: GUIManager,
         namespace: str,
         id: Union[str, int, None] = None,
     ) -> None:
@@ -177,13 +177,13 @@ class GuiManager:
         else:
             page_id = id
         # Show page
-        GuiManager.renderer.show(
+        GUIManager.renderer.show(
             namespace=namespace,
             page_id=page_id,
         )
 
     def close(
-        self: GuiManager,
+        self: GUIManager,
         namespace: str,
         id: Union[str, int, None] = None,
     ) -> None:
@@ -193,24 +193,24 @@ class GuiManager:
         else:
             page_id = id
         # Close page
-        GuiManager.renderer.close(
+        GUIManager.renderer.close(
             namespace=namespace,
             page_id=page_id,
         )
 
     def update_status(
-        self: GuiManager,
+        self: GUIManager,
         ovos_event: str,
         data: Optional[Dict[str, Any]],
     ) -> None:
         # Update status
-        GuiManager.renderer.update_status(
+        GUIManager.renderer.update_status(
             ovos_event=ovos_event,
             data=data,
         )
 
     def update_data(
-        self: GuiManager,
+        self: GUIManager,
         namespace: str,
         session_data: Dict[str, Any],
     ) -> None:
@@ -229,7 +229,7 @@ class GuiManager:
             )
 
     def update_state(
-        self: GuiManager,
+        self: GUIManager,
         namespace: str,
         ovos_event: str,
     ) -> None:

@@ -3,7 +3,7 @@ from typing import Any, Union, Optional, List, Dict
 from pydantic import BaseModel, ConfigDict
 from pyhtmx.html_tag import HTMLTag
 from .types import InteractionParameter, Callback, PageItem
-from .tools.utils import validate_position, fix_position
+from .utils import validate_position, fix_position
 from .page_manager import PageManager
 from .logger import logger
 
