@@ -1,4 +1,4 @@
-from typing import Any, List, Dict, Union, Optional, Callable
+from typing import Any, List, Dict, Union, Optional, Callable, TypeVar
 from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field
 from pyhtmx.html_tag import HTMLTag
@@ -85,3 +85,7 @@ class InteractionParameter(BaseModel):
     parameter_name: str
     parameter_id: str
     target: HTMLTag
+
+
+InputItem = TypeVar[HTMLTag, InteractionParameter, Callback]
+OutputItem = TypeVar[HTMLTag, List[InteractionParameter], Callback]

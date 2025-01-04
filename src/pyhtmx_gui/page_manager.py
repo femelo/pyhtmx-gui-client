@@ -3,7 +3,14 @@ from typing import Any, Type, Union, Optional, List, Dict, Callable, ClassVar
 from pydantic import BaseModel, ConfigDict, PrivateAttr
 from secrets import token_hex
 from functools import partial
-from .types import InteractionParameter, Callback, PageItem, CallbackContext
+from .types import (
+    InteractionParameter,
+    Callback,
+    PageItem,
+    CallbackContext,
+    InputItem,
+    OutputItem,
+)
 from .kit import Page
 from .utils import build_page
 from .renderer import Renderer
@@ -134,12 +141,7 @@ class PageManager(BaseModel):
     _global_callbacks: PrivateAttr[Dict[str, Callback]] = {}
     _local_callbacks: PrivateAttr[Dict[str, Callback]] = {}
     _page: PrivateAttr[Optional[Union[Page, HTMLTag]]] = None
-    _item_map: PrivateAttr[
-        Dict[
-            PageItem,
-            Union[HTMLTag, List[InteractionParameter], Callback],
-        ]
-    ] = {}
+    _item_map: PrivateAttr[Dict[PageItem, OutputItem]] = {}
     interface: ClassVar[
         Type[PageRegistrationInterface]
     ] = PageRegistrationInterface
@@ -208,7 +210,7 @@ class PageManager(BaseModel):
         self: PageManager,
         item_type: PageItem,
         key: str,
-        value: Union[HTMLTag, InteractionParameter, Callback],
+        value: InputItem,
     ) -> None:
         item = self._item_map.get(item_type, None)
         if item is None:
@@ -228,7 +230,7 @@ class PageManager(BaseModel):
         self: PageManager,
         item_type: PageItem,
         key: str
-    ) -> Union[HTMLTag, List[InteractionParameter], Callback, None]:
+    ) -> Optional[OutputItem]:
         item = self._item_map.get(item_type, {})
         value = item.get(key, None)
         if not item:

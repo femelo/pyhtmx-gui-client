@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Any, Union, Optional, List, Dict
 from secrets import token_hex
 from pyhtmx.html_tag import HTMLTag
-from .types import PageItem
+from .types import PageItem, InputItem, OutputItem
 from .renderer import Renderer, global_renderer
 from .page_group import PageGroup
 from .utils import validate_position, fix_position
@@ -242,7 +242,7 @@ class GUIManager:
         page_id: str,
         item_type: PageItem,
         key: str,
-        value: Any,
+        value: InputItem,
     ) -> None:
         if not self.in_catalog(namespace):
             logger.warning(
@@ -263,7 +263,7 @@ class GUIManager:
         page_id: str,
         item_type: PageItem,
         key: str,
-    ) -> Any:
+    ) -> Optional[OutputItem]:
         if not self.in_catalog(namespace):
             logger.warning(
                 f"Page group for '{namespace}' not in catalog. "

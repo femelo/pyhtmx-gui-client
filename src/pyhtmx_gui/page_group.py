@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Any, Union, Optional, List, Dict
 from pydantic import BaseModel, ConfigDict, PrivateAttr
 from pyhtmx.html_tag import HTMLTag
-from .types import InteractionParameter, Callback, PageItem
+from .types import PageItem, InputItem, OutputItem
 from .utils import validate_position, fix_position
 from .page_manager import PageManager
 from .renderer import Renderer
@@ -159,7 +159,7 @@ class PageGroup(BaseModel):
         page_id: str,
         item_type: PageItem,
         key: str,
-        value: Union[HTMLTag, InteractionParameter, Callback],
+        value: InputItem,
     ) -> None:
         page_items = self._pages.get(page_id, None)
         if not page_items:
@@ -175,7 +175,7 @@ class PageGroup(BaseModel):
         page_id: str,
         item_type: PageItem,
         key: str,
-    ) -> Union[HTMLTag, List[InteractionParameter], Callback, None]:
+    ) -> Optional[OutputItem]:
         page_items = self._pages.get(page_id, None)
         if not page_items:
             logger.warning(
