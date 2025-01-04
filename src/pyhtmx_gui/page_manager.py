@@ -239,3 +239,23 @@ class PageManager(BaseModel):
         else:
             pass
         return value
+
+    def update_data(
+        self: PageManager,
+        session_data: Dict[str, Any],
+    ) -> None:
+        if hasattr(self._page, "update_session_data"):
+            self._page.update_session_data(
+                session_data=session_data,
+                renderer=PageManager.renderer,
+            )
+
+    def update_state(
+        self: PageManager,
+        ovos_event: str,
+    ) -> None:
+        if hasattr(self._page, "update_trigger_state"):
+            self._page.update_trigger_state(
+                ovos_event=ovos_event,
+                renderer=PageManager.renderer,
+            )

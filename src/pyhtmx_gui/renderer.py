@@ -274,11 +274,11 @@ class Renderer:
             data.update({"ovos_event": ovos_event})
             self._status.update_session_data(
                 session_data=data,
-                page_manager=self,  # what goes in here?
+                renderer=self,
             )
         self._status.update_trigger_state(
             ovos_event=ovos_event,
-            renderer=self,   # what goes in here?
+            renderer=self,
         )
 
     def update_root(self: Renderer) -> None:

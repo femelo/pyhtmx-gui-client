@@ -240,7 +240,7 @@ class Page(Widget):
     def update_session_data(
         self: Page,
         session_data: Dict[str, Any],
-        page_manager: Any,
+        renderer: Any,
     ) -> None:
         for parameter, value in session_data.items():
             for widget in self._widgets:
@@ -260,7 +260,7 @@ class Page(Widget):
                             )
                             attributes[attr_name] = attr_value
                         # Update
-                        page_manager.update_attributes(
+                        renderer.update_attributes(
                             route=self._route,
                             parameter=session_item.parameter,
                             attribute=attributes,
@@ -269,7 +269,7 @@ class Page(Widget):
     def update_trigger_state(
         self: Page,
         ovos_event: str,
-        page_manager: Any,
+        renderer: Any,
     ) -> None:
         for widget in self._widgets:
             # Check whether the session parameter pertains to the widget
@@ -284,7 +284,7 @@ class Page(Widget):
                             attr_value = getters[attr_name](ovos_event)
                             attributes[attr_name] = attr_value
                     # Update
-                    page_manager.update_attributes(
+                    renderer.update_attributes(
                         route=self._route,
                         parameter=trigger.event,
                         attribute=attributes,

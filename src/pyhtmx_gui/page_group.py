@@ -194,12 +194,9 @@ class PageGroup(BaseModel):
                 f"Nothing to update."
             )
             return
-        page_object = page_items.page
-        if hasattr(page_object, "update_session_data"):
-            page_object.update_session_data(
-                session_data=session_data,
-                page_manager=page_items,
-            )
+        page_items.update_data(
+            session_data=session_data,
+        )
 
     def update_state(
         self: PageGroup,
@@ -213,9 +210,6 @@ class PageGroup(BaseModel):
                 f"Nothing to update."
             )
             return
-        page_object = page_items.page
-        if hasattr(page_object, "update_trigger_state"):
-            page_object.update_trigger_state(
-                ovos_event=ovos_event,
-                page_manager=page_items,
-            )
+        page_items.update_state(
+            ovos_event=ovos_event,
+        )
