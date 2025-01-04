@@ -16,7 +16,7 @@ from .config import config_data
 from .renderer import ContextType, global_renderer
 from .logger import logger
 from .event_sender import global_sender
-from .ovos_gui_client import global_client, termination_event
+from .gui_client import global_client, termination_event
 
 
 APP_DIR = os.path.abspath(os.path.dirname(__file__))
