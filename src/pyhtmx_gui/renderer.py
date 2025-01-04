@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Tuple, Dict, Any
 from copy import deepcopy
 from threading import Lock
+from queue import Queue
 from pyhtmx import Html, Div, Dialog
 from .logger import logger
 from .master import MASTER_DOCUMENT
@@ -17,7 +18,8 @@ class Renderer:
     def __init__(self: Renderer):
         self._clients = []
         self._gui_manager: Optional[GUIManager] = None
-        self._page_stack: List[str] = []
+        self._last_shown: Tuple[str, str] = ()
+        self._queue: Queue = Queue()
         self._lock: Lock = Lock()
         self._root: Div = Div(
             _id="root",
@@ -31,14 +33,7 @@ class Renderer:
             sse_swap="dialog",
             hx_swap="outerHTML",
         )
-        status_bar: Page = StatusBar()
-        self.insert(
-            namespace=status_bar.namespace,
-            route=status_bar.route,
-            position=0,
-            page=status_bar.page,
-        )
-        self._status: Page = status_bar.set_up(status_bar.namespace, self)
+        self._status: Page = StatusBar()  # TODO: what here?
         self._master: Html = MASTER_DOCUMENT
         body, = self._master.find_elements_by_tag(tag="body")
         body.add_child(self._status.widget)
@@ -86,8 +81,8 @@ class Renderer:
         self: Renderer,
         route: str,
     ) -> None:
-        if route in self._page_stack:
-            self._page_stack.remove(route)
+        if route in self._queue:
+            self._queue.remove(route)
 
         if route in self._group_map:
             namespace = self._group_map.pop(route)
@@ -201,10 +196,9 @@ class Renderer:
             )
             return
         if namespace != active_namespace:
-            self._gui_manager.activate_namespace(namespace=namespace)
-            logger.info(f"Namespace activated: {namespace}")
+            self._gui_manager.activate_namespace(namespace)
 
-        # If page was not provided, get the active page
+        # If page was not provided, use active page
         active_page_id = self._gui_manager.get_active_page_id()
         page_id = page_id or active_page_id
         if not self._gui_manager.in_page_group(namespace, page_id):
@@ -214,83 +208,61 @@ class Renderer:
             )
             return
         if page_id != active_page_id:
-            self._gui_manager.activate_page(namespace=namespace, id=page_id)
-        # Get page
-        active_page = self._gui_manager.get_active_page_tag(
-            namespace=namespace,
-        )
-        if active_page:
-            logger.info(
-                f"Page activated from the catalog: {namespace}::{page_id}. "
-                "Sending to display."
-            )
-            self._page_stack.append(active_page)
-            self.update_root()
+            self._gui_manager.activate_page(namespace, page_id)
 
-    # TODO: finish refactoring
+        # Queue for displaying
+        self._queue.put((namespace, page_id))
+        logger.info(
+            f"Page activated: {namespace}::{page_id}. "
+            "Sending to display."
+        )
+        self.update_root()
+
     def close(
         self: Renderer,
         namespace: Optional[str] = None,
         page_id: Optional[str] = None,
     ) -> None:
-        # If namespace was not provided, use active namespace
+        # If namespace is explicitly provided, then it shall be deactivated
+        deactivate_namespace: bool = namespace is not None
+        # Get active namespace
         active_namespace = self._gui_manager.get_active_namespace()
-        namespace = namespace or active_namespace
-        if not self._gui_manager.in_catalog(namespace):
-            logger.info(
-                f"Namespace {namespace} not available in the catalog. "
-                "Nothing to close."
-            )
-        if namespace != active_namespace:
-            logger.info(f"Namespace '{namespace}' no longer active.")
-
-        # If page was not provided, get the active page
+        # Get active page
         active_page_id = self._gui_manager.get_active_page_id()
-        page_id = page_id or active_page_id
-        if not self._gui_manager.in_page_group(namespace, page_id):
+
+        if not deactivate_namespace:
+            namespace = namespace or active_namespace
+        elif self._gui_manager.in_catalog(namespace):
+            # Deactivate only if namespace explicitly provided
+            if namespace == active_namespace:
+                self._gui_manager.deactivate_namespace()
+                active_namespace = self._gui_manager.get_active_namespace()
+        else:
             logger.info(
-                f"Page '{page_id}' not available for namespace '{namespace}'. "
-                "Nothing to display."
+                f"Namespace {namespace} not available in the catalog."
             )
-        if page_id != active_page_id:
-            logger.info(f"Page '{namespace}::{page_id}' no longer active.")
 
-        if route is None:
-            route = self._page_stack[-1]
-        if not self._page_stack or route != self._page_stack[-1]:
-            logger.warning(f"Page {route} is not active, nothing to close.")
-            return
-        # Deactivate current page and activate previous page
-        current_route: str = self._page_stack.pop()
-        self._page_stack.insert(-1, current_route)
-        active_route: str = self._page_stack[-1]
+        page_id = page_id or active_page_id
+        if self._gui_manager.in_page_group(namespace, page_id):
+            # Deactivate only if page_id is active
+            if page_id == active_page_id:
+                logger.info(
+                    f"Page deactivated: {namespace}::{page_id}"
+                )
+                if not deactivate_namespace:
+                    self._gui_manager.deactivate_page(namespace)
+            active_page_id = self._gui_manager.get_active_page_id()
+        else:
+            logger.info(
+                f"Page '{page_id}' not available for namespace '{namespace}'."
+            )
+
+        # Queue for displaying
         logger.info(
-            f"Page deactivated: {route}. "
-            f"Previous page activated: {active_route}. "
+            f"Page activated: {active_namespace}::{active_page_id}. "
             "Sending to display."
         )
-        self.update_root()
-
-    def go_to(self: Renderer, route: str) -> None:
-        if route not in self._page_stack:
-            return
-        index = self._page_stack.index(route)
-        # Move route
-        route = self._page_stack.pop(index)
-        self._page_stack.append(route)
-        logger.info(
-            f"Page activated: {route}. Sending to display."
-        )
-        self.update_root()
-
-    def go_back(self: Renderer, level: int = -1) -> None:
-        # Move route
-        route = self._page_stack.pop(level - 1)
-        self._page_stack.append(route)
-        logger.info(
-            f"Previous page activated: {route}. "
-            "Sending to display."
-        )
+        self._queue.put((active_namespace, active_page_id))
         self.update_root()
 
     def update_status(
@@ -302,27 +274,28 @@ class Renderer:
             data.update({"ovos_event": ovos_event})
             self._status.update_session_data(
                 session_data=data,
-                renderer=self,
+                page_manager=self,  # what goes in here?
             )
         self._status.update_trigger_state(
             ovos_event=ovos_event,
-            renderer=self,
+            renderer=self,   # what goes in here?
         )
 
     def update_root(self: Renderer) -> None:
-        route = self._page_stack[-1]
-        namespace = self._group_map.get(route, "unknown")
-        if not self.in_catalog(namespace):
+        namespace, page_id = route = self._queue.get()
+        if route == self._last_shown:
             logger.warning(
-                f"No valid namespace for page with route '{route}'. "
-                "Display will not be updated."
+                f"Display already showing '{namespace}::{page_id}'. "
+                "Update not required."
             )
             return
-        page = self._group_catalog[namespace].get_page(route)
+        # Update
+        self._last_shown = route
+        page_tag = self._gui_manager.get_active_page_tag(namespace)
         self._root.text = None
         _ = self._root.detach_children()
-        self._root.add_child(page)
-        self.update(page.to_string(), event_id="root")
+        self._root.add_child(page_tag)
+        self.update(page_tag.to_string(), event_id="root")
 
     def update(
         self: Renderer,

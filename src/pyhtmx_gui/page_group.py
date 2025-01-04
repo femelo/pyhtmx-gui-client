@@ -13,8 +13,7 @@ class PageGroup(BaseModel):
     namespace: str
     page_ids: List[str] = []
     pages: Dict[str, PageManager] = {}
-    previous_index: PrivateAttr[Optional[int]] = None
-    active_index: PrivateAttr[Optional[int]] = None
+    _active_indexes: PrivateAttr[List[int]] = []
 
     @property
     def num_pages(self: PageGroup) -> int:
@@ -119,17 +118,16 @@ class PageGroup(BaseModel):
         self.page_ids.insert(to_position, item)
 
     def deactivate_page(self: PageGroup) -> None:
-        previous_index = self.previous_index
-        self.previous_index = self.active_index
-        self.active_index = previous_index
+        if not self._active_indexes:
+            return None
+        active_index = self._active_indexes.pop(0)
+        self._active_indexes.insert(1, active_index)
 
     def activate_page(self: PageGroup, id: Union[int, str]) -> None:
         if isinstance(id, int) and validate_position(id, self.num_pages - 1):
-            self.previous_index = self.active_index
-            self.active_index = id
+            self._active_indexes.insert(0, id)
         elif isinstance(id, str) and id in self.page_ids:
-            self.previous_index = self.active_index
-            self.active_index = self.page_ids.index(id)
+            self._active_indexes.insert(0, self.page_ids.index(id))
         else:
             logger.warning(
                 f"Page '{id}' does not exist. "
@@ -137,19 +135,19 @@ class PageGroup(BaseModel):
             )
 
     def get_active_page_id(self: PageGroup) -> Optional[str]:
-        if self.active_index:
-            return self.get_page_id(self.active_index)
+        if self._active_indexes:
+            return self.get_page_id(self._active_indexes[0])
         return None
 
     def get_active_page(self: PageGroup) -> Optional[Any]:
-        if self.active_index:
-            active_page_id = self.get_page_id(self.active_index)
+        if self._active_indexes:
+            active_page_id = self.get_page_id(self._active_indexes[0])
             return self.get_page(active_page_id)
         return None
 
     def get_active_page_tag(self: PageGroup) -> Optional[HTMLTag]:
-        if self.active_index:
-            active_page_id = self.get_page_id(self.active_index)
+        if self._active_indexes:
+            active_page_id = self.get_page_id(self._active_indexes[0])
             return self.get_page_tag(active_page_id)
         return None
 
@@ -200,7 +198,7 @@ class PageGroup(BaseModel):
         if hasattr(page_object, "update_session_data"):
             page_object.update_session_data(
                 session_data=session_data,
-                page_manager=self,
+                page_manager=page_items,
             )
 
     def update_state(
@@ -219,5 +217,5 @@ class PageGroup(BaseModel):
         if hasattr(page_object, "update_trigger_state"):
             page_object.update_trigger_state(
                 ovos_event=ovos_event,
-                page_manager=self,
+                page_manager=page_items,
             )

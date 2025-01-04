@@ -38,21 +38,20 @@ class GUIManager:
 
     def activate_namespace(
         self: GUIManager,
-        namespace: int,
+        namespace: str,
     ) -> None:
-        self.insert_namespace(
-            namespace=namespace,
-            position=0,
-        )
+        if namespace in self._namespaces:
+            index = self._namespaces.index(namespace)
+            self._namespaces.pop(index)
+        self._namespaces.insert(0, namespace)
 
     def deactivate_namespace(
         self: GUIManager,
-        namespace: int,
     ) -> None:
-        self.insert_namespace(
-            namespace=namespace,
-            position=1,
-        )
+        if not self._namespaces:
+            return
+        namespace = self._namespaces.pop(0)
+        self._namespaces.insert(1, namespace)
 
     def insert_namespace(
         self: GUIManager,
@@ -163,10 +162,18 @@ class GUIManager:
     def get_active_page(
         self: GUIManager,
         namespace: str,
-    ) -> Optional[HTMLTag]:
+    ) -> Optional[Any]:
         if not self.in_catalog(namespace):
             return None
         return self._catalog[namespace].get_active_page()
+
+    def get_active_page_tag(
+        self: GUIManager,
+        namespace: str,
+    ) -> Optional[HTMLTag]:
+        if not self.in_catalog(namespace):
+            return None
+        return self._catalog[namespace].get_active_page_tag()
 
     def activate_page(
         self: GUIManager,
@@ -182,7 +189,7 @@ class GUIManager:
         self.activate_namespace(namespace=namespace)
         self._catalog[namespace].activate_page(id=id)
 
-    def dectivate_page(
+    def deactivate_page(
         self: GUIManager,
         namespace: str,
     ) -> None:
