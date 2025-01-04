@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Any, Union, Optional, List, Dict
 from secrets import token_hex
 from pyhtmx.html_tag import HTMLTag
+from .types import PageItem
 from .renderer import Renderer, global_renderer
 from .page_group import PageGroup
 from .utils import validate_position, fix_position
@@ -233,6 +234,46 @@ class GUIManager:
         GUIManager.renderer.close(
             namespace=namespace,
             page_id=page_id,
+        )
+
+    def add_item(
+        self: GUIManager,
+        namespace: str,
+        page_id: str,
+        item_type: PageItem,
+        key: str,
+        value: Any,
+    ) -> None:
+        if not self.in_catalog(namespace):
+            logger.warning(
+                f"Page group for '{namespace}' not in catalog. "
+                "Item will not be added."
+            )
+            return
+        return self._catalog[namespace].add_item(
+            page_id=page_id,
+            item_type=item_type,
+            key=key,
+            value=value,
+        )
+
+    def get_item(
+        self: GUIManager,
+        namespace: str,
+        page_id: str,
+        item_type: PageItem,
+        key: str,
+    ) -> Any:
+        if not self.in_catalog(namespace):
+            logger.warning(
+                f"Page group for '{namespace}' not in catalog. "
+                "Item will not be gotten."
+            )
+            return
+        return self._catalog[namespace].get_item(
+            page_id=page_id,
+            item_type=item_type,
+            key=key,
         )
 
     def update_status(

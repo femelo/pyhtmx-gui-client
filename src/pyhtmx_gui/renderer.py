@@ -6,6 +6,7 @@ from queue import Queue
 from pyhtmx import Html, Div, Dialog
 from .logger import logger
 from .master import MASTER_DOCUMENT
+from .types import InteractionParameter, PageItem
 from .kit import Page
 from .status_bar import StatusBar
 from .gui_manager import GUIManager
@@ -101,29 +102,43 @@ class Renderer:
         self.remove_events(route)
         self.remove_dialogs(route)
 
-    # NOTE: this belongs here for the sake of behavior towards updating the display
-    # TODO: refactor it
     def update_attributes(
         self: Renderer,
-        route: str,
+        namespace: Optional[str],
+        page_id: Optional[str],
         parameter: str,
         attribute: Dict[str, Any],
     ) -> None:
-        namespace: str = self._group_map.get(route, "unknown")
-        if not self.in_catalog(namespace):
-            logger.warning(f"Page with '{route}' not properly inserted.")
+        # If namespace was not provided, use active namespace
+        active_namespace = self._gui_manager.get_active_namespace()
+        namespace = namespace or active_namespace
+        if not self._gui_manager.in_catalog(namespace):
+            logger.info(
+                f"Namespace {namespace} not available in the catalog. "
+                "Parameter will not be updated."
+            )
+            return
+        # If page was not provided, use active page
+        active_page_id = self._gui_manager.get_active_page_id()
+        page_id = page_id or active_page_id
+        if not self._gui_manager.in_page_group(namespace, page_id):
+            logger.info(
+                f"Page '{page_id}' not available for namespace '{namespace}'. "
+                "Parameter will not be updated."
+            )
             return
         parameter_list: Optional[
             List[InteractionParameter]
-        ] = self.get_from_page_group(
+        ] = self._gui_manager.get_item(
             namespace=namespace,
-            route=route,
-            item_type=PageItemType.PARAMETER,
+            page_id=page_id,
+            item_type=PageItem.PARAMETER,
             key=parameter,
         )
         if not parameter_list:
             logger.warning(
-                f"Parameter '{route}::{parameter}' not properly registered."
+                f"Parameter '{namespace}::{page_id}::{parameter}' "
+                "not registered."
             )
             return
         for interaction_parameter in parameter_list:
@@ -148,13 +163,8 @@ class Renderer:
 
     def close_dialog(
         self: Renderer,
-        dialog_id: str,
+        dialog_id: Optional[str] = None,
     ) -> None:
-        route = self._dialog_map.get(dialog_id, "unknown")
-        namespace = self._group_map.get(route, "unknown")
-        if not self.in_catalog(namespace):
-            logger.warning(f"Dialog '{dialog_id}' not properly registered.")
-            return
         # Remove dialog content and show
         self._dialog_root.text = None
         _ = self._dialog_root.detach_children()
@@ -163,19 +173,25 @@ class Renderer:
 
     def open_dialog(
         self: Renderer,
-        namespace: str,
-        page_id: str,
         dialog_id: str,
     ) -> None:
-        route = self._dialog_map.get(dialog_id, "unknown")
-        namespace = self._group_map.get(route, "unknown")
-        if not self.in_catalog(namespace):
-            logger.warning(f"Dialog '{dialog_id}' not properly registered.")
+        # Get active namespace and page id
+        namespace = self._gui_manager.get_active_namespace()
+        if not namespace:
+            logger.info(
+                "No namespace active. Dialog will not open."
+            )
+            return
+        page_id = self._gui_manager.get_active_page_id()
+        if not page_id:
+            logger.info(
+                "No page active. Dialog will not open."
+            )
             return
         # Retrieve dialog content
-        dialog_content = self.get_from_page_group(
+        dialog_content = self._gui_manager.get_item(
             namespace=namespace,
-            route=route,
+            page_id=page_id,
             item_type=PageItem.DIALOG,
             key=dialog_id,
         )

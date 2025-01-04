@@ -154,7 +154,7 @@ class PageGroup(BaseModel):
             return self.get_page_tag(active_page_id)
         return None
 
-    def add_to_page(
+    def add_item(
         self: PageGroup,
         page_id: str,
         item_type: PageItem,
@@ -170,7 +170,7 @@ class PageGroup(BaseModel):
             return
         page_items.set_item(item_type=item_type, key=key, value=value)
 
-    def get_from_page(
+    def get_item(
         self: PageGroup,
         page_id: str,
         item_type: PageItem,
