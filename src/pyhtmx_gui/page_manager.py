@@ -131,6 +131,7 @@ class PageRegistrationInterface:
 
 class PageManager(BaseModel):
     model_config = ConfigDict(strict=False, arbitrary_types_allowed=True)
+    namespace: str
     page_id: str
     page_src: Union[str, Page, HTMLTag]
     renderer: Renderer

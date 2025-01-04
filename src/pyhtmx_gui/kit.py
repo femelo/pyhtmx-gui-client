@@ -200,6 +200,7 @@ class Page(Widget):
             session_data=session_data,
         )
         self._namespace: str = f"{self.id}-ns"
+        self._page_id: str = self.id
         self._route: str = f"/{self.id}"
         self._widgets: List[Widget] = [self]
         self._page: HTMLTag = HTMLTag("div")
@@ -207,6 +208,10 @@ class Page(Widget):
     @property
     def namespace(self: Page) -> str:
         return self._namespace
+
+    @property
+    def page_id(self: Page) -> str:
+        return self._page_id
 
     @property
     def route(self: Page) -> str:
@@ -285,7 +290,8 @@ class Page(Widget):
                             attributes[attr_name] = attr_value
                     # Update
                     renderer.update_attributes(
-                        route=self._route,
+                        namespace=self.namespace,
+                        page_id=self.page_id,
                         parameter=trigger.event,
                         attribute=attributes,
                     )
@@ -358,6 +364,9 @@ class Page(Widget):
             )
 
     def set_up(self: Page, page_manager: Any) -> Page:
+        # Set namespace and page id
+        self._namespace = page_manager.namespace
+        self._page_id = page_manager.page_id
         # Propagate session data from widgets
         self.propagate_session_data()
         for widget in self._widgets:

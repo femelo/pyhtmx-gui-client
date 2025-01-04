@@ -47,6 +47,7 @@ class PageGroup(BaseModel):
                 f"Page manager will be updated."
             )
         self._pages[page_id] = PageManager(
+            namespace=self.namespace,
             page_id=page_id,
             page_src=uri,
             renderer=self.renderer,
