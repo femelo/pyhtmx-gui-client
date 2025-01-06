@@ -113,7 +113,7 @@ class GUIManager:
                 position=position,
             )
         if set(self._namespaces) == {namespace}:
-            self.show(namespace=namespace)
+            self.show(namespace, id=0)
 
     def remove_pages(
         self: GUIManager,
@@ -130,7 +130,7 @@ class GUIManager:
         # Remove pages
         for _ in range(items_number):
             if position == self._catalog[namespace].active_index:
-                self.close(namespace, position)
+                self.close(namespace, id=position)
             self._catalog[namespace].remove_page(position)
 
     def move_pages(
@@ -189,8 +189,8 @@ class GUIManager:
                 "Nothing to move."
             )
             return
-        self.activate_namespace(namespace=namespace)
-        self._catalog[namespace].activate_page(id=id)
+        self.activate_namespace(namespace)
+        self._catalog[namespace].activate_page(id)
 
     def deactivate_page(
         self: GUIManager,
