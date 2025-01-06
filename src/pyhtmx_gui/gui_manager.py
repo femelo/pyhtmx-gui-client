@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Any, Union, Optional, List, Dict
 from secrets import token_hex
 from pyhtmx.html_tag import HTMLTag
-from .types import PageItem, InputItem, OutputItem
+from .types import PageItem, InputItem, OutputItem, CallbackContext
 from .renderer import Renderer, global_renderer
 from .page_group import PageGroup
 from .utils import validate_position, fix_position
@@ -267,7 +267,7 @@ class GUIManager:
         if not self.in_catalog(namespace):
             logger.warning(
                 f"Page group for '{namespace}' not in catalog. "
-                "Item will not be gotten."
+                "Item will not be retrieved."
             )
             return
         return self._catalog[namespace].get_item(
@@ -324,3 +324,16 @@ class GUIManager:
                 page_id=page_id,
                 ovos_event=ovos_event,
             )
+
+    def trigger_callback(
+        self: GUIManager,
+        context: CallbackContext,
+        event_id: str,
+    ) -> Any:
+        namespace = self.get_active_namespace()
+        page_id = self.get_active_page_id()
+        self._catalog[namespace].trigger_callback(
+            page_id=page_id,
+            context=context,
+            event_id=event_id,
+        )

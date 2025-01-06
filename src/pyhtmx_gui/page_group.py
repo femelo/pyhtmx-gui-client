@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Any, Union, Optional, List, Dict
 from pydantic import BaseModel, ConfigDict, PrivateAttr
 from pyhtmx.html_tag import HTMLTag
-from .types import PageItem, InputItem, OutputItem
+from .types import PageItem, InputItem, OutputItem, CallbackContext
 from .utils import validate_position, fix_position
 from .page_manager import PageManager
 from .renderer import Renderer
@@ -44,7 +44,7 @@ class PageGroup(BaseModel):
                 self._page_ids.insert(position, page_id)
             logger.info(
                 f"Page '{page_id}' already exists. "
-                f"Page manager will be updated."
+                "Page manager will be updated."
             )
         self._pages[page_id] = PageManager(
             namespace=self.namespace,
@@ -64,7 +64,7 @@ class PageGroup(BaseModel):
         if not page_items:
             logger.warning(
                 f"Page '{page_id}' not in page group '{self.namespace}'. "
-                f"Page not retrieved."
+                "Page not retrieved."
             )
             return
         return page_items.page
@@ -74,7 +74,7 @@ class PageGroup(BaseModel):
         if not page_items:
             logger.warning(
                 f"Page '{page_id}' not in page group '{self.namespace}'. "
-                f"Page not retrieved."
+                "Page not retrieved."
             )
             return
         return page_items.page_tag
@@ -93,7 +93,7 @@ class PageGroup(BaseModel):
         else:
             logger.warning(
                 f"Page '{page_id}' does not exist. "
-                f"Nothing to remove."
+                "Nothing to remove."
             )
 
     def move_page(
@@ -112,7 +112,7 @@ class PageGroup(BaseModel):
         if invalid_position:
             logger.warning(
                 f"Page '{id}' does not exist. "
-                f"Nothing to move."
+                "Nothing to move."
             )
             return
         if not validate_position(to_position, self.num_pages):
@@ -135,7 +135,7 @@ class PageGroup(BaseModel):
         else:
             logger.warning(
                 f"Page '{id}' does not exist. "
-                f"Nothing to activate."
+                "Nothing to activate."
             )
 
     def get_active_page_id(self: PageGroup) -> Optional[str]:
@@ -195,7 +195,7 @@ class PageGroup(BaseModel):
         if not page_items:
             logger.warning(
                 f"Page '{page_id}' not in page group '{self.namespace}'. "
-                f"Nothing to update."
+                "Nothing to update."
             )
             return
         page_items.update_data(
@@ -211,9 +211,27 @@ class PageGroup(BaseModel):
         if not page_items:
             logger.warning(
                 f"Page '{page_id}' not in page group '{self.namespace}'. "
-                f"Nothing to update."
+                "Nothing to update."
             )
             return
         page_items.update_state(
             ovos_event=ovos_event,
+        )
+
+    def trigger_callback(
+        self: PageGroup,
+        page_id: str,
+        context: CallbackContext,
+        event_id: str,
+    ) -> Any:
+        page_items = self._pages.get(page_id, None)
+        if not page_items:
+            logger.warning(
+                f"Page '{page_id}' not in page group '{self.namespace}'. "
+                "No callback will be triggered."
+            )
+            return
+        return page_items.trigger_callback(
+            context=context,
+            event_id=event_id,
         )

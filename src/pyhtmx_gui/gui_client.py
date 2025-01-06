@@ -32,6 +32,7 @@ class GUIClient:
         )
         self._ws: Optional[WebSocket] = self.connect()
         self._thread: Optional[Thread] = self.listen()
+        self._active_skills: List[str] = []
         self._session: Dict[str, Any] = {}
         self._gui_manager: GUIManager = GUIManager()
         self.announce()
@@ -59,10 +60,10 @@ class GUIClient:
             self._ws.send(message.model_dump_json(exclude_none=True))
 
     def register(self: GUIClient, client_id: str) -> None:
-        self.renderer.register_client(client_id)
+        self._gui_manager.renderer.register_client(client_id)
 
     def deregister(self: GUIClient, client_id: str) -> None:
-        self.renderer.deregister(client_id)
+        self._gui_manager.renderer.deregister(client_id)
 
     def listen(self: GUIClient) -> Thread:
         if self._ws:
@@ -279,6 +280,7 @@ class GUIClient:
     ) -> None:
         if namespace == "mycroft.system.active_skills":
             skill = data[0].get("skill_id", None) if data else None
+            self._active_skills.insert(0, skill)
             if skill:
                 self._gui_manager.insert_namespace(
                     namespace=skill,
@@ -318,7 +320,11 @@ class GUIClient:
         if position is None:
             position = 0
         if namespace == "mycroft.system.active_skills":
-            self._gui_manager.remove_namespace(namespace=namespace)
+            try:
+                skill: str = self._active_skills.pop(position)
+                self._gui_manager.remove_namespace(namespace=skill)
+            except IndexError:
+                pass
         else:
             session_data = self._session.get(namespace, {})
             if property is not None and property in session_data:

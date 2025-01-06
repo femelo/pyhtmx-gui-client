@@ -209,35 +209,69 @@ class Renderer:
         namespace: Optional[str] = None,
         page_id: Optional[str] = None,
     ) -> None:
-        # If namespace is explicitly provided, then it shall be deactivated
-        deactivate_namespace: bool = namespace is not None
-        # Get active namespace
+        # Close specified page by deactivating the namespace
         active_namespace = self._gui_manager.get_active_namespace()
-        # Get active page
         active_page_id = self._gui_manager.get_active_page_id()
+        namespace = namespace or active_namespace
+        page_id = page_id or active_page_id
 
-        if not deactivate_namespace:
-            namespace = namespace or active_namespace
-        elif self._gui_manager.in_catalog(namespace):
-            # Deactivate only if namespace explicitly provided
+        if self._gui_manager.in_catalog(namespace):
+            # Deactivate namespace currently active
             if namespace == active_namespace:
                 self._gui_manager.deactivate_namespace()
+                # New namespace to display
                 active_namespace = self._gui_manager.get_active_namespace()
         else:
             logger.info(
                 f"Namespace {namespace} not available in the catalog."
             )
 
-        page_id = page_id or active_page_id
         if self._gui_manager.in_page_group(namespace, page_id):
-            # Deactivate only if page_id is active
+            # Report only if page is currently active
             if page_id == active_page_id:
                 logger.info(
                     f"Page deactivated: {namespace}::{page_id}"
                 )
-                if not deactivate_namespace:
-                    self._gui_manager.deactivate_page(namespace)
+            # New page to display (for new namespace)
             active_page_id = self._gui_manager.get_active_page_id()
+        else:
+            logger.info(
+                f"Page '{page_id}' not available for namespace '{namespace}'."
+            )
+
+        # Queue for displaying
+        logger.info(
+            f"Page activated: {active_namespace}::{active_page_id}. "
+            "Sending to display."
+        )
+        self._queue.put((active_namespace, active_page_id))
+        self.update_root()
+
+    def close_page(
+        self: Renderer,
+        namespace: Optional[str] = None,
+        page_id: Optional[str] = None,
+    ) -> None:
+        # Close specified page by deactivating only the page
+        active_namespace = self._gui_manager.get_active_namespace()
+        active_page_id = self._gui_manager.get_active_page_id()
+        namespace = namespace or active_namespace
+        page_id = page_id or active_page_id
+
+        if not self._gui_manager.in_catalog(namespace):
+            logger.info(
+                f"Namespace {namespace} not available in the catalog."
+            )
+
+        if self._gui_manager.in_page_group(namespace, page_id):
+            # Deactivate only if page is currenly active
+            if page_id == active_page_id:
+                logger.info(
+                    f"Page deactivated: {namespace}::{page_id}"
+                )
+                self._gui_manager.deactivate_page(namespace)
+                # New page to display
+                active_page_id = self._gui_manager.get_active_page_id()
         else:
             logger.info(
                 f"Page '{page_id}' not available for namespace '{namespace}'."

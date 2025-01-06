@@ -270,3 +270,23 @@ class PageManager:
                 ovos_event=ovos_event,
                 renderer=self.renderer,
             )
+
+    def trigger_callback(
+        self: PageManager,
+        context: CallbackContext,
+        event_id: str,
+    ) -> Any:
+        callback: Optional[Callback] = self.get_item(
+            item_type=(
+                PageItem.LOCAL_CALLBACK if context == CallbackContext.LOCAL
+                else PageItem.GLOBAL_CALLBACK
+            ),
+            key=event_id,
+        )
+        content: Any = None
+        if callback:
+            # Call
+            content = callback.fn()
+        else:
+            logger.warning(f"Callback for event '{event_id}' not found.")
+        return content

@@ -12,6 +12,7 @@ from threading import Lock, Thread
 from secrets import token_hex
 from signal import signal, SIGINT, SIGTERM
 import uvicorn
+from pyhtmx.html_tag import HTMLTag
 from .config import config_data
 from .types import CallbackContext
 from .renderer import global_renderer
@@ -104,7 +105,7 @@ async def updates() -> StreamingResponse:
 async def local_event(event_id: str) -> HTMLResponse:
     logger.debug(f"Local event triggered: {event_id}")
     # Run callback
-    component = global_renderer.trigger_callback(
+    component: HTMLTag = global_client._gui_manager.trigger_callback(
         context=CallbackContext.LOCAL,
         event_id=event_id,
     )
@@ -115,7 +116,7 @@ async def local_event(event_id: str) -> HTMLResponse:
 async def global_event(event_id: str) -> Response:
     logger.debug(f"Global event triggered: {event_id}")
     # Run callback
-    global_renderer.trigger_callback(
+    global_client._gui_manager.trigger_callback(
         context=CallbackContext.GLOBAL,
         event_id=event_id,
     )
