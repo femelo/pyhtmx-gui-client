@@ -46,7 +46,7 @@ class Control(Registrable):
     event: str
     callback: Callable
     source: HTMLTag
-    target: Optional[HTMLTag] = None
+    target: Union[HTMLTag, str, None] = None
     target_level: str = "innerHTML"
 
 

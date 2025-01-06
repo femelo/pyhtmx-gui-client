@@ -53,11 +53,12 @@ class PageRegistrationInterface:
         context: Union[str, CallbackContext],
         fn: Callable,
         source: HTMLTag,
-        target: Optional[HTMLTag] = None,
+        target: Union[HTMLTag, str, None] = None,
         target_level: str = "innerHTML",
     ) -> None:
-        # Set root container if target was not specified
-        target = target if target else cls.renderer._root
+        # Set root container if target was specified as "root"
+        if target and target == "root":
+            target = cls.renderer._root
         # Set new id
         _id: str = token_hex(4)
         event_id = '-'.join([*event.split(), _id])
@@ -81,11 +82,13 @@ class PageRegistrationInterface:
             item_type = PageItem.LOCAL_CALLBACK
         elif context == CallbackContext.GLOBAL:
             # Add necessary attributes to elements for global action
-            target.update_attributes(
-                attributes={
-                    "sse-swap": event_id,
-                },
-            )
+            if target:
+                base_event_id = target.attributes.get("sse-swap", '')
+                target.update_attributes(
+                    attributes={
+                        "sse-swap": ','.join((base_event_id, event_id)),
+                    },
+                )
             source.update_attributes(
                 attributes={
                     "hx-post": f"/global-event/{event_id}",
@@ -119,7 +122,7 @@ class PageRegistrationInterface:
         dialog_id: str,
         dialog_content: HTMLTag,
     ) -> None:
-        # Register callback
+        # Register dialog
         cls.set_item(
             item_type=PageItem.DIALOG,
             key=dialog_id,
