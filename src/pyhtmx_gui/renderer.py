@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, List, Tuple, Dict, Any
+from typing import Optional, List, Tuple, Set, Dict, Any
 from copy import deepcopy
 from threading import Lock
 from queue import Queue
@@ -11,6 +11,9 @@ from .kit import Page
 from .status_bar import StatusBar
 from .page_manager import PageManager
 from .event_sender import EventSender, global_sender
+
+
+SPECIAL_NAMESPACES: Set[str] = {"status"}
 
 
 class Renderer:
@@ -34,22 +37,47 @@ class Renderer:
             sse_swap="dialog",
             hx_swap="outerHTML",
         )
-        self._status_manager = PageManager(
-            namespace="status",
-            page_id="status-bar",
+        self._special_managers: Dict[Tuple[str, str], PageManager] = {}
+        status_ns, status_id = ("status", "status-bar")
+        status_manager = PageManager(
+            namespace=status_ns,
+            page_id=status_id,
             page_src=StatusBar(),
             renderer=self,
         )
-        self._status: Page = self._status_manager.page
+        self._status: Page = status_manager.page
         self._master: Html = MASTER_DOCUMENT
         body, = self._master.find_elements_by_tag(tag="body")
         body.add_child(self._status.widget)
         body.add_child(self._root)
         body.add_child(self._dialog_root)
+        self.set_special_manager(status_ns, status_id, status_manager)
 
     @property
     def document(self: Renderer) -> Html:
         return self._master
+
+    def is_special(self: Renderer, namespace: str) -> bool:
+        return namespace in SPECIAL_NAMESPACES
+
+    def set_special_manager(
+        self: Renderer,
+        namespace: str,
+        page_id: str,
+        page_manager: PageManager,
+    ) -> None:
+        route: Tuple[str, str] = (namespace, page_id)
+        self._special_managers[route] = page_manager
+
+    def get_special_manager(
+        self: Renderer,
+        namespace: str,
+        page_id: str,
+    ) -> Optional[PageManager]:
+        route: Tuple[str, str] = (namespace, page_id)
+        if route in self._special_managers:
+            return self._special_managers[route]
+        return None
 
     def set_gui_manager(self: Renderer, gui_manager: Any) -> None:
         self._gui_manager = gui_manager
@@ -64,6 +92,56 @@ class Renderer:
             self._clients.remove(client_id)
         logger.info(f"Number of clients in registry: {len(self._clients)}")
 
+    def update_special_attributes(
+        self: Renderer,
+        namespace: Optional[str],
+        page_id: Optional[str],
+        parameter: str,
+        attribute: Dict[str, Any],
+    ) -> None:
+        page_manager: Optional[PageManager] = self.get_special_manager(
+            namespace,
+            page_id,
+        )
+        if not page_manager:
+            logger.info(
+                f"Page '{page_id}' not available for namespace '{namespace}'. "
+                "Parameter will not be updated."
+            )
+            return
+
+        parameter_list: Optional[List[InteractionParameter]] = \
+            page_manager.get_item(
+                item_type=PageItem.PARAMETER,
+                key=parameter,
+            )
+        if not parameter_list:
+            logger.warning(
+                f"Parameter '{namespace}::{page_id}::{parameter}' "
+                "not registered."
+            )
+            return
+
+        for interaction_parameter in parameter_list:
+            parameter_id = interaction_parameter.parameter_id
+            component = interaction_parameter.target
+            attributes = dict(attribute)
+            text_content = attributes.pop("inner_content", None)
+            component.update_attributes(
+                text_content=text_content,
+                attributes=attributes,
+            )
+            if attribute:
+                self.send(
+                    component.to_string(),
+                    event_id=parameter_id,
+                )
+            else:
+                self.send(
+                    text_content,
+                    event_id=parameter_id,
+                )
+
     def update_attributes(
         self: Renderer,
         namespace: Optional[str],
@@ -74,12 +152,23 @@ class Renderer:
         # If namespace was not provided, use active namespace
         active_namespace = self._gui_manager.get_active_namespace()
         namespace = namespace or active_namespace
+
+        if self.is_special(namespace):
+            self.update_special_attributes(
+                namespace,
+                page_id,
+                parameter,
+                attribute,
+            )
+            return
+
         if not self._gui_manager.in_catalog(namespace):
             logger.info(
                 f"Namespace {namespace} not available in the catalog. "
                 "Parameter will not be updated."
             )
             return
+
         # If page was not provided, use active page
         active_page_id = self._gui_manager.get_active_page_id()
         page_id = page_id or active_page_id
@@ -89,20 +178,22 @@ class Renderer:
                 "Parameter will not be updated."
             )
             return
-        parameter_list: Optional[
-            List[InteractionParameter]
-        ] = self._gui_manager.get_item(
-            namespace=namespace,
-            page_id=page_id,
-            item_type=PageItem.PARAMETER,
-            key=parameter,
-        )
+
+        parameter_list: Optional[List[InteractionParameter]] = \
+            self._gui_manager.get_item(
+                namespace=namespace,
+                page_id=page_id,
+                item_type=PageItem.PARAMETER,
+                key=parameter,
+            )
         if not parameter_list:
             logger.warning(
                 f"Parameter '{namespace}::{page_id}::{parameter}' "
                 "not registered."
             )
             return
+
+        route: Tuple[str, str] = (namespace, page_id)
         for interaction_parameter in parameter_list:
             parameter_id = interaction_parameter.parameter_id
             component = interaction_parameter.target
@@ -112,7 +203,7 @@ class Renderer:
                 text_content=text_content,
                 attributes=attributes,
             )
-            if (namespace, page_id) == self._last_shown:
+            if route == self._last_shown:
                 if attribute:
                     self.send(
                         component.to_string(),
