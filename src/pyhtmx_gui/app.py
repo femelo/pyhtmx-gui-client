@@ -73,7 +73,7 @@ def check_disconnected() -> None:
         now = time()
         disconnected = []
         for session_id, last_update in sessions.items():
-            if now - last_update > ping_period + 2 * wait_time:
+            if now - last_update > ping_period + 3 * wait_time:
                 global_client.deregister(session_id)
                 disconnected.append(session_id)
                 logger.info(f"Session closed: {session_id}")
