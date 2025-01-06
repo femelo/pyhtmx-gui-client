@@ -63,8 +63,8 @@ class GUIManager:
             index = self._namespaces.index(namespace)
             self._namespaces.pop(index)
         # Validate position
-        if not validate_position(position, self.num_namespaces - 1):
-            position = fix_position(position, self.num_namespaces - 1)
+        if not validate_position(position, self.num_namespaces):
+            position = fix_position(position, self.num_namespaces)
         # Insert
         self._namespaces.insert(position, namespace)
         # Add page group
@@ -103,7 +103,7 @@ class GUIManager:
                 namespace=namespace,
                 renderer=GUIManager.renderer,
             )
-        prefix = self.namespace.replace('.', '_')
+        prefix = namespace.replace('.', '_')
         for item in reversed(page_args):
             token = token_hex(4)
             self._catalog[namespace].insert_page(

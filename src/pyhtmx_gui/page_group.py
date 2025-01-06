@@ -13,9 +13,9 @@ class PageGroup(BaseModel):
     model_config = ConfigDict(strict=False, arbitrary_types_allowed=True)
     namespace: str
     renderer: Renderer
-    _page_ids: PrivateAttr[List[str]] = []
-    _pages: PrivateAttr[Dict[str, PageManager]] = {}
-    _active_indexes: PrivateAttr[List[int]] = []
+    _page_ids: List[str] = PrivateAttr([])
+    _pages: Dict[str, PageManager] = PrivateAttr({})
+    _active_indexes: List[int] = PrivateAttr([])
 
     @property
     def num_pages(self: PageGroup) -> int:
@@ -32,15 +32,15 @@ class PageGroup(BaseModel):
         position: int,
     ) -> None:
         if page_id not in self._page_ids:
-            if not validate_position(position, self.num_pages - 1):
-                position = self.fix_position(position)
+            if not validate_position(position, self.num_pages):
+                position = fix_position(position, self.num_pages)
             self._page_ids.insert(position, page_id)
         else:
             index = self._page_ids.index(page_id)
             if index != position:
                 page_id = self._page_ids.pop(index)
-                if not validate_position(position, self.num_pages - 1):
-                    position = fix_position(position, self.num_pages - 1)
+                if not validate_position(position, self.num_pages):
+                    position = fix_position(position, self.num_pages)
                 self._page_ids.insert(position, page_id)
             logger.info(
                 f"Page '{page_id}' already exists. "

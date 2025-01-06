@@ -250,11 +250,10 @@ class GUIClient:
         if namespace not in self._session:
             self._session[namespace] = {}
         self._session[namespace].update(session_data)
-        if namespace in self._gui_list:
-            self._gui_manager.update_data(
-                namespace=namespace,
-                session_data=session_data,
-            )
+        self._gui_manager.update_data(
+            namespace=namespace,
+            session_data=session_data,
+        )
 
     def handle_session_delete(
         self: GUIClient,

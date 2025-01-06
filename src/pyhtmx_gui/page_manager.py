@@ -1,6 +1,5 @@
 from __future__ import annotations
-from typing import Any, Type, Union, Optional, List, Dict, Callable, ClassVar
-from pydantic import BaseModel, ConfigDict, PrivateAttr
+from typing import Any, Type, Union, Optional, List, Dict, Callable
 from secrets import token_hex
 from functools import partial
 from .types import (
@@ -13,7 +12,6 @@ from .types import (
 )
 from .kit import Page
 from .utils import build_page
-from .renderer import Renderer
 from .logger import logger
 from pyhtmx.html_tag import HTMLTag
 
@@ -129,23 +127,30 @@ class PageRegistrationInterface:
         )
 
 
-class PageManager(BaseModel):
-    model_config = ConfigDict(strict=False, arbitrary_types_allowed=True)
-    namespace: str
-    page_id: str
-    page_src: Union[str, Page, HTMLTag]
-    renderer: Renderer
-    session_data: Dict[str, Any] = {}
-    route: Optional[str] = None
-    _dialogs: PrivateAttr[Dict[str, HTMLTag]] = {}
-    _parameters: PrivateAttr[Dict[str, List[InteractionParameter]]] = {}
-    _global_callbacks: PrivateAttr[Dict[str, Callback]] = {}
-    _local_callbacks: PrivateAttr[Dict[str, Callback]] = {}
-    _page: PrivateAttr[Optional[Union[Page, HTMLTag]]] = None
-    _item_map: PrivateAttr[Dict[PageItem, OutputItem]] = {}
-    interface: ClassVar[
-        Type[PageRegistrationInterface]
-    ] = PageRegistrationInterface
+class PageManager:
+    def __init__(
+        self: PageManager,
+        namespace: str,
+        page_id: str,
+        page_src: Union[str, Page, HTMLTag],
+        renderer: Any,  # type: Renderer
+        session_data: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        self.namespace: str = namespace
+        self.page_id: str = page_id
+        self.page_src: Union[str, Page, HTMLTag] = page_src
+        self.renderer: Any = renderer
+        self.session_data: Dict[str, Any] = session_data or {}
+        self.route: Optional[str] = None
+        self._interface: Type[PageRegistrationInterface] \
+            = PageRegistrationInterface
+        self._dialogs: Dict[str, HTMLTag] = {}
+        self._parameters: Dict[str, List[InteractionParameter]] = {}
+        self._global_callbacks: Dict[str, Callback] = {}
+        self._local_callbacks: Dict[str, Callback] = {}
+        self._page: Optional[Union[Page, HTMLTag]] = None
+        self._item_map: Dict[PageItem, OutputItem] = {}
+        self.model_post_init()
 
     @property
     def page(self: PageManager) -> Any:
@@ -162,18 +167,18 @@ class PageManager(BaseModel):
 
     def __getattr__(self: PageManager, name: str) -> Any:
         # Borrow methods from page registration interface and renderer
-        if hasattr(PageManager.interface, name):
-            return partial(getattr(PageManager.interface, name), self)
-        elif hasattr(PageManager.renderer, name):
-            return getattr(PageManager.renderer, name)
+        if hasattr(self._interface, name):
+            return partial(getattr(self._interface, name), self)
+        if hasattr(self.renderer, name):
+            return getattr(self.renderer, name)
         else:
-            return self[name]
+            return getattr(self, name)
 
     def model_post_init(self: PageManager, context: Any = None) -> None:
+        self.set_item_map()
         self.build_page()
         self.set_route()
         self.post_set_up()
-        self.set_item_map()
 
     def set_route(self: PageManager) -> None:
         if hasattr(self._page, "_route"):
@@ -199,7 +204,7 @@ class PageManager(BaseModel):
             )
             return
         if hasattr(self._page, "set_up"):
-            self._page.set_up(self)
+            self._page.set_up(page_manager=self)
 
     def set_item_map(self: PageManager) -> None:
         self._item_map[PageItem.DIALOG] = self._dialogs

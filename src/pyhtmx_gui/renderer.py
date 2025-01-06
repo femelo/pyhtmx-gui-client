@@ -9,7 +9,6 @@ from .master import MASTER_DOCUMENT
 from .types import InteractionParameter, PageItem
 from .kit import Page
 from .status_bar import StatusBar
-from .gui_manager import GUIManager
 from .page_manager import PageManager
 from .event_sender import EventSender, global_sender
 
@@ -19,7 +18,7 @@ class Renderer:
 
     def __init__(self: Renderer):
         self._clients = []
-        self._gui_manager: Optional[GUIManager] = None
+        self._gui_manager: Optional[Any] = None  # type: Optional[GUIManager]
         self._last_shown: Tuple[str, str] = ()
         self._queue: Queue = Queue()
         self._lock: Lock = Lock()
@@ -36,6 +35,7 @@ class Renderer:
             hx_swap="outerHTML",
         )
         self._status_manager = PageManager(
+            namespace="status",
             page_id="status-bar",
             page_src=StatusBar(),
             renderer=self,
@@ -51,7 +51,7 @@ class Renderer:
     def document(self: Renderer) -> Html:
         return self._master
 
-    def set_gui_manager(self: Renderer, gui_manager: GUIManager) -> None:
+    def set_gui_manager(self: Renderer, gui_manager: Any) -> None:
         self._gui_manager = gui_manager
 
     def register_client(self: Renderer, client_id: str) -> None:

@@ -13,7 +13,8 @@ from secrets import token_hex
 from signal import signal, SIGINT, SIGTERM
 import uvicorn
 from .config import config_data
-from .renderer import ContextType, global_renderer
+from .types import CallbackContext
+from .renderer import global_renderer
 from .logger import logger
 from .event_sender import global_sender
 from .gui_client import global_client, termination_event
@@ -104,7 +105,7 @@ async def local_event(event_id: str) -> HTMLResponse:
     logger.debug(f"Local event triggered: {event_id}")
     # Run callback
     component = global_renderer.trigger_callback(
-        context=ContextType.LOCAL,
+        context=CallbackContext.LOCAL,
         event_id=event_id,
     )
     return HTMLResponse(component.to_string())
@@ -115,7 +116,7 @@ async def global_event(event_id: str) -> Response:
     logger.debug(f"Global event triggered: {event_id}")
     # Run callback
     global_renderer.trigger_callback(
-        context=ContextType.GLOBAL,
+        context=CallbackContext.GLOBAL,
         event_id=event_id,
     )
     return Response(status_code=204)

@@ -87,5 +87,5 @@ class InteractionParameter(BaseModel):
     target: HTMLTag
 
 
-InputItem = TypeVar[HTMLTag, InteractionParameter, Callback]
-OutputItem = TypeVar[HTMLTag, List[InteractionParameter], Callback]
+InputItem = TypeVar(HTMLTag, InteractionParameter, Callback)
+OutputItem = TypeVar(HTMLTag, List[InteractionParameter], Callback)
