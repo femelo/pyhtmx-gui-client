@@ -266,7 +266,8 @@ class Page(Widget):
                             attributes[attr_name] = attr_value
                         # Update
                         renderer.update_attributes(
-                            route=self._route,
+                            namespace=self.namespace,
+                            page_id=self.page_id,
                             parameter=session_item.parameter,
                             attribute=attributes,
                         )

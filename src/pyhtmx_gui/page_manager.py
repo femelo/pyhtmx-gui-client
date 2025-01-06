@@ -160,7 +160,7 @@ class PageManager:
     def page_tag(self: PageManager) -> HTMLTag:
         if isinstance(self._page, HTMLTag):
             return self._page
-        elif hasattr(self._page, Page):
+        elif isinstance(self._page, Page):
             return self._page.page
         else:
             pass
@@ -172,7 +172,7 @@ class PageManager:
         if hasattr(self.renderer, name):
             return getattr(self.renderer, name)
         else:
-            return getattr(self, name)
+            return self[name]
 
     def model_post_init(self: PageManager, context: Any = None) -> None:
         self.set_item_map()

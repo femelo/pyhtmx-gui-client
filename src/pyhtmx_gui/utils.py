@@ -61,7 +61,7 @@ def build_page(
         else:
             page_instance = page_object
         logger.debug(f"Object {page_instance} built.")
-    return page_object
+    return page_instance
 
 
 def validate_position(position: int, ub: int) -> bool:
