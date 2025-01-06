@@ -6,6 +6,8 @@ from pyhtmx import Div, Img, Input, Label, Ul, Li, A, Br, H1, P, Button
 from pyhtmx_gui.kit import Widget, WidgetType, SessionItem, Control, Page
 
 
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
 # Background image
 WALLPAPER = (
     "https://cdn.pixabay.com/photo/2016/06/02/02/33/"
@@ -364,7 +366,7 @@ class Drawer(Widget):
         self._widget: Div = Div(
             [
                 Input(
-                    id="drawer-input",
+                    _id="drawer-input",
                     _type="checkbox",
                     _class="drawer-toggle",
                 ),
@@ -529,7 +531,7 @@ class BackgroundContainer(Widget):
             # Hack to workaround the way figures are served
             shutil.copy(
                 os.path.join(wallpaper_path, selected_wallpaper),
-                "assets/images/",
+                os.path.join(BASE_DIR, "assets", "images"),
             )
         wallpaper_url = os.path.join("assets", "images", selected_wallpaper)
         return f"background-image: url({wallpaper_url});"
@@ -542,31 +544,31 @@ class HomeScreen(Page):
     ):
         super().__init__(name="home", session_data=session_data)
 
-        date_and_time = DateTimeWidget(session_data=session_data)
-        weather = WeatherWidget(session_data=session_data)
-        background = BackgroundContainer(session_data=session_data)
-        background.widget.add_child(weather.widget)
-        background.widget.add_child(date_and_time.widget)
-        drawer = Drawer(session_data=session_data)
-        bar = BottomBar(session_data=session_data)
-        about_dialog = AboutDialog(session_data=session_data)
-        drawer.container.add_child(background.widget)
-        drawer.container.add_child(bar.widget)
+        self.date_and_time = DateTimeWidget(session_data=session_data)
+        self.weather = WeatherWidget(session_data=session_data)
+        self.background = BackgroundContainer(session_data=session_data)
+        self.background.widget.add_child(self.weather.widget)
+        self.background.widget.add_child(self.date_and_time.widget)
+        self.drawer = Drawer(session_data=session_data)
+        self.bar = BottomBar(session_data=session_data)
+        self.about_dialog = AboutDialog(session_data=session_data)
+        self.drawer.container.add_child(self.background.widget)
+        self.drawer.container.add_child(self.bar.widget)
 
         self.add_component(
             [
-                date_and_time,
-                weather,
-                background,
-                drawer,
-                bar,
-                about_dialog,
+                self.date_and_time,
+                self.weather,
+                self.background,
+                self.drawer,
+                self.bar,
+                self.about_dialog,
             ]
         )
 
         # Main view
         self._page: Div = Div(
-            drawer.widget,
+            self.drawer.widget,
             _id="home",
             _class="flex flex-col",
             style={"width": "100vw", "height": "100vh"},
