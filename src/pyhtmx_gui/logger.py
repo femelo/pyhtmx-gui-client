@@ -19,10 +19,11 @@ def init_logger(
     # Create a formatter with colors
     formatter = ColoredFormatter(
         fmt=(
-            "%(log_color)s[%(asctime)s] [%(filename)15s @ L%(lineno)04d] "
+            "%(log_color)s[%(levelname)-8s] "
+            "[%(asctime)s.%(msecs)03d] [%(filename)-15s @ L%(lineno)03d] "
             "%(message)s%(reset)s"
         ),
-        datefmt=None,
+        datefmt="%H:%M:%S",
         reset=True,
         log_colors={
             'DEBUG':    'cyan',

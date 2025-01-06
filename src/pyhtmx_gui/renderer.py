@@ -114,12 +114,12 @@ class Renderer:
             )
             if (namespace, page_id) == self._last_shown:
                 if attribute:
-                    self.update(
+                    self.send(
                         component.to_string(),
                         event_id=parameter_id,
                     )
                 else:
-                    self.update(
+                    self.send(
                         text_content,
                         event_id=parameter_id,
                     )
@@ -132,7 +132,7 @@ class Renderer:
         self._dialog_root.text = None
         _ = self._dialog_root.detach_children()
         dialog = deepcopy(self._dialog_root)
-        self.update(dialog.to_string(), event_id="dialog")
+        self.send(dialog.to_string(), event_id="dialog")
 
     def open_dialog(
         self: Renderer,
@@ -165,7 +165,7 @@ class Renderer:
         dialog = deepcopy(self._dialog_root)
         dialog.update_attributes(attributes={"open": ''})
         if (namespace, page_id) == self._last_shown:
-            self.update(dialog.to_string(), event_id="dialog")
+            self.send(dialog.to_string(), event_id="dialog")
 
     def show(
         self: Renderer,
@@ -200,7 +200,7 @@ class Renderer:
         self._queue.put((namespace, page_id))
         logger.info(
             f"Page activated: {namespace}::{page_id}. "
-            "Sending to display."
+            "Queueing to display."
         )
         self.update_root()
 
@@ -242,7 +242,7 @@ class Renderer:
         # Queue for displaying
         logger.info(
             f"Page activated: {active_namespace}::{active_page_id}. "
-            "Sending to display."
+            "Queueing to display."
         )
         self._queue.put((active_namespace, active_page_id))
         self.update_root()
@@ -280,7 +280,7 @@ class Renderer:
         # Queue for displaying
         logger.info(
             f"Page activated: {active_namespace}::{active_page_id}. "
-            "Sending to display."
+            "Queueing to display."
         )
         self._queue.put((active_namespace, active_page_id))
         self.update_root()
@@ -315,9 +315,9 @@ class Renderer:
         self._root.text = None
         _ = self._root.detach_children()
         self._root.add_child(page_tag)
-        self.update(page_tag.to_string(), event_id="root")
+        self.send(page_tag.to_string(), event_id="root")
 
-    def update(
+    def send(
         self: Renderer,
         data: Optional[str],
         event_id: Optional[str] = None,
