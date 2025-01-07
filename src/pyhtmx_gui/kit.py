@@ -45,7 +45,7 @@ class Control(Registrable):
     context: str
     event: str
     callback: Callable
-    source: HTMLTag
+    source: Union[HTMLTag, str, None] = None
     target: Union[HTMLTag, str, None] = None
     target_level: str = "innerHTML"
 
@@ -73,6 +73,7 @@ class Widget:
         self._session_items: Dict[str, List[SessionItem]] = {}
         self._triggers: Dict[str, List[Trigger]] = {}
         self._controls: Dict[str, Control] = {}
+        self._ghost_elements: List[HTMLTag] = []
         self._widget: Optional[HTMLTag] = None
         self.init_session_data(session_data)
 
@@ -87,6 +88,10 @@ class Widget:
     @property
     def widget(self: Widget) -> Optional[HTMLTag]:
         return self._widget
+
+    @property
+    def ghost_elements(self: Widget) -> List[HTMLTag]:
+        return self._ghost_elements
 
     @property
     def session_items(self: Widget) -> Dict[str, SessionItem]:
@@ -157,6 +162,14 @@ class Widget:
                 self._triggers[key] = []
             self._triggers[key].append(value)
         elif isinstance(value, Control):
+            if value.source is None:
+                # Create a ghost element
+                ghost_source: HTMLTag = HTMLTag(
+                    "div",
+                    _style={"display: none"},
+                )
+                self._ghost_elements.append(ghost_source)
+                value.source = ghost_source
             self._controls[key] = value
         else:
             logger.error(
@@ -297,6 +310,13 @@ class Page(Widget):
                         attribute=attributes,
                     )
 
+    def include_ghost_elements(
+        self: Page,
+        widget: Widget,
+    ) -> None:
+        for element in widget.ghost_elements:
+            self._page.insert_child(0, element)
+
     def register_session_items(
         self: Page,
         widget: Widget,
@@ -371,6 +391,8 @@ class Page(Widget):
         # Propagate session data from widgets
         self.propagate_session_data()
         for widget in self._widgets:
+            # Register ghost elements
+            self.include_ghost_elements(widget)
             # Register session parameters
             self.register_session_items(widget, page_manager)
             # Register triggers

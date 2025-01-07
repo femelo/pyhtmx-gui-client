@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Any, Type, Union, Optional, List, Dict, Callable
 from secrets import token_hex
 from functools import partial
+import re
 from .types import (
     InteractionParameter,
     Callback,
@@ -14,6 +15,9 @@ from .kit import Page
 from .utils import build_page
 from .logger import logger
 from pyhtmx.html_tag import HTMLTag
+
+
+FILTER_REGEX: re.Pattern = re.compile(r'(?:\[)(.*)(?:\])')
 
 
 class PageRegistrationInterface:
@@ -61,7 +65,8 @@ class PageRegistrationInterface:
             target = cls.renderer._root
         # Set new id
         _id: str = token_hex(4)
-        event_id = '-'.join([*event.split(), _id])
+        _event: str = FILTER_REGEX.sub('', event).replace(":", ' ')
+        event_id: str = '-'.join([*_event.split(), _id])
         if context == CallbackContext.LOCAL:
             # Add necessary attributes to elements for local action
             if "id" not in target.attributes:
@@ -83,16 +88,20 @@ class PageRegistrationInterface:
         elif context == CallbackContext.GLOBAL:
             # Add necessary attributes to elements for global action
             if target:
-                base_event_id = target.attributes.get("sse-swap", '')
+                event_ids = target.attributes.get("sse-swap", '')
+                event_ids = ",".join(filter(bool, (event_ids, event_id)))
                 target.update_attributes(
                     attributes={
-                        "sse-swap": ','.join((base_event_id, event_id)),
+                        "sse-swap": event_ids,
                     },
                 )
+            events = source.attributes.get("hx-trigger", '')
+            events = ", ".join(filter(bool, (events, event)))
             source.update_attributes(
                 attributes={
+                    # TODO: for multiple events, use hx_vals
                     "hx-post": f"/global-event/{event_id}",
-                    "hx-trigger": event,
+                    "hx-trigger": events,
                 },
             )
             item_type = PageItem.GLOBAL_CALLBACK

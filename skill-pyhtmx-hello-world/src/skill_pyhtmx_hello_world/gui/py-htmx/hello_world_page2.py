@@ -80,25 +80,49 @@ class HelloWorldWidget(Widget):
                 "flex-col",
                 "justify-start",
                 "items-center",
-                "bg-white",
+                "bg-transparent",
             ],
         )
 
 
-class HelloWorldPage(Page):
+class HelloWorldPage2(Page):
 
     def __init__(
-        self: HelloWorldPage,
+        self: HelloWorldPage2,
         session_data: Optional[Dict[str, Any]] = None,
     ):
-        super().__init__(name="hello-world", session_data=session_data)
+        super().__init__(name="hello-world-page-2", session_data=session_data)
 
         hello_world = HelloWorldWidget(session_data=session_data)
         self.add_component(hello_world)
 
+        # Add control to change to the next page
+        self.add_interaction(
+            "next-page-key-up",
+            Control(
+                context="global",
+                event="keyup[event.code === 'ArrowRight'] from:body",
+                callback=(
+                    lambda renderer: renderer.show(page_id="hello_world_page3")
+                ),
+            ),
+        )
+        # Add control to change to the previous page
+        self.add_interaction(
+            "prev-page-key-up",
+            Control(
+                context="global",
+                event="keyup[event.code === 'ArrowLeft'] from:body",
+                callback=(
+                    lambda renderer: renderer.show(page_id="hello_world_page1")
+                ),
+            ),
+        )
+
+        # Create page element
         self._page: Div = Div(
             hello_world.widget,
-            _id="hello-world",
-            _class="flex flex-col",
+            _id="hello-world-2",
+            _class="flex flex-col bg-secondary-content",
             style={"width": "100vw", "height": "100vh"},
         )
