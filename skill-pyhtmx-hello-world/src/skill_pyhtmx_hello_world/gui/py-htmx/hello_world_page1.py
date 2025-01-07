@@ -31,11 +31,17 @@ class HelloWorldWidget(Widget):
             ),
         )
 
+        # Page text
+        self._page_text: Div = Div(
+            "Page 1",
+            _class="text-[3vw] font-bold italic",
+        )
+
         # Text
         self._text: Div = Div(
             inner_content=session_data.get("text"),
             _id="text",
-            _class="text-[2vw] font-bold",
+            _class="text-[3vw] font-bold",
         )
         self.add_interaction(
             "text",
@@ -69,6 +75,7 @@ class HelloWorldWidget(Widget):
         self._widget: Div = Div(
             [
                 self._title,
+                self._page_text,
                 self._text,
                 self._button,
             ],

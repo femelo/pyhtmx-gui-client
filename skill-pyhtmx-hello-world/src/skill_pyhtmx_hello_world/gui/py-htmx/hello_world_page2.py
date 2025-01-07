@@ -31,11 +31,17 @@ class HelloWorldWidget(Widget):
             ),
         )
 
+        # Page text
+        self._page_text: Div = Div(
+            "Page 2",
+            _class="text-[3vw] font-bold italic",
+        )
+
         # Text
         self._text: Div = Div(
             inner_content=session_data.get("text"),
             _id="text",
-            _class="text-[2vw] font-bold",
+            _class="text-[3vw] font-bold",
         )
         self.add_interaction(
             "text",
@@ -60,7 +66,7 @@ class HelloWorldWidget(Widget):
                 # will close the window
                 callback=lambda renderer: renderer.close(),
                 source=self._button,
-                target=None,  # to target the root (to close the page)
+                target=None,  # no target
                 target_level="innerHTML",
             ),
         )
@@ -69,6 +75,7 @@ class HelloWorldWidget(Widget):
         self._widget: Div = Div(
             [
                 self._title,
+                self._page_text,
                 self._text,
                 self._button,
             ],
