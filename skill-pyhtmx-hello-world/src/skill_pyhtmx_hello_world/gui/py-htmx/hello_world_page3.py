@@ -119,6 +119,6 @@ class HelloWorldPage3(Page):
         self._page: Div = Div(
             hello_world.widget,
             _id="hello-world-3",
-            _class="flex flex-col bg-neutral-content",
+            _class="flex flex-col bg-neutral-content fade-in-from-right",
             style={"width": "100vw", "height": "100vh"},
         )
