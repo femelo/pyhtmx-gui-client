@@ -58,43 +58,29 @@ body {
 }
 
 @keyframes fade-in {
-    0%   { opacity: 0.00; transform: scale(1.02); }
-    25%  { opacity: 0.25; transform: scale(1.06); }
+    from { opacity: 0.00; transform: scale(1.02); }
     50%  { opacity: 0.50; transform: scale(1.10); }
-    75%  { opacity: 1.00; transform: scale(1.06); }
-    100% { opacity: 1.00; transform: scale(1.02); }
+    to   { opacity: 1.00; transform: scale(1.00); }
 }
 
 @keyframes fade-in-from-left {
-    0%   { opacity: 0.00; margin-left: -100vw; }
-    25%  { opacity: 0.25; margin-left: -100vw; }
-    50%  { opacity: 0.50; margin-left:  -50vw; }
-    75%  { opacity: 1.00; margin-left:    0vw; }
-    100% { opacity: 1.00; margin-left:    0vw; }
+    from { opacity: 0.00; margin-left: -100vw; }
+    to   { opacity: 1.00; margin-left:    0vw; }
 }
 
 @keyframes fade-in-from-right {
-    0%   { opacity: 0.00; margin-left:  100vw; }
-    25%  { opacity: 0.25; margin-left:  100vw; }
-    50%  { opacity: 0.50; margin-left:   50vw; }
-    75%  { opacity: 1.00; margin-left:    0vw; }
-    100% { opacity: 1.00; margin-left:    0vw; }
+    from { opacity: 0.00; margin-left:  100vw; }
+    to   { opacity: 1.00; margin-left:    0vw; }
 }
 
 @keyframes fade-in-from-top {
-    0%   { opacity: 0.00; margin-top: -100vw; }
-    25%  { opacity: 0.25; margin-top: -100vw; }
-    50%  { opacity: 0.50; margin-top:  -50vw; }
-    75%  { opacity: 1.00; margin-top:    0vw; }
-    100% { opacity: 1.00; margin-top:    0vw; }
+    from { opacity: 0.00; margin-top: -100vw; }
+    to   { opacity: 1.00; margin-top:    0vw; }
 }
 
 @keyframes fade-in-from-bottom {
-    0%   { opacity: 0.00; margin-top:  100vw; }
-    25%  { opacity: 0.25; margin-top:  100vw; }
-    50%  { opacity: 0.50; margin-top:   50vw; }
-    75%  { opacity: 1.00; margin-top:    0vw; }
-    100% { opacity: 1.00; margin-top:    0vw; }
+    from { opacity: 0.00; margin-top:  100vw; }
+    to   { opacity: 1.00; margin-top:    0vw; }
 }
 
 .fade-in-from-left {
