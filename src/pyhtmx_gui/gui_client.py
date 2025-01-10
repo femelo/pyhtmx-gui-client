@@ -9,8 +9,7 @@ from websocket import WebSocket, create_connection
 from .logger import logger
 from .config import config_data
 from .types import MessageType, EventType, Message
-from .renderer import Renderer, global_renderer
-from .gui_management import GuiList
+from .gui_manager import GUIManager
 
 
 CLIENT_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -20,27 +19,26 @@ CLIENT_DIR = os.path.abspath(os.path.dirname(__file__))
 termination_event: Event = Event()
 
 
-class OVOSGuiClient:
+class GUIClient:
     id: str = config_data.get(
         "client-id",
         "pyhtmx-gui-client",
     )
-    renderer: Renderer = global_renderer
 
-    def __init__(self: OVOSGuiClient):
+    def __init__(self: GUIClient):
         self.server_url: str = config_data.get(
             "ovos-server-url",
             "ws://localhost:18181/gui",
         )
         self._ws: Optional[WebSocket] = self.connect()
         self._thread: Optional[Thread] = self.listen()
-        self._session: Dict[str, Any] = {}
         self._active_skills: List[str] = []
-        self._gui_list: Dict[str, GuiList] = {}
+        self._session: Dict[str, Any] = {}
+        self._gui_manager: GUIManager = GUIManager()
         self.announce()
 
     # Connect to OVOS-GUI WebSocket
-    def connect(self: OVOSGuiClient) -> Optional[WebSocket]:
+    def connect(self: GUIClient) -> Optional[WebSocket]:
         try:
             ws = create_connection(self.server_url)
             logger.info("Connected to ovos-gui websocket")
@@ -49,11 +47,11 @@ class OVOSGuiClient:
             logger.error(f"Error connecting to ovos-gui: {e}")
             return None
 
-    def announce(self: OVOSGuiClient) -> None:
+    def announce(self: GUIClient) -> None:
         if self._ws:
             message = Message(
                 type=MessageType.GUI_CONNECTED,
-                gui_id=OVOSGuiClient.id,
+                gui_id=GUIClient.id,
                 # TODO: force framework in the message root,
                 # though the bus code must be changed.
                 framework="py-htmx",
@@ -61,13 +59,13 @@ class OVOSGuiClient:
             )
             self._ws.send(message.model_dump_json(exclude_none=True))
 
-    def register(self: OVOSGuiClient, client_id: str) -> None:
-        self.renderer.register_client(client_id)
+    def register(self: GUIClient, client_id: str) -> None:
+        self._gui_manager.renderer.register_client(client_id)
 
-    def deregister(self: OVOSGuiClient, client_id: str) -> None:
-        self.renderer.deregister(client_id)
+    def deregister(self: GUIClient, client_id: str) -> None:
+        self._gui_manager.renderer.deregister(client_id)
 
-    def listen(self: OVOSGuiClient) -> Thread:
+    def listen(self: GUIClient) -> Thread:
         if self._ws:
             thread = Thread(target=self.receive_message, daemon=True)
             thread.start()
@@ -75,14 +73,14 @@ class OVOSGuiClient:
         else:
             return None
 
-    def close(self: OVOSGuiClient) -> Thread:
+    def close(self: GUIClient) -> Thread:
         if self._ws:
             sleep(0.1)
             self._ws.close()
         logger.info("Closed connection with ovos-gui websocket.")
 
     # Receive message from GUI web socket
-    def receive_message(self: OVOSGuiClient):
+    def receive_message(self: GUIClient):
         while not termination_event.is_set():
             try:
                 if self._ws:
@@ -96,7 +94,7 @@ class OVOSGuiClient:
                 logger.error(f"Error processing message:\n{exception_data}")
 
     # General processing of GUI messages
-    def process_message(self: OVOSGuiClient, message: Message) -> None:
+    def process_message(self: GUIClient, message: Message) -> None:
         if message.type == MessageType.GUI_LIST_INSERT:
             self.handle_gui_list_insert(
                 message.namespace,
@@ -156,7 +154,7 @@ class OVOSGuiClient:
             logger.warning(f"No handler defined for this message: {message}")
 
     def handle_gui_list_insert(
-        self: OVOSGuiClient,
+        self: GUIClient,
         namespace: str,
         position: Optional[int] = None,
         data: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
@@ -173,55 +171,47 @@ class OVOSGuiClient:
             ]
 
         data = [data] if isinstance(data, dict) else data
-        show = len(self._gui_list) == 0
-
-        if namespace not in self._gui_list:
-            self._gui_list[namespace] = GuiList(
-                namespace=namespace,
-                renderer=OVOSGuiClient.renderer,
-            )
 
         position = position or 0
-        values = values or data or []
+        page_args = values or data or []
         session_data = self._session.get(namespace, {})
 
-        self._gui_list[namespace].insert(
+        self._gui_manager.insert_pages(
+            namespace=namespace,
             position=position,
-            values=values,
+            page_args=page_args,
             session_data=session_data,
         )
-        if show:
-            self._gui_list[namespace].show(position)
 
     def handle_gui_list_move(
-        self: OVOSGuiClient,
+        self: GUIClient,
         namespace: str,
         from_pos: int,
         to_pos: int,
         items_number: int,
     ) -> None:
-        if namespace in self._gui_list:
-            self._gui_list[namespace].move(
-                from_pos=from_pos,
-                to_pos=to_pos,
-                items_number=items_number,
-            )
+        self._gui_manager.move_pages(
+            namespace=namespace,
+            from_pos=from_pos,
+            to_pos=to_pos,
+            items_number=items_number,
+        )
 
     def handle_gui_list_remove(
-        self: OVOSGuiClient,
+        self: GUIClient,
         namespace: str,
         position: int,
         items_number: int,
     ) -> None:
-        if namespace in self._gui_list:
-            self._gui_list[namespace].remove(
-                position=position,
-                items_number=items_number,
-            )
+        self._gui_manager.remove_pages(
+            namespace=namespace,
+            position=position,
+            items_number=items_number,
+        )
         gc.collect()
 
     def handle_event_triggered(
-        self: OVOSGuiClient,
+        self: GUIClient,
         namespace: str,
         event_name: str,
         parameters: Mapping[str, Any],
@@ -229,8 +219,10 @@ class OVOSGuiClient:
         if event_name == EventType.PAGE_GAINED_FOCUS:
             # Page gained focus: display it
             page_index = parameters.get("number", 0)
-            if namespace in self._gui_list:
-                self._gui_list[namespace].show(page_index)
+            self._gui_manager.show(
+                namespace=namespace,
+                id=page_index,
+            )
         elif namespace == "system" and event_name in set(EventType):
             # Handle OVOS system event
             utterance: Optional[str] = parameters.get("utterance", None)
@@ -240,28 +232,32 @@ class OVOSGuiClient:
                 data = {"utterance": " "}
             else:
                 data = None
-            OVOSGuiClient.renderer.update_status(
+            self._gui_manager.update_status(
                 ovos_event=event_name,
                 data=data,
             )
         else:
             # Handle general event
-            if namespace in self._gui_list:
-                self._gui_list[namespace].update_state(event_name)
+            self._gui_manager.update_state(
+                namespace=namespace,
+                ovos_event=event_name,
+            )
 
     def handle_session_set(
-        self: OVOSGuiClient,
+        self: GUIClient,
         namespace: str,
         session_data: Mapping[str, Any],
     ) -> None:
         if namespace not in self._session:
             self._session[namespace] = {}
         self._session[namespace].update(session_data)
-        if namespace in self._gui_list:
-            self._gui_list[namespace].update_data(session_data)
+        self._gui_manager.update_data(
+            namespace=namespace,
+            session_data=session_data,
+        )
 
     def handle_session_delete(
-        self: OVOSGuiClient,
+        self: GUIClient,
         namespace: str,
         property: str,
     ) -> None:
@@ -275,7 +271,7 @@ class OVOSGuiClient:
         gc.collect()
 
     def handle_session_list_insert(
-        self: OVOSGuiClient,
+        self: GUIClient,
         namespace: str,
         position: Optional[int],
         property: Optional[str],
@@ -284,8 +280,12 @@ class OVOSGuiClient:
     ) -> None:
         if namespace == "mycroft.system.active_skills":
             skill = data[0].get("skill_id", None) if data else None
+            self._active_skills.insert(0, skill)
             if skill:
-                self._active_skills.insert(position, skill)
+                self._gui_manager.insert_namespace(
+                    namespace=skill,
+                    position=position,
+                )
         else:
             if namespace not in self._session:
                 self._session[namespace] = session_data = {}
@@ -297,19 +297,21 @@ class OVOSGuiClient:
                 ]
             for item in reversed(values):
                 session_data[property].insert(position, item)
-            if namespace in self._gui_list:
-                self._gui_list[namespace].update_data(session_data)
+            self._gui_manager.update_data(
+                namespace=namespace,
+                session_data=session_data,
+            )
 
-    def handle_session_list_update(self: OVOSGuiClient) -> None:
+    def handle_session_list_update(self: GUIClient) -> None:
         # TODO: Implement me
         pass
 
-    def handle_session_list_move(self: OVOSGuiClient) -> None:
+    def handle_session_list_move(self: GUIClient) -> None:
         # TODO: Implement me
         pass
 
     def handle_session_list_remove(
-        self: OVOSGuiClient,
+        self: GUIClient,
         namespace: str,
         position: Optional[int],
         property: Optional[str],
@@ -318,10 +320,11 @@ class OVOSGuiClient:
         if position is None:
             position = 0
         if namespace == "mycroft.system.active_skills":
-            if position < len(self._active_skills):
-                skill_id = self._active_skills.pop(position)
-                if skill_id in self._gui_list:
-                    self._gui_list[skill_id].close(position)
+            try:
+                skill: str = self._active_skills.pop(position)
+                self._gui_manager.remove_namespace(namespace=skill)
+            except IndexError:
+                pass
         else:
             session_data = self._session.get(namespace, {})
             if property is not None and property in session_data:
@@ -329,7 +332,7 @@ class OVOSGuiClient:
 
     # Send an event to OVOS-GUI
     def send_focus_event(
-        self: OVOSGuiClient,
+        self: GUIClient,
         namespace: str,
         index: int
     ) -> None:
@@ -343,4 +346,4 @@ class OVOSGuiClient:
             self._ws.send(message.model_dump_json())
 
 
-global_client = OVOSGuiClient()
+global_client = GUIClient()
