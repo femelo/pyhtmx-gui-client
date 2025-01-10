@@ -110,7 +110,7 @@ class HelloWorldPage3(Page):
                 context="global",
                 event="keyup[event.code === 'ArrowLeft'] from:body",
                 callback=(
-                    lambda renderer: renderer.show(page_id="hello_world_page2")
+                    lambda renderer: renderer.show_previous()
                 ),
             ),
         )
@@ -119,6 +119,6 @@ class HelloWorldPage3(Page):
         self._page: Div = Div(
             hello_world.widget,
             _id="hello-world-3",
-            _class="flex flex-col bg-neutral-content fade-in-from-right",
+            _class="flex flex-col bg-neutral-content",
             style={"width": "100vw", "height": "100vh"},
         )

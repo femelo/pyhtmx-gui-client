@@ -21,6 +21,15 @@ class GUIManager:
     def num_namespaces(self: GUIManager) -> int:
         return len(self._namespaces)
 
+    def get_num_pages(
+        self: GUIManager,
+        namespace: Optional[str] = None,
+    ) -> Optional[int]:
+        namespace = namespace or self.get_active_namespace()
+        if not self.in_catalog(namespace):
+            return None
+        return self._catalog[namespace].num_pages
+
     def in_catalog(self: GUIManager, namespace: str) -> bool:
         return namespace in self._catalog
 
@@ -152,6 +161,15 @@ class GUIManager:
                 from_position,
                 to_position,
             )
+
+    def get_active_page_index(
+        self: GUIManager,
+        namespace: Optional[str] = None,
+    ) -> Optional[int]:
+        namespace = namespace or self.get_active_namespace()
+        if not self.in_catalog(namespace):
+            return None
+        return self._catalog[namespace].get_active_page_index()
 
     def get_active_page_id(
         self: GUIManager,

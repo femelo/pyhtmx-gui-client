@@ -110,7 +110,7 @@ class HelloWorldPage2(Page):
                 context="global",
                 event="keyup[event.code === 'ArrowRight'] from:body",
                 callback=(
-                    lambda renderer: renderer.show(page_id="hello_world_page3")
+                    lambda renderer: renderer.show_next()
                 ),
             ),
         )
@@ -121,7 +121,7 @@ class HelloWorldPage2(Page):
                 context="global",
                 event="keyup[event.code === 'ArrowLeft'] from:body",
                 callback=(
-                    lambda renderer: renderer.show(page_id="hello_world_page1")
+                    lambda renderer: renderer.show_previous()
                 ),
             ),
         )

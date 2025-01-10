@@ -5,6 +5,9 @@ htmx.on(
     function(event) { htmx.process(event.detail.elt); },
 );
 
+// Root element
+const root_div = document.getElementById("root");
+
 // Helper function
 let dom_ready = (callback) => {
     document.readyState === 'interactive' || document.readyState === 'complete'
@@ -18,15 +21,35 @@ function set_animation(event) {
     const classes_match = /(?<=class=")[^\"\=]*(?=")/.exec(event.detail.data);
     if (classes_match != null) {
         const classes_list = classes_match[0].split(' ');
-        const match = classes_list.filter(
+        const fade_in = classes_list.filter(
             (c) => c.includes("fade-in"),
         ).pop();
-        if (match != null) {
-            console.log(`Setting --swap-animation = ${match}`)
+        const next = classes_list.filter(
+            (c) => c.includes("next"),
+        ).pop();
+        const previous = classes_list.filter(
+            (c) => c.includes("previous"),
+        ).pop();
+        if (fade_in != null) {
+            console.log(`Setting --swap-animation = ${fade_in}`)
             document.documentElement.style.setProperty(
                 "--swap-animation",
-                match,
+                fade_in,
             );
+        } else if (next != null) {
+            console.log("Setting --swap-animation = swipe-in-from-right")
+            document.documentElement.style.setProperty(
+                "--swap-animation",
+                "swipe-in-from-right",
+            );
+            root_div.firstElementChild.classList.add("swipe-out-to-left");
+        } else if (previous != null) {
+            console.log("Setting --swap-animation = swipe-in-from-left")
+            document.documentElement.style.setProperty(
+                "--swap-animation",
+                "swipe-in-from-left",
+            );
+            root_div.firstElementChild.classList.add("swipe-out-to-right");
         } else {
             // console.log("Unsetting --swap-animation");
             document.documentElement.style.removeProperty(

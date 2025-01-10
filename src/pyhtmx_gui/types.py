@@ -63,6 +63,11 @@ class PageItem(str, Enum):
     GLOBAL_CALLBACK = "global_callback"
 
 
+class PageNeighbor(str, Enum):
+    NEXT = "next"
+    PREVIOUS = "previous"
+
+
 class Callback(BaseModel):
     model_config = ConfigDict(
         strict=False,
