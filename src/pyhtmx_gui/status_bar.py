@@ -80,12 +80,13 @@ class StatusBar(Page):
                 "height": "15%",
                 "width": "100%",
                 "position": "fixed",
-                "z-index": 1,
+                "z-index": 1000,
                 "top": "0",
                 "left": "0",
                 "background-color": "rgba(0, 0, 0, 0)",
                 "overflow-y": "hidden",
                 "transition": "1.0s",
+                "pointer-events": "none",
             },
         )
 

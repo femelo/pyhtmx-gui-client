@@ -12,11 +12,13 @@ from threading import Lock, Thread
 from secrets import token_hex
 from signal import signal, SIGINT, SIGTERM
 import uvicorn
+from pyhtmx.html_tag import HTMLTag
 from .config import config_data
-from .renderer import ContextType, global_renderer
+from .types import CallbackContext
+from .renderer import global_renderer
 from .logger import logger
 from .event_sender import global_sender
-from .ovos_gui_client import global_client, termination_event
+from .gui_client import global_client, termination_event
 
 
 APP_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -71,7 +73,7 @@ def check_disconnected() -> None:
         now = time()
         disconnected = []
         for session_id, last_update in sessions.items():
-            if now - last_update > ping_period + 2 * wait_time:
+            if now - last_update > ping_period + 3 * wait_time:
                 global_client.deregister(session_id)
                 disconnected.append(session_id)
                 logger.info(f"Session closed: {session_id}")
@@ -103,8 +105,8 @@ async def updates() -> StreamingResponse:
 async def local_event(event_id: str) -> HTMLResponse:
     logger.debug(f"Local event triggered: {event_id}")
     # Run callback
-    component = global_renderer.trigger_callback(
-        context=ContextType.LOCAL,
+    component: HTMLTag = global_client._gui_manager.trigger_callback(
+        context=CallbackContext.LOCAL,
         event_id=event_id,
     )
     return HTMLResponse(component.to_string())
@@ -114,8 +116,8 @@ async def local_event(event_id: str) -> HTMLResponse:
 async def global_event(event_id: str) -> Response:
     logger.debug(f"Global event triggered: {event_id}")
     # Run callback
-    global_renderer.trigger_callback(
-        context=ContextType.GLOBAL,
+    global_client._gui_manager.trigger_callback(
+        context=CallbackContext.GLOBAL,
         event_id=event_id,
     )
     return Response(status_code=204)

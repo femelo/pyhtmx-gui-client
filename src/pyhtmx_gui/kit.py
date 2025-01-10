@@ -45,8 +45,8 @@ class Control(Registrable):
     context: str
     event: str
     callback: Callable
-    source: HTMLTag
-    target: Optional[HTMLTag] = None
+    source: Union[HTMLTag, str, None] = None
+    target: Union[HTMLTag, str, None] = None
     target_level: str = "innerHTML"
 
 
@@ -73,6 +73,7 @@ class Widget:
         self._session_items: Dict[str, List[SessionItem]] = {}
         self._triggers: Dict[str, List[Trigger]] = {}
         self._controls: Dict[str, Control] = {}
+        self._ghost_elements: List[HTMLTag] = []
         self._widget: Optional[HTMLTag] = None
         self.init_session_data(session_data)
 
@@ -87,6 +88,10 @@ class Widget:
     @property
     def widget(self: Widget) -> Optional[HTMLTag]:
         return self._widget
+
+    @property
+    def ghost_elements(self: Widget) -> List[HTMLTag]:
+        return self._ghost_elements
 
     @property
     def session_items(self: Widget) -> Dict[str, SessionItem]:
@@ -157,6 +162,14 @@ class Widget:
                 self._triggers[key] = []
             self._triggers[key].append(value)
         elif isinstance(value, Control):
+            if value.source is None:
+                # Create a ghost element
+                ghost_source: HTMLTag = HTMLTag(
+                    "div",
+                    _style={"display: none"},
+                )
+                self._ghost_elements.append(ghost_source)
+                value.source = ghost_source
             self._controls[key] = value
         else:
             logger.error(
@@ -199,9 +212,23 @@ class Page(Widget):
             name=name or f"page-{token_hex(4)}",
             session_data=session_data,
         )
+        self._namespace: str = f"{self.id}-ns"
+        self._page_id: str = self.id
         self._route: str = f"/{self.id}"
         self._widgets: List[Widget] = [self]
         self._page: HTMLTag = HTMLTag("div")
+
+    @property
+    def namespace(self: Page) -> str:
+        return self._namespace
+
+    @property
+    def page_id(self: Page) -> str:
+        return self._page_id
+
+    @property
+    def route(self: Page) -> str:
+        return self._route
 
     @property
     def page(self: Page) -> HTMLTag:
@@ -252,7 +279,8 @@ class Page(Widget):
                             attributes[attr_name] = attr_value
                         # Update
                         renderer.update_attributes(
-                            route=self._route,
+                            namespace=self.namespace,
+                            page_id=self.page_id,
                             parameter=session_item.parameter,
                             attribute=attributes,
                         )
@@ -276,15 +304,23 @@ class Page(Widget):
                             attributes[attr_name] = attr_value
                     # Update
                     renderer.update_attributes(
-                        route=self._route,
+                        namespace=self.namespace,
+                        page_id=self.page_id,
                         parameter=trigger.event,
                         attribute=attributes,
                     )
 
+    def include_ghost_elements(
+        self: Page,
+        widget: Widget,
+    ) -> None:
+        for element in widget.ghost_elements:
+            self._page.insert_child(0, element)
+
     def register_session_items(
         self: Page,
         widget: Widget,
-        renderer: Any,
+        page_manager: Any,
     ) -> None:
         # Register session parameters
         for session_group in widget.session_items.values():
@@ -292,8 +328,7 @@ class Page(Widget):
                 # Prevent objects from being registered twice
                 if session_item.registered:
                     continue
-                renderer.register_interaction_parameter(
-                    route=self._route,
+                page_manager.register_interaction_parameter(
                     parameter=session_item.parameter,
                     target=session_item.component,
                     target_level=session_item.target_level,
@@ -303,7 +338,7 @@ class Page(Widget):
     def register_triggers(
         self: Page,
         widget: Widget,
-        renderer: Any,
+        page_manager: Any,
     ) -> None:
         # Register triggers
         for trigger_group in widget.triggers.values():
@@ -311,8 +346,7 @@ class Page(Widget):
                 # Prevent objects from being registered twice
                 if trigger.registered:
                     continue
-                renderer.register_interaction_parameter(
-                    route=self._route,
+                page_manager.register_interaction_parameter(
                     parameter=trigger.event,
                     target=trigger.component,
                     target_level=trigger.target_level,
@@ -322,17 +356,17 @@ class Page(Widget):
     def register_callbacks(
         self: Page,
         widget: Widget,
-        renderer: Any,
+        page_manager: Any,
     ) -> None:
         # Register callbacks
         for control in widget.controls.values():
             # Prevent objects from being registered twice
             if control.registered:
                 continue
-            renderer.register_callback(
-                context=control.context,
+            page_manager.register_callback(
                 event=control.event,
-                fn=partial(control.callback, renderer),
+                context=control.context,
+                fn=partial(control.callback, page_manager),
                 source=control.source,
                 target=control.target,
                 target_level=control.target_level,
@@ -342,24 +376,29 @@ class Page(Widget):
     def register_dialog(
         self: Page,
         widget: Widget,
-        renderer: Any,
+        page_manager: Any,
     ) -> None:
         if widget.type == WidgetType.DIALOG:
-            renderer.register_dialog(
+            page_manager.register_dialog(
                 dialog_id=widget.id,
                 dialog_content=widget.widget,
             )
 
-    def set_up(self: Page, renderer: Any) -> Page:
+    def set_up(self: Page, page_manager: Any) -> Page:
+        # Set namespace and page id
+        self._namespace = page_manager.namespace
+        self._page_id = page_manager.page_id
         # Propagate session data from widgets
         self.propagate_session_data()
         for widget in self._widgets:
+            # Register ghost elements
+            self.include_ghost_elements(widget)
             # Register session parameters
-            self.register_session_items(widget, renderer)
+            self.register_session_items(widget, page_manager)
             # Register triggers
-            self.register_triggers(widget, renderer)
+            self.register_triggers(widget, page_manager)
             # Register callbacks
-            self.register_callbacks(widget, renderer)
+            self.register_callbacks(widget, page_manager)
             # Register dialog
-            self.register_dialog(widget, renderer)
+            self.register_dialog(widget, page_manager)
         return self

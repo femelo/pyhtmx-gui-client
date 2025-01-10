@@ -16,6 +16,13 @@ class HelloWorldSkill(OVOSSkill):
 
         self.gui["title"] = "PyHTMX-based Hello World"
         self.gui["text"] = text
-        self.gui.show_page("hello_world")
+        self.gui.show_pages(
+            [
+                "hello_world_page1",
+                "hello_world_page2",
+                "hello_world_page3",
+            ],
+            override_idle=60,
+        )
 
         self.speak(text)
