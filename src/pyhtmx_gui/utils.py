@@ -1,17 +1,20 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Union, Dict, Any
 import importlib
 import inspect
+from .kit import Page
+from .logger import logger
 from pyhtmx.html_tag import HTMLTag
 
 
 def build_page(
     file_path: str,
-    session_data: Optional[Dict[str, Any]] = None
-) -> Any:
+    module_name: str = "page",
+    session_data: Optional[Dict[str, Any]] = None,
+) -> Union[HTMLTag, Page]:
     # Load module
-    spec = importlib.util.spec_from_file_location("page", file_path)
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
     module = importlib.util.module_from_spec(spec)
-    # sys.modules[self.name] = module
+    # sys.modules[module_name] = module
     spec.loader.exec_module(module)
     objects = []
     # Get relevant objects
@@ -19,7 +22,7 @@ def build_page(
         lambda name: (
             not name.startswith("__")
             and hasattr(getattr(module, name), "__module__")
-            and getattr(module, name).__module__ == "page"
+            and getattr(module, name).__module__ == module_name
         ),
         dir(module),
     )
@@ -30,7 +33,11 @@ def build_page(
             objects.append(obj)
         elif inspect.isclass(obj) and HTMLTag in obj.__bases__:
             objects.append(obj)
-        elif inspect.isclass(obj) and hasattr(obj, "_is_page") and obj._is_page:
+        elif (
+            inspect.isclass(obj) and
+            hasattr(obj, "_is_page") and
+            obj._is_page
+        ):
             objects.append(obj)
         else:
             pass
@@ -42,14 +49,28 @@ def build_page(
             "Make sure wrapping classes have the class "
             "attribute _is_page = True"
         )
-    else:    
+    else:
         if len(objects) > 1:
-            print(
-                f"Multiple page views defined on {file_path}. "
+            logger.warning(
+                f"Multiple pages defined on {file_path}. "
                 "Using the first object found."
             )
         page_object = objects[0]
         if inspect.isclass(page_object):
-            page_object = page_object(session_data=session_data)
-        print(f"Object {page_object} built.")
-    return page_object
+            page_instance = page_object(session_data=session_data)
+        else:
+            page_instance = page_object
+        logger.debug(f"Object {page_instance} built.")
+    return page_instance
+
+
+def validate_position(position: int, ub: int) -> bool:
+    valid = 0 <= position <= ub
+    if not valid:
+        logger.warning("Provided position out of range.")
+    return valid
+
+
+def fix_position(position: int, ub: int) -> int:
+    logger.info("Position set to nearest bound.")
+    return max(min(position, ub), 0)

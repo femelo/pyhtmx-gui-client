@@ -9,6 +9,8 @@ from pyhtmx import Div
 from pyhtmx_gui.kit import Page, SessionItem
 
 
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
 # Background image
 WALLPAPER = (
     "https://cdn.pixabay.com/photo/2016/06/02/02/33/"
@@ -123,7 +125,7 @@ class HomeScreen(Page):
             # Hack to workaround the way figures are served
             shutil.copy(
                 os.path.join(wallpaper_path, selected_wallpaper),
-                "assets/images/",
+                os.path.join(BASE_DIR, "assets", "images"),
             )
         if not wallpaper_path or not selected_wallpaper:
             wallpaper_url = WALLPAPER
@@ -135,14 +137,15 @@ class HomeScreen(Page):
             )
         return f"background-image: url({wallpaper_url});"
 
-    def set_up(self: HomeScreen, renderer: Any) -> None:
-        super().set_up(renderer)
+    def set_up(self: HomeScreen, page_manager: Any) -> None:
+        super().set_up(page_manager)
 
         # Update time
         def update_time():
             while HomeScreen._clock.wait():
-                renderer.update_attributes(
-                    route=self._route,
+                page_manager.update_attributes(
+                    namespace=self.namespace,
+                    page_id=self.page_id,
                     parameter="clock-time",
                     attribute={"inner_content": HomeScreen._clock.time},
                 )

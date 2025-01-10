@@ -31,11 +31,17 @@ class HelloWorldWidget(Widget):
             ),
         )
 
+        # Page text
+        self._page_text: Div = Div(
+            "Page 3",
+            _class="text-[3vw] font-bold italic",
+        )
+
         # Text
         self._text: Div = Div(
             inner_content=session_data.get("text"),
             _id="text",
-            _class="text-[2vw] font-bold",
+            _class="text-[3vw] font-bold",
         )
         self.add_interaction(
             "text",
@@ -60,7 +66,7 @@ class HelloWorldWidget(Widget):
                 # will close the window
                 callback=lambda renderer: renderer.close(),
                 source=self._button,
-                target=None,  # to target the root (to close the page)
+                target=None,  # no target
                 target_level="innerHTML",
             ),
         )
@@ -69,6 +75,7 @@ class HelloWorldWidget(Widget):
         self._widget: Div = Div(
             [
                 self._title,
+                self._page_text,
                 self._text,
                 self._button,
             ],
@@ -80,25 +87,38 @@ class HelloWorldWidget(Widget):
                 "flex-col",
                 "justify-start",
                 "items-center",
-                "bg-white",
+                "bg-transparent",
             ],
         )
 
 
-class HelloWorldPage(Page):
+class HelloWorldPage3(Page):
 
     def __init__(
-        self: HelloWorldPage,
+        self: HelloWorldPage3,
         session_data: Optional[Dict[str, Any]] = None,
     ):
-        super().__init__(name="hello-world", session_data=session_data)
+        super().__init__(name="hello-world-page-3", session_data=session_data)
 
         hello_world = HelloWorldWidget(session_data=session_data)
         self.add_component(hello_world)
 
+        # Add control to change to the previous page
+        self.add_interaction(
+            "prev-page-key-up",
+            Control(
+                context="global",
+                event="keyup[event.code === 'ArrowLeft'] from:body",
+                callback=(
+                    lambda renderer: renderer.show(page_id="hello_world_page2")
+                ),
+            ),
+        )
+
+        # Create page element
         self._page: Div = Div(
             hello_world.widget,
-            _id="hello-world",
-            _class="flex flex-col",
+            _id="hello-world-3",
+            _class="flex flex-col bg-neutral-content fade-in-from-right",
             style={"width": "100vw", "height": "100vh"},
         )
