@@ -92,7 +92,7 @@ class StatusBar(Page):
 
     def get_utterance(self: StatusBar, value: Any = None) -> str:
         utterance: str = self._session_data.get("utterance")
-        return utterance[0].upper() + utterance[1:]
+        return utterance[0].upper() + utterance[1:] if utterance else ''
 
     def get_spinner_class(self: StatusBar, ovos_event: str) -> str:
         if ovos_event in (EventType.WAKEWORD, EventType.RECORD_BEGIN):

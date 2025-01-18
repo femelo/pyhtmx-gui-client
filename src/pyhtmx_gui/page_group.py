@@ -138,6 +138,11 @@ class PageGroup(BaseModel):
                 "Nothing to activate."
             )
 
+    def get_active_page_index(self: PageGroup) -> Optional[int]:
+        if self._active_indexes:
+            return self._active_indexes[0]
+        return None
+
     def get_active_page_id(self: PageGroup) -> Optional[str]:
         if self._active_indexes:
             return self.get_page_id(self._active_indexes[0])
