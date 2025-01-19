@@ -1,9 +1,15 @@
+import os
 from typing import Optional, Union, Dict, Any
 import importlib
 import inspect
+from PIL import ImageFont
 from .kit import Page
 from .logger import logger
 from pyhtmx.html_tag import HTMLTag
+
+
+MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
+ASSETS_DIR = os.path.join(MODULE_DIR, "assets", "fonts")
 
 
 def build_page(
@@ -74,3 +80,13 @@ def validate_position(position: int, ub: int) -> bool:
 def fix_position(position: int, ub: int) -> int:
     logger.info("Position set to nearest bound.")
     return max(min(position, ub), 0)
+
+
+def calculate_text_width(
+    text: str,
+    font_name: str = "helvetica",
+    font_size: int = 24
+) -> int:
+    font = ImageFont.truetype(os.path.join(ASSETS_DIR, font_name), font_size)
+    size = font.getlength(text)
+    return round(size + 0.5)

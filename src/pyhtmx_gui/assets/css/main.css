@@ -13,6 +13,13 @@
     font-style: normal;
 }
 
+@font-face {
+    font-family: 'VT323';
+    src: url('/assets/fonts/VT323-Regular.ttf') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
 /* General style */
 html,
 body {
@@ -23,16 +30,33 @@ body {
 /* Status bar style */
 #utterance {
     padding: 16px;
+    margin-top: 16px;
     margin-left: 0px;
-    animation: slide-in 0.5s;
+    overflow: hidden; /* Ensures the content is not revealed until the animation */
+    line-height: 0;
+    font-family: "VT323";
+    /* letter-spacing: 0; */
+    /* text-overflow: ellipsis; */
+    white-space: nowrap; /* Keeps the content on a single line */
+    animation:
+        typing 0.5s steps(20, end),  /* The typing effect */
+        blink-caret .75s step-end infinite;
 }
 
 @keyframes slide-in {
-    0%   { margin-left: -500px; }
-    25%  { margin-left: -375px; }
-    50%  { margin-left: -250px; }
-    75%  { margin-left: -125px; }
-    100% { margin-left:    0px; }
+    from { margin-left: -25vw; }
+    to   { margin-left:   0vw; }
+}
+
+/* The typing effect */
+@keyframes typing {
+    from { width:   0%; }
+}
+
+/* The typing effect */
+@keyframes blink-caret {
+    to, from { border-right-color: transparent; }
+    50%      { border-right-color: orange; }
 }
 
 #spinner {
@@ -42,7 +66,7 @@ body {
     margin-left: auto;
     width: 15vh;
     height: 15vh;
-    transition: opacity 0.5s ease-in-out, visibility 0s linear 0.5s;
+    transition: opacity 0.25s ease-in-out, visibility 0s linear 0.25s;
 }
 
 #spinner.visible {
@@ -57,59 +81,217 @@ body {
     transition: opacity 0.5s ease-in-out, visibility 0s linear 0.5s;
 }
 
-@keyframes fade-in {
+
+/* Fade in animations */
+@keyframes anim-fade-in {
     from { opacity: 0.00; transform: scale(1.02); }
     50%  { opacity: 0.50; transform: scale(1.10); }
     to   { opacity: 1.00; transform: scale(1.00); }
 }
 
-@keyframes fade-in-from-left {
+@keyframes anim-fade-in-from-left {
     from { opacity: 0.00; margin-left: -100vw; }
     to   { opacity: 1.00; margin-left:    0vw; }
 }
 
-@keyframes fade-in-from-right {
+@keyframes anim-fade-in-from-right {
     from { opacity: 0.00; margin-left:  100vw; }
     to   { opacity: 1.00; margin-left:    0vw; }
 }
 
-@keyframes fade-in-from-top {
-    from { opacity: 0.00; margin-top: -100vw; }
-    to   { opacity: 1.00; margin-top:    0vw; }
+@keyframes anim-fade-in-from-top {
+    from { opacity: 0.00; margin-top: -100vh; }
+    to   { opacity: 1.00; margin-top:    0vh; }
 }
 
-@keyframes fade-in-from-bottom {
-    from { opacity: 0.00; margin-top:  100vw; }
-    to   { opacity: 1.00; margin-top:    0vw; }
+@keyframes anim-fade-in-from-bottom {
+    from { opacity: 0.00; margin-top:  100vh; }
+    to   { opacity: 1.00; margin-top:    0vh; }
+}
+
+
+/* Fade out animations */
+@keyframes anim-fade-out {
+    from { opacity: 1.00; }
+    to   { opacity: 0.00; }
+}
+
+@keyframes anim-fade-out-to-left {
+    from { opacity: 1.00; margin-left:    0vw; }
+    to   { opacity: 0.00; margin-left: -100vw; }
+}
+
+@keyframes anim-fade-out-to-right {
+    from { opacity: 1.00; margin-left:    0vw; }
+    to   { opacity: 0.00; margin-left:  100vw; }
+}
+
+@keyframes anim-fade-out-to-top {
+    from { opacity: 1.00; margin-top:    0vh; }
+    to   { opacity: 0.00; margin-top: -100vh; }
+}
+
+@keyframes anim-fade-out-to-bottom {
+    from { opacity: 1.00; margin-top:    0vh; }
+    to   { opacity: 0.00; margin-top:  100vh; }
+}
+
+
+/* Swipe in animations */
+@keyframes anim-swipe-in-from-left {
+    from { transform: translateX(-100vw); }
+}
+
+@keyframes anim-swipe-in-from-right {
+    from { transform: translateX( 100vw); }
+}
+
+@keyframes anim-swipe-in-from-top {
+    from { transform: translateY(-100vh); }
+}
+
+@keyframes anim-swipe-in-from-bottom {
+    from { transform: translateY( 100vh); }
+}
+
+
+/* Swipe out animations */
+@keyframes anim-swipe-out-to-left {
+    to   { transform: translateX(-100vw); }
+}
+
+@keyframes anim-swipe-out-to-right {
+    to   { transform: translateX( 100vw); }
+}
+
+@keyframes anim-swipe-out-to-top {
+    to   { transform: translateY(-100vh); }
+}
+
+@keyframes anim-swipe-out-to-bottom {
+    to   { transform: translateY( 100vh); }
+}
+
+
+/* Fade in classes */
+/* .fade-in {
+    view-transition-name: fade-in;
 }
 
 .fade-in-from-left {
-    opacity: 1;
-    margin: 0;
-    animation: fade-in-from-left 0.5s ease-in-out;
+    view-transition-name: fade-in-from-left;
 }
 
 .fade-in-from-right {
-    opacity: 1;
-    margin: 0;
-    animation: fade-in-from-right 0.5s ease-in-out;
+    view-transition-name: fade-in-from-right;
 }
 
 .fade-in-from-top {
-    opacity: 1;
-    margin: 0;
-    animation: fade-in-from-top 0.5s ease-in-out;
+    view-transition-name: fade-in-from-top;
 }
 
 .fade-in-from-bottom {
-    opacity: 1;
-    margin: 0;
-    animation: fade-in-from-bottom 0.5s ease-in-out;
+    view-transition-name: fade-in-from-bottom;
+} */
+
+
+/* Swipe in classes */
+/* .swipe-in-from-left {
+    view-transition-name: swipe-in-from-left;
 }
+
+.swipe-in-from-right {
+    view-transition-name: swipe-in-from-right;
+}
+
+.swipe-in-from-top {
+    view-transition-name: swipe-in-from-top;
+}
+
+.swipe-in-from-bottom {
+    view-transition-name: swipe-in-from-bottom;
+} */
+
+
+/* Fade in view transitions */
+::view-transition-old(fade-in) {
+    animation: 0.25s anim-fade-out 0s ease;
+}
+
+::view-transition-new(fade-in) {
+    animation: 0.25s anim-fade-in 0s ease;
+}
+
+::view-transition-old(fade-in-from-left) {
+    animation: 0.25s anim-fade-out-to-right 0s ease;
+}
+
+::view-transition-new(fade-in-from-left) {
+    animation: 0.25s anim-fade-in-from-left 0s ease;
+}
+
+::view-transition-old(fade-in-from-right) {
+    animation: 0.25s anim-fade-out-to-left 0s ease;
+}
+
+::view-transition-new(fade-in-from-right) {
+    animation: 0.25s anim-fade-in-from-right 0s ease;
+}
+
+::view-transition-old(fade-in-from-top) {
+    animation: 0.25s anim-fade-out-to-bottom 0s ease;
+}
+
+::view-transition-new(fade-in-from-top) {
+    animation: 0.25s anim-fade-in-from-top 0s ease;
+}
+
+::view-transition-old(fade-in-from-bottom) {
+    animation: 0.25s anim-fade-out-to-top 0s ease;
+}
+
+::view-transition-new(fade-in-from-bottom) {
+    animation: 0.25s anim-fade-in-from-bottom 0s ease;
+}
+
+
+/* Swipe in view transitions */
+::view-transition-old(swipe-in-from-left) {
+    animation: 0.25s anim-swipe-out-to-right 0s ease;
+}
+
+::view-transition-new(swipe-in-from-left) {
+    animation: 0.25s anim-swipe-in-from-left 0s ease;
+}
+
+::view-transition-old(swipe-in-from-right) {
+    animation: 0.25s anim-swipe-out-to-left 0s ease;
+}
+
+::view-transition-new(swipe-in-from-right) {
+    animation: 0.25s anim-swipe-in-from-right 0s ease;
+}
+
+::view-transition-old(swipe-in-from-top) {
+    animation: 0.25s anim-swipe-out-to-bottom 0s ease;
+}
+
+::view-transition-new(swipe-in-from-top) {
+    animation: 0.25s anim-swipe-in-from-top 0s ease;
+}
+
+::view-transition-old(swipe-in-from-bottom) {
+    animation: 0.25s anim-swipe-out-to-top 0s ease;
+}
+
+::view-transition-new(swipe-in-from-bottom) {
+    animation: 0.25s anim-swipe-in-from-bottom 0s ease;
+}
+
 
 /* TODO: how to make this general? */
 #root > div {
     opacity: 1;
     margin: 0;
-    animation: var(--swap-animation, fade-in) 0.5s ease-in-out;
+    view-transition-name: var(--swap-animation, fade-in);
 }

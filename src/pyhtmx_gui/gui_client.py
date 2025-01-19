@@ -2,8 +2,8 @@ from __future__ import annotations
 import os
 import gc
 from typing import Mapping, Dict, List, Optional, Union, Any
-from threading import Thread, Event
-from time import sleep
+from threading import Thread, Event, Timer, Lock
+from time import time, sleep
 import traceback
 from websocket import WebSocket, create_connection
 from .logger import logger
@@ -34,6 +34,10 @@ class GUIClient:
         self._thread: Optional[Thread] = self.listen()
         self._active_skills: List[str] = []
         self._session: Dict[str, Any] = {}
+        self._timer_lock: Lock = Lock()
+        self._timer: Optional[Timer] = None
+        self._utterance_span: float = 5.0
+        self._utterance_time: int = 0
         self._gui_manager: GUIManager = GUIManager()
         self.announce()
 
@@ -227,15 +231,23 @@ class GUIClient:
             # Handle OVOS system event
             utterance: Optional[str] = parameters.get("utterance", None)
             if utterance:
+                with self._timer_lock:
+                    self._utterance_time = time()
                 data = {"utterance": utterance}
-            elif event_name in (EventType.RECORD_END, ):
-                data = {"utterance": " "}
             else:
                 data = None
+            # Update status
             self._gui_manager.update_status(
                 ovos_event=event_name,
                 data=data,
             )
+            if utterance:
+                if self._timer:
+                    self._timer.cancel()
+                # Reset utterance after a while
+                self._timer = Timer(self._utterance_span, self.reset_utterance)
+                self._timer.start()
+
         else:
             # Handle general event
             self._gui_manager.update_state(
@@ -329,6 +341,21 @@ class GUIClient:
             session_data = self._session.get(namespace, {})
             if property is not None and property in session_data:
                 del session_data[property]
+
+    # Remove utterance
+    def reset_utterance(
+        self: GUIClient,
+    ) -> None:
+        # Remove utterance if needed
+        with self._timer_lock:
+            elapsed_time: int = time() - self._utterance_time
+            if self._utterance_time > 0 and elapsed_time > self._utterance_span:
+                self._gui_manager.update_status(
+                    ovos_event=EventType.UTTERANCE,
+                    data={"utterance": ""},
+                )
+                self._utterance_time = 0
+                self._timer = None
 
     # Send an event to OVOS-GUI
     def send_focus_event(

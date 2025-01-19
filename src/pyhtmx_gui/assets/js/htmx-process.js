@@ -15,11 +15,24 @@ let dom_ready = (callback) => {
 
 // Function to set animation before swapping the element in
 function set_animation(event) {
+    // Verify whether a transition should be applied
+    const swap_spec = event.target.getAttribute("hx-swap");
+    if (swap_spec == null) {
+        console.log("Target not set for transition.");
+        return;
+    }
+    let match = /(?<=transition:)(true|false)/.exec(swap_spec);
+    let should_transition = (match != null) && (match[0] === "true");
+    if (!should_transition) {
+        console.log("Target not set for transition.");
+        return;
+    }
+    // If there is a transition
     const classes_match = /(?<=class=")[^\"\=]*(?=")/.exec(event.detail.data);
     if (classes_match != null) {
         const classes_list = classes_match[0].split(' ');
-        const match = classes_list.filter(
-            (c) => c.includes("fade-in"),
+        match = classes_list.filter(
+            (c) => c.includes("fade-in") || c.includes("swipe-in"),
         ).pop();
         if (match != null) {
             console.log(`Setting --swap-animation = ${match}`)
@@ -28,10 +41,13 @@ function set_animation(event) {
                 match,
             );
         } else {
-            // console.log("Unsetting --swap-animation");
-            document.documentElement.style.removeProperty(
-                "--swap-animation",
-            );
+            const swap_animation = document.documentElement.style.getPropertyValue("--swap-animation");
+            if (swap_animation != null) {
+                console.log("Unsetting --swap-animation");
+                document.documentElement.style.removeProperty(
+                    "--swap-animation",
+                );
+            }
         }
     }
 };

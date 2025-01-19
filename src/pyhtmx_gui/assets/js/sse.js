@@ -280,7 +280,28 @@ This extension adds support for Server Sent Events to htmx.  See /www/extensions
 
     var swapSpec = api.getSwapSpecification(elt)
     var target = api.getTarget(elt)
-    api.swap(target, content, swapSpec)
+
+    let doSwap = () => api.swap(target, content, swapSpec)
+
+    let shouldTransition = htmx.config.globalViewTransitions
+    if (swapSpec.hasOwnProperty('transition')) {
+      shouldTransition = swapSpec.transition
+    }
+
+    if (shouldTransition && document.startViewTransition) {
+      // wrap the original doSwap() in a call to startViewTransition()
+      const innerDoSwap = doSwap
+      doSwap = function() {
+        // @ts-ignore experimental feature atm
+        document.startViewTransition(() => innerDoSwap())
+      }
+    }
+
+    if (swapSpec.swapDelay > 0) {
+      getWindow().setTimeout(doSwap, swapSpec.swapDelay)
+    } else {
+      doSwap()
+    }
   }
 
 

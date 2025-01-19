@@ -20,7 +20,7 @@ class HelloWorldWidget(Widget):
         self._title: Div = Div(
             inner_content=session_data.get("title"),
             _id="title",
-            _class="text-[4vw] font-bold",
+            _class="text-[4vw] font-bold text-[currentColor]",
         )
         self.add_interaction(
             "title",
@@ -34,14 +34,14 @@ class HelloWorldWidget(Widget):
         # Page text
         self._page_text: Div = Div(
             "Page 1",
-            _class="text-[3vw] font-bold italic",
+            _class="text-[3vw] font-bold text-[currentColor] italic",
         )
 
         # Text
         self._text: Div = Div(
             inner_content=session_data.get("text"),
             _id="text",
-            _class="text-[3vw] font-bold",
+            _class="text-[3vw] font-bold text-[currentColor]",
         )
         self.add_interaction(
             "text",
@@ -56,7 +56,7 @@ class HelloWorldWidget(Widget):
         self._button: Button = Button(
             "Back to Home",
             _id="btn-close",
-            _class="btn btn-outline btn-info btn-lg"  # daisyUI classes
+            _class="btn btn-outline btn-lg"  # daisyUI classes
         )
         self.add_interaction(
             "btn-close-click",
@@ -110,7 +110,7 @@ class HelloWorldPage1(Page):
                 context="global",
                 event="keyup[event.code === 'ArrowRight'] from:body",
                 callback=(
-                    lambda renderer: renderer.show(page_id="hello_world_page2")
+                    lambda renderer: renderer.show_next()
                 ),
             ),
         )
@@ -119,6 +119,6 @@ class HelloWorldPage1(Page):
         self._page: Div = Div(
             hello_world.widget,
             _id="hello-world-1",
-            _class="flex flex-col bg-primary-content",
+            _class="flex flex-col bg-blue-400 dark:bg-blue-900 fade-in",
             style={"width": "100vw", "height": "100vh"},
         )

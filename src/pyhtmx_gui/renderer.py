@@ -6,7 +6,7 @@ from queue import Queue
 from pyhtmx import Html, Div, Dialog
 from .logger import logger
 from .master import MASTER_DOCUMENT
-from .types import InteractionParameter, PageItem
+from .types import InteractionParameter, PageItem, PageNeighbor
 from .kit import Page
 from .status_bar import StatusBar
 from .page_manager import PageManager
@@ -29,7 +29,7 @@ class Renderer:
             _id="root",
             _class="flex flex-col",
             sse_swap="root",
-            hx_swap="innerHTML",
+            hx_swap="innerHTML transition:true",
         )
         self._dialog_root: Dialog = Dialog(
             _id="dialog",
@@ -131,7 +131,7 @@ class Renderer:
                 text_content=text_content,
                 attributes=attributes,
             )
-            if attribute:
+            if attributes:
                 self.send(
                     component.to_string(),
                     event_id=parameter_id,
@@ -295,6 +295,63 @@ class Renderer:
         )
         self.update_root()
 
+    def show_next(
+        self: Renderer,
+    ) -> None:
+        self.show_neighbor(PageNeighbor.NEXT)
+
+    def show_previous(
+        self: Renderer,
+    ) -> None:
+        self.show_neighbor(PageNeighbor.PREVIOUS)
+
+    def show_neighbor(
+        self: Renderer,
+        neighbor: PageNeighbor,
+    ) -> None:
+        # Get active namespace and page id
+        namespace = self._gui_manager.get_active_namespace()
+        if not namespace:
+            logger.info(
+                f"No namespace active. "
+                f"{neighbor.title()} page will not be shown."
+            )
+            return
+        page_index = self._gui_manager.get_active_page_index()
+        if page_index is None:
+            logger.info(
+                "No page active. "
+                f"{neighbor.title()} page will not be shown."
+            )
+            return
+        num_pages = self._gui_manager.get_num_pages()
+        if num_pages == 1:
+            logger.info(
+                "Only one page available. "
+                f"{neighbor.title()} page will not be shown."
+            )
+            return
+        # Get neighboring page index
+        offset: int = 1 if neighbor == PageNeighbor.NEXT else -1
+        n_page_index: int = (page_index + offset) % num_pages
+        page_id = self._gui_manager.get_active_page_id()
+        # Activate neighboring page
+        self._gui_manager.activate_page(namespace, n_page_index)
+        n_page_id = self._gui_manager.get_active_page_id()
+        # Confirm deactivation of previous page
+        if n_page_id != page_id:
+            logger.info(
+                f"Page deactivated: {namespace}::{page_id}"
+            )
+            page_id = n_page_id
+        # Queue for displaying
+        self._queue.put((namespace, page_id))
+        logger.info(
+            f"Page activated: {namespace}::{page_id}. "
+            "Queueing to display."
+        )
+        self.update_neighbor(neighbor)
+
     def close(
         self: Renderer,
         namespace: Optional[str] = None,
@@ -407,6 +464,33 @@ class Renderer:
         _ = self._root.detach_children()
         self._root.add_child(page_tag)
         self.send(page_tag.to_string(), event_id="root")
+
+    def update_neighbor(self: Renderer, neighbor: PageNeighbor) -> None:
+        namespace, page_id = route = self._queue.get()
+        if route == self._last_shown:
+            logger.warning(
+                f"Display already showing '{namespace}::{page_id}'. "
+                "Update not required."
+            )
+            return
+        # Update
+        self._last_shown = route
+        page_tag = self._gui_manager.get_active_page_tag(namespace)
+        self._root.text = None
+        _ = self._root.detach_children()
+        self._root.add_child(page_tag)
+        # Set animation
+        animation: str = (
+            "swipe-in-from-right"
+            if neighbor == PageNeighbor.NEXT else
+            "swipe-in-from-left"
+        )
+        page_copy = deepcopy(page_tag)
+        page_copy.update_attributes(
+            attributes={"class": animation},
+            incremental=True,
+        )
+        self.send(page_copy.to_string(), event_id="root")
 
     def send(
         self: Renderer,
