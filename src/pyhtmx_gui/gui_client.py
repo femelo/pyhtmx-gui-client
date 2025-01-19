@@ -35,6 +35,7 @@ class GUIClient:
         self._active_skills: List[str] = []
         self._session: Dict[str, Any] = {}
         self._timer_lock: Lock = Lock()
+        self._timer: Optional[Timer] = None
         self._utterance_span: float = 5.0
         self._utterance_time: int = 0
         self._gui_manager: GUIManager = GUIManager()
@@ -241,7 +242,11 @@ class GUIClient:
                 data=data,
             )
             if utterance:
-                Timer(self._utterance_span, self.reset_utterance).start()
+                if self._timer:
+                    self._timer.cancel()
+                # Reset utterance after a while
+                self._timer = Timer(self._utterance_span, self.reset_utterance)
+                self._timer.start()
 
         else:
             # Handle general event
@@ -350,6 +355,7 @@ class GUIClient:
                     data={"utterance": ""},
                 )
                 self._utterance_time = 0
+                self._timer = None
 
     # Send an event to OVOS-GUI
     def send_focus_event(

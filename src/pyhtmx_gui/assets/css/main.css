@@ -13,6 +13,13 @@
     font-style: normal;
 }
 
+@font-face {
+    font-family: 'VT323';
+    src: url('/assets/fonts/VT323-Regular.ttf') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
 /* General style */
 html,
 body {
@@ -23,13 +30,33 @@ body {
 /* Status bar style */
 #utterance {
     padding: 16px;
+    margin-top: 16px;
     margin-left: 0px;
-    animation: slide-in 0.25s;
+    overflow: hidden; /* Ensures the content is not revealed until the animation */
+    line-height: 0;
+    font-family: "VT323";
+    /* letter-spacing: 0; */
+    /* text-overflow: ellipsis; */
+    white-space: nowrap; /* Keeps the content on a single line */
+    animation:
+        typing 0.5s steps(20, end),  /* The typing effect */
+        blink-caret .75s step-end infinite;
 }
 
 @keyframes slide-in {
     from { margin-left: -25vw; }
     to   { margin-left:   0vw; }
+}
+
+/* The typing effect */
+@keyframes typing {
+    from { width:   0%; }
+}
+
+/* The typing effect */
+@keyframes blink-caret {
+    to, from { border-right-color: transparent; }
+    50%      { border-right-color: orange; }
 }
 
 #spinner {

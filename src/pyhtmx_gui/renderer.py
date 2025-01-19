@@ -131,7 +131,7 @@ class Renderer:
                 text_content=text_content,
                 attributes=attributes,
             )
-            if attribute:
+            if attributes:
                 self.send(
                     component.to_string(),
                     event_id=parameter_id,

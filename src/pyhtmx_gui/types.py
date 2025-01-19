@@ -25,6 +25,7 @@ class EventType(str, Enum):
     UTTERANCE = "recognizer_loop:utterance"
     UTTERANCE_HANDLED = "ovos.utterance.handled"
     UTTERANCE_CANCELLED = "ovos.utterance.cancelled"
+    SPEAK = "speak"
     AUDIO_OUTPUT_START = "recognizer_loop:audio_output_start"
     AUDIO_OUTPUT_END = "recognizer_loop:audio_output_end"
     SKILL_HANDLER_START = "mycroft.skill.handler.start"
