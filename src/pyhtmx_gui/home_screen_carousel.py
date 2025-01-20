@@ -2,7 +2,7 @@ from __future__ import annotations
 import os
 from typing import Any, Optional, List, Dict
 import random
-from pyhtmx import Div, Img, Script, Link, Ul, Li, H2
+from pyhtmx import Div, Input, Img, Script, Link, Ul, Li, H2
 from pyhtmx_gui.kit import SessionItem, Widget, Page
 
 
@@ -353,9 +353,25 @@ class HomeScreen(Page):
             "text-white",
             "font-bold",
         ]
+        text_input: Input = Input(
+            _type="text",
+            placeholder="Ask anything",
+            _class=[
+                "input",
+                "input-bordered",
+                "focus:border-sky-500",
+                "focus:ring-sky-500",
+                "focus:ring-1",
+                "text-[20px]",
+                "w-[30vw]",
+                "h-[48px]",
+                "ml-auto",
+            ],
+        )
         tabs_container = Div(
             [
-                Div(inner_content="1", _class=tab_classes),
+                text_input,
+                Div(inner_content="1", _class=[*tab_classes, "ml-auto"]),
                 Div(inner_content="2", _class=tab_classes),
                 Div(inner_content="3", _class=tab_classes),
                 Div(inner_content="4", _class=tab_classes),
@@ -365,6 +381,8 @@ class HomeScreen(Page):
                 "tabs-boxed",
                 "tabs-lg",
                 "tabs-hidden",
+                "px-[1vw]",
+                "pb-[1vw]",
                 "mb-4",
                 "flex",
                 "justify-center",
