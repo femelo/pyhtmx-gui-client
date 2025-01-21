@@ -28,19 +28,29 @@ body {
 }
 
 /* Status bar style */
-#utterance {
+#speech, #utterance {
     padding: 16px;
     margin-top: 16px;
     margin-left: 0px;
     overflow: hidden; /* Ensures the content is not revealed until the animation */
     line-height: 0;
-    font-family: "VT323";
     /* letter-spacing: 0; */
     /* text-overflow: ellipsis; */
     white-space: nowrap; /* Keeps the content on a single line */
+}
+
+#speech {
+    font-family: "VT323";
     animation:
-        typing 0.5s steps(20, end),  /* The typing effect */
-        blink-caret .75s step-end infinite;
+    typing 0.5s steps(20, end),  /* The typing effect */
+    blink-caret-blue .75s step-end infinite;
+}
+
+#utterance {
+    font-family: "Inter";
+    animation:
+    typing 0.5s steps(20, end),  /* The typing effect */
+    blink-caret-orange .75s step-end infinite;
 }
 
 @keyframes slide-in {
@@ -53,10 +63,15 @@ body {
     from { width:   0%; }
 }
 
-/* The typing effect */
-@keyframes blink-caret {
+/* The blinking caret */
+@keyframes blink-caret-orange {
     to, from { border-right-color: transparent; }
     50%      { border-right-color: orange; }
+}
+
+@keyframes blink-caret-blue {
+    to, from { border-right-color: transparent; }
+    50%      { border-right-color: royalblue; }
 }
 
 #spinner {

@@ -1,7 +1,7 @@
 from __future__ import annotations
 import os
 import gc
-from typing import Mapping, Dict, List, Optional, Union, Any
+from typing import Mapping, Dict, List, Literal, Optional, Union, Any
 from threading import Thread, Event, Timer, Lock
 from time import time, sleep
 import traceback
@@ -34,10 +34,10 @@ class GUIClient:
         self._thread: Optional[Thread] = self.listen()
         self._active_skills: List[str] = []
         self._session: Dict[str, Any] = {}
-        self._timer_lock: Lock = Lock()
-        self._timer: Optional[Timer] = None
-        self._utterance_span: float = 5.0
-        self._utterance_time: int = 0
+        self._timer_locks: Dict[str, Lock] = {"speech": Lock(), "utterance": Lock()}
+        self._timers: Dict[str, Optional[Timer]] = {"speech": None, "utterance": None}
+        self._timespan: float = 5.0
+        self._timestamps: Dict[str, int] = {"speech": 0, "utterance": 0}
         self._gui_manager: GUIManager = GUIManager()
         self._gui_manager.set_gui_client(self)
         self.announce()
@@ -230,11 +230,12 @@ class GUIClient:
             )
         elif namespace == "system" and event_name in set(EventType):
             # Handle OVOS system event
-            utterance: Optional[str] = parameters.get("utterance", None)
-            if utterance:
-                with self._timer_lock:
-                    self._utterance_time = time()
-                data = {"utterance": utterance}
+            speech_or_utterance: Optional[str] = parameters.get("utterance", None)
+            key: str = "speech" if event_name == EventType.SPEAK else "utterance"
+            if speech_or_utterance:
+                with self._timer_locks[key]:
+                    self._timestamps[key] = time()
+                data = {key: speech_or_utterance}
             else:
                 data = None
             # Update status
@@ -242,13 +243,16 @@ class GUIClient:
                 ovos_event=event_name,
                 data=data,
             )
-            if utterance:
-                if self._timer:
-                    self._timer.cancel()
+            if speech_or_utterance:
+                if self._timers[key]:
+                    self._timers[key].cancel()
                 # Reset utterance after a while
-                self._timer = Timer(self._utterance_span, self.reset_utterance)
-                self._timer.start()
-
+                self._timers[key] = Timer(
+                    self._timespan,
+                    self.reset_speech_or_utterance,
+                    args=(key, ),
+                )
+                self._timers[key].start()
         else:
             # Handle general event
             self._gui_manager.update_state(
@@ -344,19 +348,23 @@ class GUIClient:
                 del session_data[property]
 
     # Remove utterance
-    def reset_utterance(
+    def reset_speech_or_utterance(
         self: GUIClient,
+        event_key: str = Literal["speech", "utterance"],
     ) -> None:
-        # Remove utterance if needed
-        with self._timer_lock:
-            elapsed_time: int = time() - self._utterance_time
-            if self._utterance_time > 0 and elapsed_time > self._utterance_span:
+        # Remove speech/utterance if needed
+        event_type: EventType = (
+            EventType.SPEAK if event_key == "speech" else EventType.UTTERANCE
+        )
+        with self._timer_locks[event_key]:
+            elapsed_time: int = time() - self._timestamps[event_key]
+            if self._timestamps[event_key] > 0 and elapsed_time > self._timespan:
                 self._gui_manager.update_status(
-                    ovos_event=EventType.UTTERANCE,
-                    data={"utterance": ""},
+                    ovos_event=event_type,
+                    data={event_key: ""},
                 )
-                self._utterance_time = 0
-                self._timer = None
+                self._timestamps[event_key] = 0
+                self._timers[event_key] = None
 
     # Send an event to OVOS-GUI
     def send_event(

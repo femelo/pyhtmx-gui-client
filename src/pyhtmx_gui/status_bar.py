@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Optional, Dict, Any
+from functools import partial
 from pyhtmx.html_tag import HTMLTag
 from pyhtmx import Div
 from pyhtmx_gui.kit import Page, SessionItem, Trigger
@@ -19,9 +20,32 @@ class StatusBar(Page):
             name="status",
             session_data=session_data
         )
+        self._speech = Div(
+            _id="speech",
+            _class=self.get_speech_or_utterance_class(key="speech"),
+        )
+        self.add_interaction(
+            "speech",
+            SessionItem(
+                parameter="status-speech",
+                attribute=("inner_content", "class"),
+                component=self._speech,
+                format_value={
+                    "inner_content": partial(
+                        self.get_speech_or_utterance,
+                        key="speech",
+                    ),
+                    "class": partial(
+                        self.get_speech_or_utterance_class,
+                        key="speech",
+                    ),
+                },
+                target_level="outerHTML",
+            ),
+        )
         self._utterance = Div(
             _id="utterance",
-            _class=self.get_utterance_class(),
+            _class=self.get_speech_or_utterance_class(key="utterance"),
         )
         self.add_interaction(
             "utterance",
@@ -30,8 +54,14 @@ class StatusBar(Page):
                 attribute=("inner_content", "class"),
                 component=self._utterance,
                 format_value={
-                    "inner_content": self.get_utterance,
-                    "class": self.get_utterance_class,
+                    "inner_content": partial(
+                        self.get_speech_or_utterance,
+                        key="utterance",
+                    ),
+                    "class": partial(
+                        self.get_speech_or_utterance_class,
+                        key="utterance",
+                    ),
                 },
                 target_level="outerHTML",
             ),
@@ -67,7 +97,7 @@ class StatusBar(Page):
             )
         self._widget = Div(
             [
-                self._utterance,
+                Div([self._utterance, self._speech], _class="flex flex-col grow"),
                 self._spinner,
             ],
             _id="status-bar",
@@ -95,26 +125,37 @@ class StatusBar(Page):
             },
         )
 
-    def get_utterance(self: StatusBar, value: Any = None) -> str:
-        utterance: str = self._session_data.get("utterance")
-        return utterance[0].upper() + utterance[1:] if utterance else ''
+    def get_speech_or_utterance(
+        self: StatusBar,
+        value: Any = None,
+        key: str = "utterance",
+    ) -> str:
+        text: str = self._session_data.get(key)
+        return text[0].upper() + text[1:] if text else ''
 
-    def get_utterance_class(self: StatusBar, value: Any = None) -> list[str]:
-        utterance_class: list[str] = [
-            "text-[40px]",
-            "text-white",
+    def get_speech_or_utterance_class(
+        self: StatusBar,
+        value: Any = None,
+        key: str = "utterance",
+    ) -> list[str]:
+        font_size: int = 24 if key == "utterance" else 32
+        guard: str = 3 * ' ' if key == "utterance" else 2 * ' '
+        _class: list[str] = [
+            f"text-[{font_size}px]",
+            "text-white" if key == "utterance" else "text-white",
+            "font-medium" if key == "utterance" else "font-normal",
             "border-0",
         ]
         if value:
             width = calculate_text_width(
-                value[0].upper() + value[1:] + " ",
-                font_name="VT323-Regular.ttf",
-                font_size=40,
+                value[0].upper() + value[1:] + guard,
+                font_name="Inter-Regular.woff2" if key == "utterance" else "VT323-Regular.ttf",
+                font_size=font_size,
             ) + 8
-            utterance_class.extend([f"w-[{width}px]", "border-r-8"])
+            _class.extend([f"w-[{width}px]", "border-r-8"])
         else:
-            utterance_class.extend(["w-[0px]", "border-r-0"])
-        return utterance_class
+            _class.extend(["w-[0px]", "border-r-0"])
+        return _class
 
     def get_spinner_class(self: StatusBar, ovos_event: str) -> str:
         if ovos_event in (EventType.WAKEWORD, EventType.RECORD_BEGIN):
