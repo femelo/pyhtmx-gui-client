@@ -3,7 +3,9 @@ import os
 from typing import Any, Optional, List, Dict
 import random
 from pyhtmx import Div, Input, Img, Script, Link, Ul, Li, H2
-from pyhtmx_gui.kit import SessionItem, Widget, Page
+from pyhtmx_gui.page_manager import PageManager
+from pyhtmx_gui.types import DOMEvent
+from pyhtmx_gui.kit import SessionItem, Control, Widget, Page
 
 
 # Weather icon mapping
@@ -346,7 +348,7 @@ class HomeScreen(Page):
             _id="carousel",
         )
 
-        # Tabs-container
+        # Bottom container
         tab_classes = [
             "tab",
             "tab-lifted",
@@ -354,8 +356,11 @@ class HomeScreen(Page):
             "font-bold",
         ]
         text_input: Input = Input(
+            _id="utterance-input",
             _type="text",
+            value="",
             placeholder="Ask anything",
+            onmouseout="this.blur()",  # Remove focus on mouse out
             _class=[
                 "input",
                 "input-bordered",
@@ -368,7 +373,38 @@ class HomeScreen(Page):
                 "ml-auto",
             ],
         )
-        tabs_container = Div(
+
+        # Add interaction to send utterance back to OVOS
+        def send_utterance_callback(page_manager: PageManager, dom_event: DOMEvent):
+            # Send utterance to OVOS
+            page_manager.send_utterance_to_ovos(dom_event.target.value)
+            # Reset text input value
+            page_manager.update_attributes(
+                namespace="skill-ovos-homescreen.openvoiceos",
+                page_id="home_screen",
+                parameter="utterance-input",
+                attribute={"value": ""},
+            )
+        self.add_interaction(
+            "utterance_input",
+            SessionItem(
+                parameter="utterance-input",
+                attribute="value",
+                component=text_input,
+            )
+        )
+        self.add_interaction(
+            "send-utterance-key-up",
+            Control(
+                context="global",
+                event="keyup[(event.code === 'Enter') && (this.value != '')] from:body",
+                callback=send_utterance_callback,
+                source=text_input,
+            ),
+        )
+
+        # Bottom container
+        bottom_container = Div(
             [
                 text_input,
                 Div(inner_content="1", _class=[*tab_classes, "ml-auto"]),
@@ -387,7 +423,7 @@ class HomeScreen(Page):
                 "flex",
                 "justify-center",
             ],
-            _id="tabs-container",
+            _id="bottom-container",
             style={
                 "height": "10%",
                 "width": "100%",
@@ -401,9 +437,9 @@ class HomeScreen(Page):
             },
         )
 
-        # Combine carousel and tabs
+        # Combine carousel, utterance input and tabs
         main_view = Div(
-            [carousel_container, tabs_container],
+            [carousel_container, bottom_container],
             _class=[
                 "h-full",
                 "w-full",

@@ -39,6 +39,7 @@ class GUIClient:
         self._utterance_span: float = 5.0
         self._utterance_time: int = 0
         self._gui_manager: GUIManager = GUIManager()
+        self._gui_manager.set_gui_client(self)
         self.announce()
 
     # Connect to OVOS-GUI WebSocket
@@ -358,19 +359,32 @@ class GUIClient:
                 self._timer = None
 
     # Send an event to OVOS-GUI
-    def send_focus_event(
+    def send_event(
         self: GUIClient,
         namespace: str,
-        index: int
+        event_name: EventType,
+        data: Dict[str, Any],
     ) -> None:
         if self._ws:
             message = Message(
                 type=MessageType.EVENT_TRIGGERED,
                 namespace=namespace,
-                event_name="page_gained_focus",
-                data={"number": index},
+                event_name=event_name,
+                data=data,
             )
             self._ws.send(message.model_dump_json())
+
+    # Send an event to OVOS-GUI
+    def send_focus_event(
+        self: GUIClient,
+        namespace: str,
+        index: int
+    ) -> None:
+        self.send_event(
+            namespace=namespace,
+            event_name=EventType.PAGE_GAINED_FOCUS,
+            data={"number": index},
+        )
 
 
 global_client = GUIClient()

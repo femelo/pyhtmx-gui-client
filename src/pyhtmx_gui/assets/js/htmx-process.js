@@ -66,3 +66,30 @@ dom_ready(() => {
         set_animation,
     );
 });
+
+
+function objectify_node(node) {
+    const attributes = Array.from(node.getAttributeNames()).filter(
+        (attr) => !attr.startsWith("hx-") && !attr.startsWith("sse")
+    );
+    const node_object = Object.fromEntries(
+        attributes.map((attr) => [attr, node.getAttribute(attr)])
+    );
+    if ("value" in node) {
+        node_object["value"] = node.value;
+    }
+    return node_object;
+}
+
+
+function stringify_event(e) {
+    const obj = {};
+    for (let k in e) {
+      obj[k] = e[k];
+    }
+    return JSON.stringify(obj, (k, v) => {
+        if (v instanceof Node) return objectify_node(v);
+        if (v instanceof Window) return 'Window';
+        return v;
+    }, ' ');
+}
