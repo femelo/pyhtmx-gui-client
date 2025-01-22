@@ -9,6 +9,7 @@ from websocket import WebSocket, create_connection
 from .logger import logger
 from .config import config_data
 from .types import MessageType, EventType, Message
+from .utils import format_utterance
 from .gui_manager import GUIManager
 
 
@@ -230,12 +231,13 @@ class GUIClient:
             )
         elif namespace == "system" and event_name in set(EventType):
             # Handle OVOS system event
-            speech_or_utterance: Optional[str] = parameters.get("utterance", None)
+            speech_or_utterance: Optional[Union[str, List[str]]] = \
+                parameters.get("utterance", None) or parameters.get("utterances", None)
             key: str = "speech" if event_name == EventType.SPEAK else "utterance"
             if speech_or_utterance:
                 with self._timer_locks[key]:
                     self._timestamps[key] = time()
-                data = {key: speech_or_utterance}
+                data = {key: format_utterance(speech_or_utterance)}
             else:
                 data = None
             # Update status

@@ -22,7 +22,7 @@ class HelloWorldSkill(OVOSSkill):
                 "hello_world_page2",
                 "hello_world_page3",
             ],
-            override_idle=60,
+            override_idle=20,
         )
 
         self.speak(text)

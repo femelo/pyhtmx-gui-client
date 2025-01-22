@@ -139,7 +139,7 @@ class StatusBar(Page):
         key: str = "utterance",
     ) -> list[str]:
         font_size: int = 24 if key == "utterance" else 32
-        guard: str = 3 * ' ' if key == "utterance" else 2 * ' '
+        guard: str = ' ' if key == "utterance" else ''
         _class: list[str] = [
             f"text-[{font_size}px]",
             "text-white" if key == "utterance" else "text-white",

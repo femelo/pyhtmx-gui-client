@@ -1,5 +1,5 @@
 import os
-from typing import Optional, Union, Dict, Any
+from typing import Optional, Union, Dict, List, Any
 import importlib
 import inspect
 from PIL import ImageFont
@@ -90,3 +90,26 @@ def calculate_text_width(
     font = ImageFont.truetype(os.path.join(ASSETS_DIR, font_name), font_size)
     size = font.getlength(text)
     return round(size + 0.5)
+
+
+def format_utterance(utterance: Union[str, List[str]]) -> str:
+    if isinstance(utterance, list):
+        utterance_sentences: List[str] = list(
+            map(
+                lambda x: x.strip().strip('.').strip(),
+                filter(bool, utterance),
+            ),
+        )
+    else:
+        utterance_sentences: List[str] = list(
+            map(
+                str.strip,
+                filter(bool, utterance.strip().split('.')),
+            )
+        )
+    formatted_utterance: str = ". ".join(utterance_sentences)
+    last_char: str = formatted_utterance[-1]
+    if last_char not in list('.:,;?!-'):
+        formatted_utterance += '.'
+    formatted_utterance += ' '
+    return formatted_utterance
