@@ -108,7 +108,7 @@ def format_utterance(utterance: Union[str, List[str]]) -> str:
             )
         )
     formatted_utterance: str = ". ".join(utterance_sentences)
-    last_char: str = formatted_utterance[-1]
+    last_char: str = formatted_utterance[-1] if format_utterance else ''
     if last_char not in list('.:,;?!-'):
         formatted_utterance += '.'
     formatted_utterance += ' '
