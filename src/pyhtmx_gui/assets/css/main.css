@@ -27,75 +27,6 @@ body {
     margin: 0;
 }
 
-/* Status bar style */
-#speech, #utterance {
-    padding: 16px;
-    margin-top: 16px;
-    margin-left: 0px;
-    overflow: hidden; /* Ensures the content is not revealed until the animation */
-    line-height: 0;
-    /* letter-spacing: 0; */
-    /* text-overflow: ellipsis; */
-    white-space: nowrap; /* Keeps the content on a single line */
-}
-
-#speech {
-    font-family: "VT323";
-    animation:
-    typing 0.5s steps(20, end),  /* The typing effect */
-    blink-caret-blue .75s step-end infinite;
-}
-
-#utterance {
-    font-family: "Inter";
-    animation:
-    typing 0.5s steps(20, end),  /* The typing effect */
-    blink-caret-orange .75s step-end infinite;
-}
-
-@keyframes slide-in {
-    from { margin-left: -25vw; }
-    to   { margin-left:   0vw; }
-}
-
-/* The typing effect */
-@keyframes typing {
-    from { width:   0%; }
-}
-
-/* The blinking caret */
-@keyframes blink-caret-orange {
-    to, from { border-right-color: transparent; }
-    50%      { border-right-color: orange; }
-}
-
-@keyframes blink-caret-blue {
-    to, from { border-right-color: transparent; }
-    50%      { border-right-color: royalblue; }
-}
-
-#spinner {
-    visibility: hidden;
-    opacity: 0;
-    padding: 16px;
-    margin-left: auto;
-    width: 15vh;
-    height: 15vh;
-    transition: opacity 0.25s ease-in-out, visibility 0s linear 0.25s;
-}
-
-#spinner.visible {
-    visibility: visible;
-    opacity: 1;
-    transition: opacity 1s ease-in-out, visibility 0s linear 0s;
-}
-
-#spinner.fade-out {
-    visibility: hidden;
-    opacity: 0;
-    transition: opacity 0.5s ease-in-out, visibility 0s linear 0.5s;
-}
-
 
 /* Fade in animations */
 @keyframes anim-fade-in {
@@ -188,46 +119,6 @@ body {
 }
 
 
-/* Fade in classes */
-/* .fade-in {
-    view-transition-name: fade-in;
-}
-
-.fade-in-from-left {
-    view-transition-name: fade-in-from-left;
-}
-
-.fade-in-from-right {
-    view-transition-name: fade-in-from-right;
-}
-
-.fade-in-from-top {
-    view-transition-name: fade-in-from-top;
-}
-
-.fade-in-from-bottom {
-    view-transition-name: fade-in-from-bottom;
-} */
-
-
-/* Swipe in classes */
-/* .swipe-in-from-left {
-    view-transition-name: swipe-in-from-left;
-}
-
-.swipe-in-from-right {
-    view-transition-name: swipe-in-from-right;
-}
-
-.swipe-in-from-top {
-    view-transition-name: swipe-in-from-top;
-}
-
-.swipe-in-from-bottom {
-    view-transition-name: swipe-in-from-bottom;
-} */
-
-
 /* Fade in view transitions */
 ::view-transition-old(fade-in) {
     animation: 0.25s anim-fade-out 0s ease;
@@ -308,5 +199,5 @@ body {
 #root > div {
     opacity: 1;
     margin: 0;
-    view-transition-name: var(--swap-animation, fade-in);
+    view-transition-name: var(--swap-animation, none);
 }

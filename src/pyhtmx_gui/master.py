@@ -37,6 +37,11 @@ MASTER_DOCUMENT: Html = Html(
                     rel="stylesheet",
                     _type="text/css",
                 ),
+                Link(
+                    href="assets/css/status.css",
+                    rel="stylesheet",
+                    _type="text/css",
+                ),
                 Script(
                     src="assets/js/tailwind-play-cdn.js",
                     _type="text/javascript",
@@ -52,12 +57,12 @@ MASTER_DOCUMENT: Html = Html(
                     defer="true",
                 ),
                 Script(
-                    src="assets/js/htmx-process.js",
+                    src="assets/js/lottie-player.js",
                     _type="text/javascript",
                     defer="true",
                 ),
                 Script(
-                    src="assets/js/lottie-player.js",
+                    src="assets/js/main.js",
                     _type="text/javascript",
                     defer="true",
                 ),

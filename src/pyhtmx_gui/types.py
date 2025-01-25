@@ -38,6 +38,9 @@ class EventType(str, Enum):
     UTTERANCE = "recognizer_loop:utterance"
     UTTERANCE_HANDLED = "ovos.utterance.handled"
     UTTERANCE_CANCELLED = "ovos.utterance.cancelled"
+    # NOTE: This is a dummy event for internal use
+    UTTERANCE_UNDETECTED = "ovos.utterance.undetected"
+    UTTERANCE_END = "ovos.utterance.end"
     SPEAK = "speak"
     AUDIO_OUTPUT_START = "recognizer_loop:audio_output_start"
     AUDIO_OUTPUT_END = "recognizer_loop:audio_output_end"

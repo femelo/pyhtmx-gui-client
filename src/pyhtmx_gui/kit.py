@@ -130,9 +130,11 @@ class Widget:
                     value.format_value,
                 )
             if set(value.attribute) == {"inner_content"}:
-                value.target_level = "innerHTML"
+                if "innerHTML" not in value.target_level:
+                    value.target_level = ' '.join(["innerHTML", *value.target_level.split()])
             else:
-                value.target_level = "outerHTML"
+                if "outerHTML" not in value.target_level:
+                    value.target_level = ' '.join(["outerHTML", *value.target_level.split()])
             if key not in self._session_items:
                 self._session_items[key] = []
             self._session_items[key].append(value)
@@ -155,9 +157,11 @@ class Widget:
                     value.attribute[0]: value.get_value
                 }
             if set(value.attribute) == {"inner_content"}:
-                value.target_level = "innerHTML"
+                if "innerHTML" not in value.target_level:
+                    value.target_level = ' '.join(["innerHTML", *value.target_level.split()])
             else:
-                value.target_level = "outerHTML"
+                if "outerHTML" not in value.target_level:
+                    value.target_level = ' '.join(["outerHTML", *value.target_level.split()])
             if key not in self._triggers:
                 self._triggers[key] = []
             self._triggers[key].append(value)

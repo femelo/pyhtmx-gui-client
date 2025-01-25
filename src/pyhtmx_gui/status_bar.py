@@ -3,6 +3,7 @@ from typing import Optional, Dict, Any
 from functools import partial
 from pyhtmx.html_tag import HTMLTag
 from pyhtmx import Div
+from math import exp, log
 from pyhtmx_gui.kit import Page, SessionItem, Trigger
 from .types import EventType
 from .utils import calculate_text_width
@@ -71,8 +72,11 @@ class StatusBar(Page):
             _id="spinner",
             src="assets/animations/spinner2.json",
             background="transparent",
+            disableCheck="true",
+            disableShadowDOM="true",
             loop="",
             autoplay="",
+            _class="fade-out",
         )
         spinner_trigger = Trigger(
             event="status-spinner",
@@ -81,15 +85,18 @@ class StatusBar(Page):
             get_value={
                 "class": self.get_spinner_class,
             },
-            target_level="outerHTML",
+            target_level="outerHTML transition:true",
         )
         for ovos_event in [
             EventType.WAKEWORD,
-            EventType.RECORD_BEGIN,
-            EventType.RECORD_END,
-            EventType.UTTERANCE,
+            # EventType.RECORD_BEGIN,
+            # EventType.RECORD_END,
+            # EventType.UTTERANCE,
             EventType.UTTERANCE_HANDLED,
             EventType.UTTERANCE_CANCELLED,
+            EventType.UTTERANCE_UNDETECTED,
+            EventType.INTENT_FAILURE,
+            EventType.UTTERANCE_END,
         ]:
             self.add_interaction(
                 ovos_event.value,
@@ -120,7 +127,6 @@ class StatusBar(Page):
                 "left": "0",
                 "background-color": "rgba(0, 0, 0, 0)",
                 "overflow-y": "hidden",
-                "transition": "1.0s",
                 "pointer-events": "none",
             },
         )
@@ -152,13 +158,28 @@ class StatusBar(Page):
                 font_name="Inter-Regular.woff2" if key == "utterance" else "VT323-Regular.ttf",
                 font_size=font_size,
             ) + 8
-            _class.extend([f"w-[{width}px]", "border-r-8"])
+            period = 1.5 * (1.0 - exp(log(0.75) * len(value) / 10))
+            _class.extend(
+                [
+                    f"{key}-period-{period:0.2f}",
+                    f"w-[{width}px]",
+                    "border-r-8",
+                ]
+            )
         else:
             _class.extend(["w-[0px]", "border-r-0"])
         return _class
 
-    def get_spinner_class(self: StatusBar, ovos_event: str) -> str:
-        if ovos_event in (EventType.WAKEWORD, EventType.RECORD_BEGIN):
+    def get_spinner_class(self: StatusBar, ovos_event: str) -> Optional[str]:
+        if ovos_event in (EventType.WAKEWORD, ):
             return "visible"  # Activate fade-in
-        elif ovos_event == EventType.RECORD_END:
+        elif ovos_event in (EventType.UTTERANCE_HANDLED, ):
+            return "success"  # Activate success
+        elif ovos_event in (EventType.UTTERANCE_CANCELLED, ):
+            return "cancelled"
+        elif ovos_event in (EventType.UTTERANCE_UNDETECTED, EventType.INTENT_FAILURE):
+            return "failure"  # Activate failure
+        elif ovos_event in (EventType.UTTERANCE_END, ):
             return "fade-out"  # Activate fade-out
+        else:
+            return None
