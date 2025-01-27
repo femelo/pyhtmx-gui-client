@@ -8,7 +8,7 @@
     const carousel = document.querySelector(".carousel");
     const carouselItems = document.querySelectorAll(".carousel-item");
     const tabs = document.querySelectorAll(".tab");
-    const tabsContainer = document.getElementById("tabs-container");
+    const bottomContainer = document.getElementById("bottom-container");
     const fullScreenImage = document.getElementById("full-screen-image");
 
     let selectedTab = 0;
@@ -66,20 +66,23 @@
     // Function to show tabs temporarily and adjust fullscreen image
     function showTabs() {
         // Remove the ‘hidden’ classes from the tabs
-        tabsContainer.classList.remove("tabs-hidden");
+        bottomContainer.classList.remove("tabs-hidden");
         // Add the ‘tabs-shown’ class to make them visible
-        tabsContainer.classList.add("tabs-shown");
+        bottomContainer.classList.add("tabs-shown");
 
         // Make the full-screen image smaller
         fullScreenImage.classList.add("small");
     }
 
     function hideTabs() {
-        tabsContainer.classList.remove("tabs-shown"); // Hide the tabs after 2 seconds
-        tabsContainer.classList.add("tabs-hidden");
+        const utteranceInput = document.getElementById("utterance-input");
+        if (utteranceInput !== document.activeElement) {
+            bottomContainer.classList.remove("tabs-shown"); // Hide the tabs after 2 seconds
+            bottomContainer.classList.add("tabs-hidden");
 
-        // Resize the full-screen image
-        fullScreenImage.classList.remove("small");
+            // Resize the full-screen image
+            fullScreenImage.classList.remove("small");
+        }
     }
 
     // Show tabs on hover over the carousel

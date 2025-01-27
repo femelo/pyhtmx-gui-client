@@ -1,0 +1,165 @@
+/* Status bar style */
+#speech, #utterance {
+    padding: 16px;
+    margin-top: 16px;
+    margin-left: 0px;
+    overflow: hidden; /* Ensures the content is not revealed until the animation */
+    line-height: 0;
+    /* letter-spacing: 0; */
+    /* text-overflow: ellipsis; */
+    white-space: nowrap; /* Keeps the content on a single line */
+}
+
+#speech {
+    font-family: "VT323";
+    animation:
+        anim-typing var(--speech-period, 0.5s) steps(50, end),
+        anim-blink-caret-blue .75s step-end infinite;
+    /* view-transition-name: speech-in; */
+}
+
+#utterance {
+    font-family: "Inter";
+    animation:
+        anim-typing var(--utterance-period, 0.5s) steps(50, end),
+        anim-blink-caret-orange .75s step-end infinite;
+    /* view-transition-name: utterance-in; */
+}
+
+@keyframes slide-in {
+    from { margin-left: -25vw; }
+    to   { margin-left:   0vw; }
+}
+
+/* The typing effect */
+@keyframes anim-typing {
+    from { width:   0%; }
+}
+
+/* The blinking caret */
+@keyframes anim-blink-caret-orange {
+    to, from { border-right-color: transparent; }
+    50%      { border-right-color: orange; }
+}
+
+@keyframes anim-blink-caret-blue {
+    to, from { border-right-color: transparent; }
+    50%      { border-right-color: royalblue; }
+}
+
+/* ::view-transition-new(speech-in):only-child {
+    animation: anim-typing 1.5s steps(20, end), anim-blink-caret-blue .75s step-end infinite;
+}
+
+::view-transition-new(utterance-in):only-child {
+    animation: anim-typing 1.5s steps(20, end), anim-blink-caret-orange .75s step-end infinite;
+} */
+
+@keyframes anim-spinner-fade-in {
+    from { opacity: 0; visibility: hidden;  }
+    to   { opacity: 1; visibility: visible; }
+}
+
+@keyframes anim-spinner-fade-out {
+    to { opacity: 0; visibility: hidden; }
+}
+
+@keyframes anim-spinner-from-normal {
+    from { filter: invert(56%) sepia(81%) saturate(5144%) hue-rotate(197deg) brightness(100%) contrast(93%); }
+}
+
+@keyframes anim-spinner-to-success {
+    to { filter: invert(56%) sepia(100%) saturate(361%) hue-rotate(90deg) brightness(91%) contrast(92%); }
+}
+
+@keyframes anim-spinner-to-failure {
+    to { filter: invert(65%) sepia(70%) saturate(6075%) hue-rotate(331deg) brightness(91%) contrast(105%); }
+}
+
+@keyframes anim-spinner-to-cancelled {
+    to { filter: invert(76%) sepia(24%) saturate(6992%) hue-rotate(359deg) brightness(101%) contrast(93%); }
+}
+
+/* Spinner style */
+#spinner {
+    visibility: visible;
+    opacity: 1;
+    padding: 16px;
+    margin-left: auto;
+    width: 15vh;
+    height: 15vh;
+}
+
+::view-transition-new(spinner-fade-in):only-child {
+    animation: anim-spinner-fade-in 1.25s ease-in;
+}
+
+#spinner.visible {
+    visibility: visible;
+    opacity: 1;
+    /* transition: opacity 1s ease-in, visibility 0s linear 0s; */
+    view-transition-name: spinner-fade-in;
+    #spinner-circle {
+        filter: invert(56%) sepia(81%) saturate(5144%) hue-rotate(197deg) brightness(100%) contrast(93%);
+    }
+}
+
+
+::view-transition-old(spinner-success) {
+    animation: anim-spinner-from-normal 0.75s ease;
+}
+
+::view-transition-new(spinner-success) {
+    animation: anim-spinner-to-success 0.75s ease;
+}
+
+#spinner.success {
+    #spinner-circle {
+        view-transition-name: spinner-success;
+        filter: invert(56%) sepia(100%) saturate(361%) hue-rotate(90deg) brightness(91%) contrast(92%);
+        /* transition: all 1s ease-in; */
+    }
+}
+
+::view-transition-old(spinner-cancelled) {
+    animation: anim-spinner-from-normal 0.75s ease;
+}
+
+::view-transition-new(spinner-cancelled) {
+    animation: anim-spinner-to-cancelled 0.75s ease;
+}
+
+#spinner.cancelled {
+    #spinner-circle {
+        view-transition-name: spinner-cancelled;
+        filter: invert(76%) sepia(24%) saturate(6992%) hue-rotate(359deg) brightness(101%) contrast(93%);
+        /* transition: all 1s ease-in; */
+    }
+}
+
+::view-transition-old(spinner-failure) {
+    animation: anim-spinner-from-normal 0.75s ease;
+}
+
+::view-transition-new(spinner-failure) {
+    animation: anim-spinner-to-failure 0.75s ease;
+}
+
+#spinner.failure {
+    #spinner-circle {
+        view-transition-name: spinner-failure;
+        filter: invert(65%) sepia(70%) saturate(6075%) hue-rotate(331deg) brightness(91%) contrast(105%);
+        /* transition: all 1s ease-in; */
+    }
+}
+
+::view-transition-new(spinner-fade-out):only-child {
+    animation: anim-spinner-fade-out 1.5s ease;
+}
+
+#spinner.fade-out {
+    visibility: hidden;
+    opacity: 0;
+    /* transition: opacity 1s ease, visibility 0s linear 1.5s; */
+    view-transition-name: spinner-fade-out;
+}

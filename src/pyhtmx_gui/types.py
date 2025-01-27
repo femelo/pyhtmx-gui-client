@@ -1,7 +1,20 @@
 from typing import Any, List, Dict, Union, Optional, Callable, TypeVar
 from enum import Enum
+import json
+from types import SimpleNamespace as Namespace
 from pydantic import BaseModel, ConfigDict, Field
 from pyhtmx.html_tag import HTMLTag
+
+
+class DOMEvent:
+    def __init__(self, event_id: str, event_json: str):
+        self.event_id: str = event_id
+        event_object = json.loads(event_json, object_hook=lambda d: Namespace(**d))
+        # Dynamically set attributes
+        for attr in event_object.__dict__:
+            if callable(getattr(event_object, attr)) or attr.startswith("__"):
+                continue
+            setattr(self, attr.replace("-", "_"), getattr(event_object, attr))
 
 
 class MessageType(str, Enum):
@@ -25,6 +38,9 @@ class EventType(str, Enum):
     UTTERANCE = "recognizer_loop:utterance"
     UTTERANCE_HANDLED = "ovos.utterance.handled"
     UTTERANCE_CANCELLED = "ovos.utterance.cancelled"
+    # NOTE: This is a dummy event for internal use
+    UTTERANCE_UNDETECTED = "ovos.utterance.undetected"
+    UTTERANCE_END = "ovos.utterance.end"
     SPEAK = "speak"
     AUDIO_OUTPUT_START = "recognizer_loop:audio_output_start"
     AUDIO_OUTPUT_END = "recognizer_loop:audio_output_end"

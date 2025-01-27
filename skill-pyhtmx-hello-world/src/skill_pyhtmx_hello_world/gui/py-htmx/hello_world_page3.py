@@ -64,7 +64,7 @@ class HelloWorldWidget(Widget):
                 context="global",
                 event="click",
                 # will close the window
-                callback=lambda renderer: renderer.close(),
+                callback=lambda renderer, _: renderer.close(),
                 source=self._button,
                 target=None,  # no target
                 target_level="innerHTML",
@@ -110,7 +110,7 @@ class HelloWorldPage3(Page):
                 context="global",
                 event="keyup[event.code === 'ArrowLeft'] from:body",
                 callback=(
-                    lambda renderer: renderer.show_previous()
+                    lambda renderer, _: renderer.show_previous()
                 ),
             ),
         )

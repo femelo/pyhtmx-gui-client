@@ -1,7 +1,7 @@
 from __future__ import annotations
 import os
 import gc
-from typing import Mapping, Dict, List, Optional, Union, Any
+from typing import Mapping, Dict, List, Literal, Optional, Union, Any
 from threading import Thread, Event, Timer, Lock
 from time import time, sleep
 import traceback
@@ -9,7 +9,9 @@ from websocket import WebSocket, create_connection
 from .logger import logger
 from .config import config_data
 from .types import MessageType, EventType, Message
+# from .utils import format_utterance
 from .gui_manager import GUIManager
+from .status_handler import StatusHandler
 
 
 CLIENT_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -34,11 +36,11 @@ class GUIClient:
         self._thread: Optional[Thread] = self.listen()
         self._active_skills: List[str] = []
         self._session: Dict[str, Any] = {}
-        self._timer_lock: Lock = Lock()
-        self._timer: Optional[Timer] = None
-        self._utterance_span: float = 5.0
-        self._utterance_time: int = 0
         self._gui_manager: GUIManager = GUIManager()
+        self._gui_manager.set_gui_client(self)
+        self._status_handler: StatusHandler = StatusHandler(
+            self._gui_manager.update_status
+        )
         self.announce()
 
     # Connect to OVOS-GUI WebSocket
@@ -229,25 +231,10 @@ class GUIClient:
             )
         elif namespace == "system" and event_name in set(EventType):
             # Handle OVOS system event
-            utterance: Optional[str] = parameters.get("utterance", None)
-            if utterance:
-                with self._timer_lock:
-                    self._utterance_time = time()
-                data = {"utterance": utterance}
-            else:
-                data = None
-            # Update status
-            self._gui_manager.update_status(
-                ovos_event=event_name,
-                data=data,
+            self._status_handler.process_event(
+                event_name=event_name,
+                event_data=parameters,
             )
-            if utterance:
-                if self._timer:
-                    self._timer.cancel()
-                # Reset utterance after a while
-                self._timer = Timer(self._utterance_span, self.reset_utterance)
-                self._timer.start()
-
         else:
             # Handle general event
             self._gui_manager.update_state(
@@ -342,20 +329,21 @@ class GUIClient:
             if property is not None and property in session_data:
                 del session_data[property]
 
-    # Remove utterance
-    def reset_utterance(
+    # Send an event to OVOS-GUI
+    def send_event(
         self: GUIClient,
+        namespace: str,
+        event_name: EventType,
+        data: Dict[str, Any],
     ) -> None:
-        # Remove utterance if needed
-        with self._timer_lock:
-            elapsed_time: int = time() - self._utterance_time
-            if self._utterance_time > 0 and elapsed_time > self._utterance_span:
-                self._gui_manager.update_status(
-                    ovos_event=EventType.UTTERANCE,
-                    data={"utterance": ""},
-                )
-                self._utterance_time = 0
-                self._timer = None
+        if self._ws:
+            message = Message(
+                type=MessageType.EVENT_TRIGGERED,
+                namespace=namespace,
+                event_name=event_name,
+                data=data,
+            )
+            self._ws.send(message.model_dump_json())
 
     # Send an event to OVOS-GUI
     def send_focus_event(
@@ -363,14 +351,11 @@ class GUIClient:
         namespace: str,
         index: int
     ) -> None:
-        if self._ws:
-            message = Message(
-                type=MessageType.EVENT_TRIGGERED,
-                namespace=namespace,
-                event_name="page_gained_focus",
-                data={"number": index},
-            )
-            self._ws.send(message.model_dump_json())
+        self.send_event(
+            namespace=namespace,
+            event_name=EventType.PAGE_GAINED_FOCUS,
+            data={"number": index},
+        )
 
 
 global_client = GUIClient()

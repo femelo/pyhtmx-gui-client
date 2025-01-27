@@ -10,6 +10,7 @@ from .types import (
     CallbackContext,
     InputItem,
     OutputItem,
+    DOMEvent,
 )
 from .kit import Page
 from .utils import build_page
@@ -82,6 +83,7 @@ class PageRegistrationInterface:
                     "hx-trigger": event,
                     "hx-target": target.attributes["id"],
                     "hx-swap": target_level,
+                    "hx-vals": "js:{event: stringify_event(event)}",
                 },
             )
             item_type = PageItem.LOCAL_CALLBACK
@@ -102,6 +104,7 @@ class PageRegistrationInterface:
                     # TODO: for multiple events, use hx_vals
                     "hx-post": f"/global-event/{event_id}",
                     "hx-trigger": events,
+                    "hx-vals": "js:{event: stringify_event(event)}",
                 },
             )
             item_type = PageItem.GLOBAL_CALLBACK
@@ -287,6 +290,7 @@ class PageManager:
         self: PageManager,
         context: CallbackContext,
         event_id: str,
+        event: Optional[DOMEvent] = None,
     ) -> Any:
         callback: Optional[Callback] = self.get_item(
             item_type=(
@@ -298,7 +302,7 @@ class PageManager:
         content: Any = None
         if callback:
             # Call
-            content = callback.fn()
+            content = callback.fn(event)
         else:
             logger.warning(f"Callback for event '{event_id}' not found.")
         return content

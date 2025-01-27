@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Any, Union, Optional, List, Dict
 from secrets import token_hex
 from pyhtmx.html_tag import HTMLTag
-from .types import PageItem, InputItem, OutputItem, CallbackContext
+from .types import PageItem, InputItem, OutputItem, CallbackContext, EventType, DOMEvent
 from .renderer import Renderer, global_renderer
 from .page_group import PageGroup
 from .utils import validate_position, fix_position
@@ -15,11 +15,15 @@ class GUIManager:
     def __init__(self: GUIManager) -> None:
         self._namespaces: List[str] = []
         self._catalog: Dict[str, PageGroup] = {}
+        self._gui_client: Any = None
         GUIManager.renderer.set_gui_manager(self)
 
     @property
     def num_namespaces(self: GUIManager) -> int:
         return len(self._namespaces)
+
+    def set_gui_client(self: GUIManager, gui_client: Any) -> None:
+        self._gui_client = gui_client
 
     def get_num_pages(
         self: GUIManager,
@@ -347,6 +351,7 @@ class GUIManager:
         self: GUIManager,
         context: CallbackContext,
         event_id: str,
+        event: Optional[DOMEvent] = None,
     ) -> Any:
         namespace = self.get_active_namespace()
         page_id = self.get_active_page_id()
@@ -354,4 +359,18 @@ class GUIManager:
             page_id=page_id,
             context=context,
             event_id=event_id,
+            event=event,
+        )
+
+    def send_event(
+        self: GUIManager,
+        namespace: str,
+        ovos_event: EventType,
+        data: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        data = data or {}
+        self._gui_client.send_event(
+            namespace=namespace,
+            event_name=ovos_event,
+            data=data,
         )

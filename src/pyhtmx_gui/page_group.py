@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Any, Union, Optional, List, Dict
 from pydantic import BaseModel, ConfigDict, PrivateAttr
 from pyhtmx.html_tag import HTMLTag
-from .types import PageItem, InputItem, OutputItem, CallbackContext
+from .types import PageItem, InputItem, OutputItem, CallbackContext, DOMEvent
 from .utils import validate_position, fix_position
 from .page_manager import PageManager
 from .renderer import Renderer
@@ -228,6 +228,7 @@ class PageGroup(BaseModel):
         page_id: str,
         context: CallbackContext,
         event_id: str,
+        event: Optional[DOMEvent] = None,
     ) -> Any:
         page_items = self._pages.get(page_id, None)
         if not page_items:
@@ -239,4 +240,5 @@ class PageGroup(BaseModel):
         return page_items.trigger_callback(
             context=context,
             event_id=event_id,
+            event=event,
         )

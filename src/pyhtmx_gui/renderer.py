@@ -6,7 +6,7 @@ from queue import Queue
 from pyhtmx import Html, Div, Dialog
 from .logger import logger
 from .master import MASTER_DOCUMENT
-from .types import InteractionParameter, PageItem, PageNeighbor
+from .types import InteractionParameter, PageItem, PageNeighbor, EventType
 from .kit import Page
 from .status_bar import StatusBar
 from .page_manager import PageManager
@@ -507,6 +507,28 @@ class Renderer:
             msg = f"event: {event_id}\n{msg}"
         self.event_sender.send(msg)
 
+    def send_event_to_ovos(
+        self: Renderer,
+        namespace: str,
+        ovos_event: EventType,
+        data: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        data = data or {}
+        self._gui_manager.send_event(
+            namespace=namespace,
+            ovos_event=ovos_event,
+            data=data,
+        )
+
+    def send_utterance_to_ovos(
+        self: Renderer,
+        utterance: str,
+    ) -> None:
+        self.send_event_to_ovos(
+            namespace="system",
+            ovos_event=EventType.UTTERANCE,
+            data={"utterance": utterance},
+        )
 
 # Instantiate global renderer
 global_renderer: Renderer = Renderer()

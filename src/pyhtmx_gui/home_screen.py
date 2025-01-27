@@ -348,7 +348,7 @@ class Drawer(Widget):
                 context="global",
                 event="click",
                 # will open the dialog about
-                callback=lambda renderer: renderer.open_dialog("about-dialog"),
+                callback=lambda renderer, _: renderer.open_dialog("about-dialog"),
                 source=self._about_item,
                 target=None,  # no target
             ),
@@ -433,7 +433,7 @@ class AboutDialog(Widget):
                 event="click",
                 # will close the about dialog
                 callback=(
-                    lambda renderer: renderer.close_dialog("about-dialog")
+                    lambda renderer, _: renderer.close_dialog("about-dialog")
                 ),
                 source=self._button,
                 target=None,  # no target
