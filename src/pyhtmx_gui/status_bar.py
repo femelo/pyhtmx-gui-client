@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 from functools import partial
 from pyhtmx.html_tag import HTMLTag
 from pyhtmx import Div
@@ -7,6 +7,60 @@ from math import exp, log
 from pyhtmx_gui.kit import Page, SessionItem, Trigger
 from .types import EventType
 from .utils import calculate_text_width
+
+
+BG_CIRCLE = HTMLTag(
+    tag="circle",
+    fill="currentColor",
+    cx="75",
+    cy="75",
+    r="50",
+    _class="bg-circle",
+)
+
+PULSE_CIRCLE = HTMLTag(
+    tag="circle",
+    fill="currentColor",
+    cx="75",
+    cy="75",
+    r="75",
+    _class="pulse-circle",
+)
+
+DOTS: List[HTMLTag] = [
+    HTMLTag(
+        tag="circle",
+        cx=str(15 * i + 5 + 25),
+        cy="75",
+        r="4",
+        _class=f"spinner-dot dot-{i}",
+    )
+    for i in range(1, 6)
+]
+
+
+SPINNER: HTMLTag = HTMLTag(
+    tag="svg",
+    inner_content=[
+        PULSE_CIRCLE,
+        BG_CIRCLE,
+        HTMLTag(
+            tag="g",
+            inner_content=DOTS,
+            fill="white",
+            _class="dots",
+        )
+    ],
+    version="1.1",
+    id="L1",
+    xmlns="http://www.w3.org/2000/svg",
+    xmlns_xlink="http://www.w3.org/1999/xlink",
+    x="0px",
+    y="0px",
+    viewBox="0 0 150 150",
+    enable_background="new 0 0 150 150",
+    xml_space="preserve",
+)
 
 
 class StatusBar(Page):
@@ -67,15 +121,9 @@ class StatusBar(Page):
                 target_level="outerHTML",
             ),
         )
-        self._spinner = HTMLTag(
-            tag="lottie-player",
+        self._spinner = Div(
+            inner_content=SPINNER,
             _id="spinner",
-            src="assets/animations/spinner2.json",
-            background="transparent",
-            disableCheck="true",
-            disableShadowDOM="true",
-            loop="",
-            autoplay="",
             _class="fade-out",
         )
         spinner_trigger = Trigger(
@@ -85,7 +133,7 @@ class StatusBar(Page):
             get_value={
                 "class": self.get_spinner_class,
             },
-            target_level="outerHTML transition:true",
+            target_level="attribute:class transition:true",
         )
         for ovos_event in [
             EventType.WAKEWORD,
@@ -167,7 +215,7 @@ class StatusBar(Page):
                 ]
             )
         else:
-            _class.extend(["w-[0px]", "border-r-0"])
+            _class.extend(["no-text", "w-[0px]", "border-r-0"])
         return _class
 
     def get_spinner_class(self: StatusBar, ovos_event: str) -> Optional[str]:

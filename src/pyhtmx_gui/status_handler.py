@@ -119,7 +119,7 @@ class StatusHandler:
         self: StatusHandler,
         handling_function: Callable,
     ) -> None:
-        self._handlers: Dict[StatusEvent, Lock] = {
+        self._handlers: Dict[StatusEvent, StatusEventHandler] = {
             StatusEvent.SPEECH: StatusEventHandler(
                 StatusEvent.SPEECH,
                 handling_function,

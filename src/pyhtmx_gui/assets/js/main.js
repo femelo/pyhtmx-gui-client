@@ -14,6 +14,36 @@ let dom_ready = (callback) => {
 
 const status_elements = ["speech", "utterance", "spinner"];
 
+// TODO: avoid duplication of code
+// Function to show tabs temporarily and adjust fullscreen image
+function show_tabs() {
+    const bottom_container = document.getElementById("bottom-container");
+    const full_screen_image = document.getElementById("full-screen-image");
+    if (bottom_container != null && full_screen_image != null) {
+        // Remove the ‘hidden’ classes from the tabs
+        bottom_container.classList.remove("tabs-hidden");
+        // Add the ‘tabs-shown’ class to make them visible
+        bottom_container.classList.add("tabs-shown");
+
+        // Make the full-screen image smaller
+        full_screen_image.classList.add("small");
+    }
+}
+
+function hide_tabs() {
+    const utterance_input = document.getElementById("utterance-input");
+    const bottom_container = document.getElementById("bottom-container");
+    const full_screen_image = document.getElementById("full-screen-image");
+    if (utterance_input !== document.activeElement && bottom_container != null && full_screen_image != null) {
+        bottom_container.classList.remove("tabs-shown"); // Hide the tabs after 2 seconds
+        bottom_container.classList.add("tabs-hidden");
+
+        // Resize the full-screen image
+        full_screen_image.classList.remove("small");
+    }
+}
+
+
 // Function to set animation before swapping the element in
 function set_animation(event) {
     // Get the classes of the element
@@ -23,7 +53,7 @@ function set_animation(event) {
     if (classes_match != null) {
         classes_list = classes_match[0].split(' ');
         match = classes_list.filter(
-            (c) => c.includes("speech-period") || c.includes("utterance-period"),
+            (c) => c.includes("speech-period") || c.includes("utterance-period") || c.includes("no-text"),
         ).pop();
         if (match != null) {
             if (match.includes("speech-period")) {
@@ -33,13 +63,17 @@ function set_animation(event) {
                     "--speech-period",
                     `${value}s`,
                 );
-            } else {
+                show_tabs();
+            } else if (match.includes("utterance-period")) {
                 const value = match.split('-').pop();
                 console.log(`Setting --utterance-period = ${value}s`)
                 document.documentElement.style.setProperty(
                     "--utterance-period",
                     `${value}s`,
                 );
+                show_tabs();
+            } else {
+                hide_tabs();
             }
         }
     }
@@ -111,9 +145,12 @@ dom_ready(() => {
 
 
 function objectify_node(node) {
-    const attributes = Array.from(node.getAttributeNames()).filter(
-        (attr) => !attr.startsWith("hx-") && !attr.startsWith("sse")
-    );
+    let attributes = [];
+    if (node.getAttributeNames) {
+        attributes = Array.from(node.getAttributeNames()).filter(
+            (attr) => !attr.startsWith("hx-") && !attr.startsWith("sse")
+        );
+    }
     const node_object = Object.fromEntries(
         attributes.map((attr) => [attr, node.getAttribute(attr)])
     );

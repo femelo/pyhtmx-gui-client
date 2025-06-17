@@ -75,8 +75,11 @@
     }
 
     function hideTabs() {
+        const inactiveUtterance = document.getElementById("utterance").classList.contains("no-text");
+        const inactiveSpeech = document.getElementById("speech").classList.contains("no-text");
+        console.log(`Inactive utterance: ${inactiveUtterance}, Inactive speech: ${inactiveSpeech}`);
         const utteranceInput = document.getElementById("utterance-input");
-        if (utteranceInput !== document.activeElement) {
+        if ((utteranceInput !== document.activeElement) && inactiveUtterance && inactiveSpeech) {
             bottomContainer.classList.remove("tabs-shown"); // Hide the tabs after 2 seconds
             bottomContainer.classList.add("tabs-hidden");
 
@@ -129,7 +132,7 @@
 
     const debouncedHandleMouseover = debounce(handleMouseover, 10);
     const debouncedHandleMouseout = debounce(handleMouseout, 10);
-    const debouncedHandleKeyup = debounce(handleKeyup, 25);
+    const debouncedHandleKeyup = debounce(handleKeyup, 100);
 
     document.addEventListener("mouseover", debouncedHandleMouseover);
     document.addEventListener("mouseout", debouncedHandleMouseout);

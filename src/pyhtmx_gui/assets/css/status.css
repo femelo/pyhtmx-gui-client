@@ -56,28 +56,37 @@
 } */
 
 @keyframes anim-spinner-fade-in {
-    from { opacity: 0; visibility: hidden;  }
+    from { opacity: 0; visibility: visible; }
     to   { opacity: 1; visibility: visible; }
 }
 
 @keyframes anim-spinner-fade-out {
-    to { opacity: 0; visibility: hidden; }
+    from { opacity: 1; visibility: visible; }
+    to   { opacity: 0; visibility: visible; color: grey; }
 }
 
 @keyframes anim-spinner-from-normal {
-    from { filter: invert(56%) sepia(81%) saturate(5144%) hue-rotate(197deg) brightness(100%) contrast(93%); }
+    from {
+        color: blue;
+    }
 }
 
 @keyframes anim-spinner-to-success {
-    to { filter: invert(56%) sepia(100%) saturate(361%) hue-rotate(90deg) brightness(91%) contrast(92%); }
+    to {
+        color: green;
+    }
 }
 
 @keyframes anim-spinner-to-failure {
-    to { filter: invert(65%) sepia(70%) saturate(6075%) hue-rotate(331deg) brightness(91%) contrast(105%); }
+    to {
+        color: red;
+    }
 }
 
 @keyframes anim-spinner-to-cancelled {
-    to { filter: invert(76%) sepia(24%) saturate(6992%) hue-rotate(359deg) brightness(101%) contrast(93%); }
+    to {
+        color: grey;
+    }
 }
 
 /* Spinner style */
@@ -91,33 +100,35 @@
 }
 
 ::view-transition-new(spinner-fade-in):only-child {
-    animation: anim-spinner-fade-in 1.25s ease-in;
+    animation: anim-spinner-fade-in 2.00s ease-in;
 }
 
 #spinner.visible {
     visibility: visible;
     opacity: 1;
-    /* transition: opacity 1s ease-in, visibility 0s linear 0s; */
-    view-transition-name: spinner-fade-in;
-    #spinner-circle {
-        filter: invert(56%) sepia(81%) saturate(5144%) hue-rotate(197deg) brightness(100%) contrast(93%);
+    .bg-circle {
+        view-transition-name: spinner-fade-in;
+        color: blue;
+    }
+    .pulse-circle {
+        view-transition-name: spinner-fade-in;
+        color: blue;
     }
 }
 
 
-::view-transition-old(spinner-success) {
-    animation: anim-spinner-from-normal 0.75s ease;
+::view-transition-new(spinner-success):only-child {
+    animation: anim-spinner-to-success 2.00s ease;
 }
 
-::view-transition-new(spinner-success) {
-    animation: anim-spinner-to-success 0.75s ease;
-}
-
-#spinner.success {
-    #spinner-circle {
+#spinner.success  {
+    .bg-circle {
         view-transition-name: spinner-success;
-        filter: invert(56%) sepia(100%) saturate(361%) hue-rotate(90deg) brightness(91%) contrast(92%);
-        /* transition: all 1s ease-in; */
+        color: green;
+    }
+    .pulse-circle {
+        view-transition-name: spinner-success;
+        color: green;
     }
 }
 
@@ -126,14 +137,17 @@
 }
 
 ::view-transition-new(spinner-cancelled) {
-    animation: anim-spinner-to-cancelled 0.75s ease;
+    animation: anim-spinner-to-cancelled 1.50s ease;
 }
 
-#spinner.cancelled {
-    #spinner-circle {
+#spinner.cancelled  {
+    .bg-circle{
         view-transition-name: spinner-cancelled;
-        filter: invert(76%) sepia(24%) saturate(6992%) hue-rotate(359deg) brightness(101%) contrast(93%);
-        /* transition: all 1s ease-in; */
+        color: grey;
+    }
+    .pulse-circle {
+        view-transition-name: spinner-cancelled;
+        color: grey;
     }
 }
 
@@ -142,24 +156,85 @@
 }
 
 ::view-transition-new(spinner-failure) {
-    animation: anim-spinner-to-failure 0.75s ease;
+    animation: anim-spinner-to-failure 1.50s ease;
 }
 
 #spinner.failure {
-    #spinner-circle {
+    .bg-circle {
         view-transition-name: spinner-failure;
-        filter: invert(65%) sepia(70%) saturate(6075%) hue-rotate(331deg) brightness(91%) contrast(105%);
-        /* transition: all 1s ease-in; */
+        color: red;
+    }
+    .pulse-circle {
+        view-transition-name: spinner-failure;
+        color: red;
     }
 }
 
-::view-transition-new(spinner-fade-out):only-child {
-    animation: anim-spinner-fade-out 1.5s ease;
+::view-transition-new(spinner-fade-out) {
+    animation: anim-spinner-from-visible 1.50s ease;
+}
+
+::view-transition-new(spinner-fade-out) {
+    animation: anim-spinner-fade-out 1.50s ease;
 }
 
 #spinner.fade-out {
-    visibility: hidden;
+    visibility: visible;
     opacity: 0;
-    /* transition: opacity 1s ease, visibility 0s linear 1.5s; */
-    view-transition-name: spinner-fade-out;
+    .bg-circle {
+        view-transition-name: spinner-fade-out;
+        color: grey;
+    }
+    .pulse-circle {
+        view-transition-name: spinner-fade-out;
+        color: grey;
+    }
+}
+
+@keyframes anim-spinner-dot-bounce {
+    25%  { transform: translateY(5px);  }
+    50%  { transform: translateY(0);    }
+    75%  { transform: translateY(-5px); }
+    100% { transform: translateY(0);    }
+}
+
+@keyframes anim-spinner-pulse {
+    0% {
+        opacity: 40%;
+        r: 50px;
+    }
+    25% {
+        opacity: 30%;
+        r: 60px;
+    }
+    100% {
+        opacity: 0;
+        r: 75px;
+    }
+}
+
+.spinner-dot {
+    animation: anim-spinner-dot-bounce 1.25s linear infinite;
+}
+
+.pulse-circle {
+    opacity: 40%;
+    animation: anim-spinner-pulse 2.0s ease-out infinite;
+}
+
+
+.dot-1 {
+    animation-delay: 0.0s;
+}
+.dot-2 {
+    animation-delay: 0.2s;
+}
+.dot-3 {
+    animation-delay: 0.4s;
+}
+.dot-4 {
+    animation-delay: 0.6s;
+}
+.dot-5 {
+    animation-delay: 0.8s;
 }
