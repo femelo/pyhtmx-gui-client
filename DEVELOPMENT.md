@@ -25,9 +25,14 @@ cd skill-pyhtmx-hello-world &&
 python3 -m pip install -e .
 ```
 
+## Install the pyhtmx library
+```bash
+python3 -m pip install pyhtmx-lib
+```
+
 ## Starting the application
 
-For launching the GUI application, start it with the command line script as below.
+For launching the GUI application, start it with the command line script as below. It will automatically start the pyhtxm-gui client on http://localhost:8000. If preferred, change the network adress in `config.toml` (/pyhtmx_gui/config/config.toml)
 
 ```bash
 pyhtmx-gui
