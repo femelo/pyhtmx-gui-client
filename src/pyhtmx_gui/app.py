@@ -13,7 +13,6 @@ from secrets import token_hex
 from signal import signal, SIGINT, SIGTERM
 import uvicorn
 from urllib.parse import unquote
-import json
 from pyhtmx.html_tag import HTMLTag
 from .config import config_data
 from .types import DOMEvent, CallbackContext
@@ -23,8 +22,17 @@ from .event_sender import global_sender
 from .gui_client import global_client, termination_event
 
 
-APP_DIR = os.path.abspath(os.path.dirname(__file__))
-ASSETS_DIR = os.path.join(APP_DIR, "assets")
+APP_DIR: str = os.path.abspath(os.path.dirname(__file__))
+ASSETS_DIR: str = os.path.join(APP_DIR, "assets")
+CACHE_DIR: str = os.path.abspath(os.path.expanduser(config_data["cache-dir"]))
+
+
+# Ensure cache directory is accessible
+if not os.path.exists(CACHE_DIR):
+    raise FileNotFoundError(
+        f"Cache directory does not exist: {CACHE_DIR}."
+        " Please set the 'cache-dir' correctly in the config file."
+    )
 
 
 @asynccontextmanager
@@ -40,6 +48,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
+app.mount("/cache", StaticFiles(directory=CACHE_DIR), name="cache")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

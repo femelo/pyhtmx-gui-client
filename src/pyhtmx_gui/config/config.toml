@@ -5,3 +5,4 @@ server-port = 8000
 log-level = "debug"
 client-id = "pyhtmx-gui-client"
 ovos-server-url = "ws://localhost:18181/gui"
+cache-dir = "~/.cache/ovos_gui"
