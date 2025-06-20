@@ -140,11 +140,15 @@ class StatusBar(Page):
             # EventType.RECORD_BEGIN,
             # EventType.RECORD_END,
             # EventType.UTTERANCE,
+            EventType.SKILL_HANDLER_START,
+            # EventType.SKILL_HANDLER_COMPLETE,
             EventType.UTTERANCE_HANDLED,
             EventType.UTTERANCE_CANCELLED,
             EventType.UTTERANCE_UNDETECTED,
             EventType.INTENT_FAILURE,
             EventType.UTTERANCE_END,
+            # EventType.AUDIO_OUTPUT_START,
+            # EventType.AUDIO_OUTPUT_END,
         ]:
             self.add_interaction(
                 ovos_event.value,
@@ -219,7 +223,7 @@ class StatusBar(Page):
         return _class
 
     def get_spinner_class(self: StatusBar, ovos_event: str) -> Optional[str]:
-        if ovos_event in (EventType.WAKEWORD, ):
+        if ovos_event in (EventType.WAKEWORD, EventType.SKILL_HANDLER_START):
             return "visible"  # Activate fade-in
         elif ovos_event in (EventType.UTTERANCE_HANDLED, ):
             return "success"  # Activate success

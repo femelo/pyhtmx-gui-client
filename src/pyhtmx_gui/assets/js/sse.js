@@ -293,7 +293,7 @@ This extension adds support for Server Sent Events to htmx.  See /www/extensions
           const element = document.getElementById(target.id);
           if (element !== null) {
             // If the target element is not null, set the attribute
-            // console.log(`Setting ${attrName}="${attrValue[0]}" on ${target.id}`);
+            console.log(`Setting ${attrName}="${attrValue[0]}" on ${target.id}`);
             element.setAttribute(attrName, attrValue[0]);
           }
         }

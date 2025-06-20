@@ -1,9 +1,9 @@
 from __future__ import annotations
 import os
 import gc
-from typing import Mapping, Dict, List, Literal, Optional, Union, Any
-from threading import Thread, Event, Timer, Lock
-from time import time, sleep
+from typing import Mapping, Dict, List, Optional, Union, Any
+from threading import Thread, Event
+from time import sleep
 import traceback
 from websocket import WebSocket, create_connection
 from .logger import logger

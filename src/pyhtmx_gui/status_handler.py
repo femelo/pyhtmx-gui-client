@@ -158,12 +158,28 @@ class StatusHandler:
         else:
             data = None
 
-        # Verify if utterance is undetected
+        # Set flags
         wakeword_detected: bool = event_name == EventType.WAKEWORD
+        handler_started: bool = event_name == EventType.SKILL_HANDLER_START
+        handler_completed: bool = event_name == EventType.SKILL_HANDLER_COMPLETE
         utterance_handled: bool = event_name == EventType.UTTERANCE_HANDLED
+        utterance_cancelled: bool = event_name == EventType.UTTERANCE_CANCELLED
+        audio_start: bool = event_name == EventType.AUDIO_OUTPUT_START
         audio_end: bool = event_name == EventType.AUDIO_OUTPUT_END
-        if wakeword_detected or utterance_handled or audio_end:
+
+        # Update timestamp
+        if (
+            wakeword_detected or
+            handler_started or
+            handler_completed or
+            utterance_handled or
+            utterance_cancelled or
+            audio_start or
+            audio_end
+        ):
+            # Register timestamp to serve as reference after a timeout
             self._handlers[StatusEvent.SPINNER].update_timestamp()
+            # Verify if utterance is undetected
             if skill_id == "skill-ovos-fallback-unknown.openvoiceos" or exception:
                 event_name = EventType.UTTERANCE_UNDETECTED
             persistence = 0.0
@@ -177,7 +193,20 @@ class StatusHandler:
         if utterance:
             self._handlers[status_event].reset_timer()
 
-        if wakeword_detected or utterance_handled:
-            self._handlers[StatusEvent.SPINNER].reset_timer()
+        # This timer reset postpones the spinner fade-out
+        # based on the horizon expected for the next event
+        # TODO: these transitions should be handled by a
+        # state machine
+        timeout: float = 0.0
+        if wakeword_detected:
+            timeout = 20.0
+        elif handler_started or audio_start:
+            timeout = 60.0
         elif audio_end:
-            self._handlers[StatusEvent.SPINNER].reset_timer(timeout=5.0)
+            timeout = 10.0
+        elif handler_completed or utterance_handled:
+            timeout = 8.0
+        elif utterance_cancelled:
+            timeout = 5.0
+        if timeout:
+            self._handlers[StatusEvent.SPINNER].reset_timer(timeout=timeout)
