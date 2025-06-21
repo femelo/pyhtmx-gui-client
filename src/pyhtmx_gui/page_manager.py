@@ -36,6 +36,7 @@ class PageRegistrationInterface:
         if "outerHTML" not in target_level:
             attributes["hx-swap"] = target_level
         else:
+            attributes["hx-swap-oob"] = "true"
             _target_level = target_level.replace("outerHTML", "").strip()
             if _target_level:
                 attributes["hx-swap"] = _target_level

@@ -286,15 +286,23 @@ This extension adds support for Server Sent Events to htmx.  See /www/extensions
     // This block simplifies the swap by simply setting an attribute
     let doSwap = null;
     if (swapSpec.swapStyle.includes("attribute:")) {
-      var attrName = swapSpec.swapStyle.split(':')[1];
-      var attrValue = RegExp(`(?<=${attrName}=")[^\"\=]*(?=")`).exec(content);
-      if (attrValue != null) {
+      let attrList = swapSpec.swapStyle.split(':')[1];
+      const attributes = {};
+      for (let attrName of attrList.split(',')) {
+        let attrValue = RegExp(`(?<=${attrName}=")[^\"\=]*(?=")`).exec(content);
+        if (attrValue != null) {
+          attributes[attrName] = attrValue[0];
+        }
+      }
+      if (Object.keys(attributes).length) {
         doSwap = function() {
           const element = document.getElementById(target.id);
           if (element !== null) {
-            // If the target element is not null, set the attribute
-            console.log(`Setting ${attrName}="${attrValue[0]}" on ${target.id}`);
-            element.setAttribute(attrName, attrValue[0]);
+            // If the target element is not null, set the attributes
+            for (const [attrName, attrValue] of Object.entries(attributes)) {
+              console.log(`Setting ${attrName}="${attrValue}" on ${target.id}`);
+              element.setAttribute(attrName, attrValue);
+            }
           }
         }
       }

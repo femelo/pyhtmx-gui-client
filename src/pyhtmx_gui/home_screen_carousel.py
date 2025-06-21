@@ -168,7 +168,7 @@ class WeatherWidget(Widget):
                     "src": self.weather_icon_src,
                     "alt": self.weather_icon_alt,
                 },
-                target_level="outerHTML",
+                target_level="attribute:src,alt",  # target level for the update
             ),
         )
         # Wrap img in a div to control size dynamically
