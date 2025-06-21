@@ -131,7 +131,7 @@ class Widget:
                 )
             if "attribute" in value.target_level:
                 pass
-            elif "inner_content" in set(value.attribute):
+            elif set(value.attribute) == {"inner_content"}:
                 if "innerHTML" not in value.target_level:
                     value.target_level = ' '.join(["innerHTML", *value.target_level.split()])
             else:
@@ -160,7 +160,7 @@ class Widget:
                 }
             if "attribute" in value.target_level:
                 pass
-            if "inner_content" in set(value.attribute):
+            elif set(value.attribute) == {"inner_content"}:
                 if "innerHTML" not in value.target_level:
                     value.target_level = ' '.join(["innerHTML", *value.target_level.split()])
             else:

@@ -32,14 +32,10 @@ class PageRegistrationInterface:
         # Set new id
         _id: str = token_hex(4)
         parameter_id = f"{parameter}-{_id}"
-        attributes: Dict[str, str] = {"sse-swap": parameter_id}
-        if "outerHTML" not in target_level:
-            attributes["hx-swap"] = target_level
-        else:
-            attributes["hx-swap-oob"] = "true"
-            _target_level = target_level.replace("outerHTML", "").strip()
-            if _target_level:
-                attributes["hx-swap"] = _target_level
+        attributes: Dict[str, str] = {
+            "sse-swap": parameter_id,
+            "hx-swap": target_level,
+        }
         target.update_attributes(
             attributes=attributes,
         )
