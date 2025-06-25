@@ -100,7 +100,7 @@
 }
 
 ::view-transition-new(spinner-fade-in):only-child {
-    animation: anim-spinner-fade-in 2.00s ease-in;
+    animation: anim-spinner-fade-in 0.5s ease-in 0.0s;
 }
 
 #spinner.visible {
@@ -117,8 +117,12 @@
 }
 
 
-::view-transition-new(spinner-success):only-child {
-    animation: anim-spinner-to-success 2.00s ease;
+::view-transition-old(spinner-success) {
+    animation: anim-spinner-from-visible 0.5s ease 0.0s;
+}
+
+::view-transition-new(spinner-success) {
+    animation: anim-spinner-to-success 0.5s ease 0.0s;
 }
 
 #spinner.success  {
@@ -133,11 +137,11 @@
 }
 
 ::view-transition-old(spinner-cancelled) {
-    animation: anim-spinner-from-normal 0.75s ease;
+    animation: anim-spinner-from-visible 0.5s ease 0.0s;
 }
 
 ::view-transition-new(spinner-cancelled) {
-    animation: anim-spinner-to-cancelled 1.50s ease;
+    animation: anim-spinner-to-cancelled 0.5s ease 0.0s;
 }
 
 #spinner.cancelled  {
@@ -152,11 +156,11 @@
 }
 
 ::view-transition-old(spinner-failure) {
-    animation: anim-spinner-from-normal 0.75s ease;
+    animation: anim-spinner-from-visible 0.5s ease 0.0s;
 }
 
 ::view-transition-new(spinner-failure) {
-    animation: anim-spinner-to-failure 1.50s ease;
+    animation: anim-spinner-to-failure 0.5s ease 0.0s;
 }
 
 #spinner.failure {
@@ -171,11 +175,11 @@
 }
 
 ::view-transition-new(spinner-fade-out) {
-    animation: anim-spinner-from-visible 1.50s ease;
+    animation:  anim-spinner-from-visible 0.5s ease 0.0s ;
 }
 
 ::view-transition-new(spinner-fade-out) {
-    animation: anim-spinner-fade-out 1.50s ease;
+    animation:  anim-spinner-fade-out 0.5s ease-out 0.0s ;
 }
 
 #spinner.fade-out {

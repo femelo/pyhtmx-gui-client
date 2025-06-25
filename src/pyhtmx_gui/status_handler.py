@@ -3,6 +3,7 @@ from typing import Any, Callable, Dict, List, Optional, Mapping, Union
 from threading import Lock, Timer, Thread
 from enum import Enum
 import time
+from math import exp, log
 from queue import Queue
 from .logger import logger
 from .types import EventType
@@ -42,6 +43,7 @@ class StatusEventHandler:
         self._close: bool = False
         self._thread: Thread = Thread(target=self.handle_events, daemon=True)
         self._thread.start()
+        self._is_handling: bool = False
 
     def __del__(self: StatusEventHandler) -> None:
         self._close = True
@@ -50,6 +52,14 @@ class StatusEventHandler:
     @property
     def elapsed_time(self: StatusEventHandler) -> int:
         return time.time() - self._timestamp
+
+    @property
+    def is_handling(self: StatusEventHandler) -> bool:
+        return self._is_handling
+
+    @is_handling.setter
+    def is_handling(self: StatusEventHandler, value: bool) -> None:
+        self._is_handling = value
 
     def queue_event(
         self: StatusEventHandler,
@@ -112,6 +122,7 @@ class StatusEventHandler:
                 )
                 self._timestamp = 0
                 self._timer = None
+                self._is_handling = False
 
 
 class StatusHandler:
@@ -123,12 +134,12 @@ class StatusHandler:
             StatusEvent.SPEECH: StatusEventHandler(
                 StatusEvent.SPEECH,
                 handling_function,
-                timeout=5.0,
+                timeout=6.0,
             ),
             StatusEvent.UTTERANCE: StatusEventHandler(
                 StatusEvent.UTTERANCE,
                 handling_function,
-                timeout=5.0,
+                timeout=6.0,
             ),
             StatusEvent.SPINNER: StatusEventHandler(
                 StatusEvent.SPINNER,
@@ -151,31 +162,41 @@ class StatusHandler:
         exception: Optional[str] = event_data.get("exception", None)
         # Set status event type
         status_event: str = StatusEvent.SPEECH if event_name == EventType.SPEAK else StatusEvent.UTTERANCE
-        persistence: int = 0.0
+        persistence: float = 0.3
+
+
+        # If utterance is present, queue the event as quick as possible
         if utterance:
             self._handlers[status_event].update_timestamp()
-            data = {status_event: format_utterance(utterance)}
-        else:
-            data = None
+            formatted_utterance: str = format_utterance(utterance)
+            data = {status_event: formatted_utterance}
+            if not self._handlers[status_event].is_handling:
+                self._handlers[status_event].is_handling = True
+            else:
+                persistence = 1.0 + 1.5 * (
+                    1.0 - exp(log(0.75) * len(formatted_utterance) / 10)
+                )
 
-        # Set flags
-        wakeword_detected: bool = event_name == EventType.WAKEWORD
-        handler_started: bool = event_name == EventType.SKILL_HANDLER_START
-        handler_completed: bool = event_name == EventType.SKILL_HANDLER_COMPLETE
-        utterance_handled: bool = event_name == EventType.UTTERANCE_HANDLED
-        utterance_cancelled: bool = event_name == EventType.UTTERANCE_CANCELLED
-        audio_start: bool = event_name == EventType.AUDIO_OUTPUT_START
-        audio_end: bool = event_name == EventType.AUDIO_OUTPUT_END
+            self._handlers[status_event].queue_event(
+                event_name=event_name,
+                event_data=data,
+                persistence=persistence,
+            )
+            self._handlers[status_event].reset_timer()
+            return
+
+        # No utterance, check for other events
+        data = None
 
         # Update timestamp
-        if (
-            wakeword_detected or
-            handler_started or
-            handler_completed or
-            utterance_handled or
-            utterance_cancelled or
-            audio_start or
-            audio_end
+        if event_name in (
+            EventType.WAKEWORD,
+            EventType.SKILL_HANDLER_START,
+            EventType.SKILL_HANDLER_COMPLETE,
+            EventType.UTTERANCE_HANDLED,
+            EventType.UTTERANCE_CANCELLED,
+            EventType.AUDIO_OUTPUT_START,
+            EventType.AUDIO_OUTPUT_END,
         ):
             # Register timestamp to serve as reference after a timeout
             self._handlers[StatusEvent.SPINNER].update_timestamp()
@@ -184,29 +205,41 @@ class StatusHandler:
                 event_name = EventType.UTTERANCE_UNDETECTED
             persistence = 0.0
 
-        self._handlers[status_event].queue_event(
-            event_name=event_name,
-            event_data=data,
-            persistence=persistence,
-        )
-
-        if utterance:
-            self._handlers[status_event].reset_timer()
+        if event_name in (
+            EventType.WAKEWORD,
+            # EventType.RECORD_BEGIN,
+            # EventType.RECORD_END,
+            # EventType.UTTERANCE,
+            EventType.SKILL_HANDLER_START,
+            # EventType.SKILL_HANDLER_COMPLETE,
+            EventType.UTTERANCE_HANDLED,
+            EventType.UTTERANCE_CANCELLED,
+            EventType.UTTERANCE_UNDETECTED,
+            EventType.INTENT_FAILURE,
+            EventType.UTTERANCE_END,
+            # EventType.AUDIO_OUTPUT_START,
+            # EventType.AUDIO_OUTPUT_END,
+        ):
+            self._handlers[status_event].queue_event(
+                event_name=event_name,
+                event_data=data,
+                persistence=persistence,
+            )
 
         # This timer reset postpones the spinner fade-out
         # based on the horizon expected for the next event
         # TODO: these transitions should be handled by a
         # state machine
         timeout: float = 0.0
-        if wakeword_detected:
+        if event_name == EventType.WAKEWORD:
             timeout = 20.0
-        elif handler_started or audio_start:
+        elif event_name in (EventType.SKILL_HANDLER_START, EventType.AUDIO_OUTPUT_START):
             timeout = 60.0
-        elif audio_end:
+        elif event_name == EventType.AUDIO_OUTPUT_END:
             timeout = 10.0
-        elif handler_completed or utterance_handled:
+        elif event_name in (EventType.SKILL_HANDLER_COMPLETE, EventType.UTTERANCE_HANDLED):
             timeout = 8.0
-        elif utterance_cancelled:
+        elif event_name == EventType.UTTERANCE_CANCELLED:
             timeout = 5.0
         if timeout:
             self._handlers[StatusEvent.SPINNER].reset_timer(timeout=timeout)

@@ -133,7 +133,7 @@ class StatusBar(Page):
             get_value={
                 "class": self.get_spinner_class,
             },
-            target_level="attribute:class transition:true",
+            target_level="attribute:class",
         )
         for ovos_event in [
             EventType.WAKEWORD,

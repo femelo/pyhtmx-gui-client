@@ -438,6 +438,9 @@ class Renderer:
         ovos_event: str,
         data: Optional[Dict[str, Any]],
     ) -> None:
+        logger.info(
+            f"Queueing event: {ovos_event}, data: {data}"
+        )
         if data:
             data.update({"ovos_event": ovos_event})
             self._status.update_session_data(
