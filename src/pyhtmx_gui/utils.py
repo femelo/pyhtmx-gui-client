@@ -2,6 +2,7 @@ import os
 from typing import Optional, Union, Dict, List, Any
 import importlib
 import inspect
+import re
 from PIL import ImageFont
 from .kit import Page
 from .logger import logger
@@ -10,6 +11,8 @@ from pyhtmx.html_tag import HTMLTag
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSETS_DIR = os.path.join(MODULE_DIR, "assets", "fonts")
+
+DEC_DOT_REGEX: re.Pattern = re.compile(r"(?<=\d)[.,](?=\d)")
 
 
 def build_page(
@@ -96,7 +99,7 @@ def format_utterance(utterance: Union[str, List[str]]) -> str:
     if isinstance(utterance, list):
         utterance_sentences: List[str] = list(
             map(
-                lambda x: x.strip().strip('.').strip(),
+                lambda x: DEC_DOT_REGEX.sub(',', x).strip().strip('.').strip(),
                 filter(bool, utterance),
             ),
         )
@@ -104,10 +107,10 @@ def format_utterance(utterance: Union[str, List[str]]) -> str:
         utterance_sentences: List[str] = list(
             map(
                 str.strip,
-                filter(bool, utterance.strip().split('.')),
+                filter(bool, DEC_DOT_REGEX.sub(',', utterance).strip().split('.')),
             )
         )
-    formatted_utterance: str = ". ".join(utterance_sentences)
+    formatted_utterance: str = DEC_DOT_REGEX.sub('.', ". ".join(utterance_sentences))
     last_char: str = formatted_utterance[-1] if format_utterance else ''
     if last_char not in list('.:,;?!-'):
         formatted_utterance += '.'
