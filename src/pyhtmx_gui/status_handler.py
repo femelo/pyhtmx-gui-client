@@ -162,7 +162,7 @@ class StatusHandler:
         exception: Optional[str] = event_data.get("exception", None)
         # Set status event type
         status_event: str = StatusEvent.SPEECH if event_name == EventType.SPEAK else StatusEvent.UTTERANCE
-        persistence: float = 0.3
+        persistence: float = 1.0 if event_name == EventType.SPEAK else 0.5
 
 
         # If utterance is present, queue the event as quick as possible
@@ -173,7 +173,7 @@ class StatusHandler:
             if not self._handlers[status_event].is_handling:
                 self._handlers[status_event].is_handling = True
             else:
-                persistence = 1.0 + 1.5 * (
+                persistence = 1.5 + 1.5 * (
                     1.0 - exp(log(0.75) * len(formatted_utterance) / 10)
                 )
 
