@@ -170,12 +170,13 @@ class StatusHandler:
             self._handlers[status_event].update_timestamp()
             formatted_utterance: str = format_utterance(utterance)
             data = {status_event: formatted_utterance}
-            if not self._handlers[status_event].is_handling:
-                self._handlers[status_event].is_handling = True
-            else:
-                persistence = 1.5 + 1.5 * (
-                    1.0 - exp(log(0.75) * len(formatted_utterance) / 10)
-                )
+            if status_event == StatusEvent.SPEECH:
+                if not self._handlers[status_event].is_handling:
+                    self._handlers[status_event].is_handling = True
+                else:
+                    persistence = 1.5 + 1.5 * (
+                        1.0 - exp(log(0.75) * len(formatted_utterance) / 10)
+                    )
 
             self._handlers[status_event].queue_event(
                 event_name=event_name,
