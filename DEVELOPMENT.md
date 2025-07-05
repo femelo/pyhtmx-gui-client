@@ -29,6 +29,11 @@ python3 -m pip install -e .
 ```bash
 python3 -m pip install pyhtmx-lib
 ```
+## OVOS-gui pyhtmx support
+```bash
+pip uninstall ovos-gui
+pip install "git+https://github.com/femelo/ovos-gui.git@dev#egg=ovos_gui"
+```
 
 ## Starting the application
 
