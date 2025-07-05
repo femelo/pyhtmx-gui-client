@@ -132,11 +132,21 @@ class Widget:
             if "attribute" in value.target_level:
                 pass
             elif set(value.attribute) == {"inner_content"}:
+                # Ensure innerHTML is targeted
+                target_level = list(
+                    filter(lambda e: "outerHTML" not in e, value.target_level.split())
+                )
                 if "innerHTML" not in value.target_level:
-                    value.target_level = ' '.join(["innerHTML", *value.target_level.split()])
+                    target_level.insert(0, "innerHTML")
+                value.target_level = ' '.join([*target_level])
             else:
+                # Ensure outerHTML is targeted
+                target_level = list(
+                    filter(lambda e: "innerHTML" not in e, value.target_level.split())
+                )
                 if "outerHTML" not in value.target_level:
-                    value.target_level = ' '.join(["outerHTML", *value.target_level.split()])
+                    target_level.insert(0, "outerHTML")
+                value.target_level = ' '.join([*target_level])
             if key not in self._session_items:
                 self._session_items[key] = []
             self._session_items[key].append(value)
@@ -161,11 +171,21 @@ class Widget:
             if "attribute" in value.target_level:
                 pass
             elif set(value.attribute) == {"inner_content"}:
+                # Ensure innerHTML is targeted
+                target_level = list(
+                    filter(lambda e: "outerHTML" not in e, value.target_level.split())
+                )
                 if "innerHTML" not in value.target_level:
-                    value.target_level = ' '.join(["innerHTML", *value.target_level.split()])
+                    target_level.insert(0, "innerHTML")
+                value.target_level = ' '.join([*target_level])
             else:
+                # Ensure outerHTML is targeted
+                target_level = list(
+                    filter(lambda e: "innerHTML" not in e, value.target_level.split())
+                )
                 if "outerHTML" not in value.target_level:
-                    value.target_level = ' '.join(["outerHTML", *value.target_level.split()])
+                    target_level.insert(0, "outerHTML")
+                value.target_level = ' '.join([*target_level])
             if key not in self._triggers:
                 self._triggers[key] = []
             self._triggers[key].append(value)

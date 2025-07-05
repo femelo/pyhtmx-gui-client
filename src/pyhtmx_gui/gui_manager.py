@@ -142,7 +142,7 @@ class GUIManager:
             return
         # Remove pages
         for _ in range(items_number):
-            if position == self._catalog[namespace].active_index:
+            if position == self._catalog[namespace].get_active_page_index():
                 self.close(namespace, id=position)
             self._catalog[namespace].remove_page(position)
 
