@@ -7,7 +7,7 @@ Before start editing, testing and debugging the code, install the provided packa
 First clone the repository:
 
 ```bash
-git clone https://github.com/femelo/pyhtmx-gui-client.git &&
+git clone --branch add-shell-bar https://github.com/femelo/pyhtmx-gui-client.git &&
 cd pyhtmx-gui-client
 ```
 
