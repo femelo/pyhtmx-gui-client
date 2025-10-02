@@ -14,15 +14,16 @@ class HelloWorldSkill(OVOSSkill):
     def handle_hello_world(self: HelloWorldSkill):
         text = "Hello world, this is a new GUI"
 
-        self.gui["title"] = "PyHTMX-based Hello World"
-        self.gui["text"] = text
-        self.gui.show_pages(
-            [
-                "hello_world_page1",
-                "hello_world_page2",
-                "hello_world_page3",
-            ],
-            override_idle=20,
-        )
+        if self.gui:
+            self.gui["title"] = "PyHTMX-based Hello World"
+            self.gui["text"] = text
+            self.gui.show_pages(
+                [
+                    "hello_world_page1",
+                    "hello_world_page2",
+                    "hello_world_page3",
+                ],
+                override_idle=20,
+            )
 
-        self.speak(text)
+            self.speak(text)

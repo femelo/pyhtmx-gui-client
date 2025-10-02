@@ -57,7 +57,7 @@ class WidgetType(str, Enum):
 
 
 class Widget:
-    _parameters: Tuple[str] = ()
+    _parameters: Tuple[str, ...] = ()
 
     def __init__(
         self: Widget,
@@ -94,11 +94,11 @@ class Widget:
         return self._ghost_elements
 
     @property
-    def session_items(self: Widget) -> Dict[str, SessionItem]:
+    def session_items(self: Widget) -> Dict[str, List[SessionItem]]:
         return self._session_items
 
     @property
-    def triggers(self: Widget) -> Dict[str, Trigger]:
+    def triggers(self: Widget) -> Dict[str, List[Trigger]]:
         return self._triggers
 
     @property
@@ -129,23 +129,27 @@ class Widget:
                     value.attribute,
                     value.format_value,
                 )
-            if "attribute" in value.target_level:
+            if value.target_level and ("attribute" in value.target_level):
                 pass
             elif set(value.attribute) == {"inner_content"}:
                 # Ensure innerHTML is targeted
-                target_level = list(
-                    filter(lambda e: "outerHTML" not in e, value.target_level.split())
-                )
-                if "innerHTML" not in value.target_level:
-                    target_level.insert(0, "innerHTML")
+                target_level = []
+                if value.target_level:
+                    target_level = list(
+                        filter(lambda e: "outerHTML" not in e, value.target_level.split())
+                    )
+                    if "innerHTML" not in value.target_level:
+                        target_level.insert(0, "innerHTML")
                 value.target_level = ' '.join([*target_level])
             else:
                 # Ensure outerHTML is targeted
-                target_level = list(
-                    filter(lambda e: "innerHTML" not in e, value.target_level.split())
-                )
-                if "outerHTML" not in value.target_level:
-                    target_level.insert(0, "outerHTML")
+                target_level = []
+                if value.target_level:
+                    target_level = list(
+                        filter(lambda e: "innerHTML" not in e, value.target_level.split())
+                    )
+                    if "outerHTML" not in value.target_level:
+                        target_level.insert(0, "outerHTML")
                 value.target_level = ' '.join([*target_level])
             if key not in self._session_items:
                 self._session_items[key] = []
@@ -168,23 +172,27 @@ class Widget:
                 value.get_value = {
                     value.attribute[0]: value.get_value
                 }
-            if "attribute" in value.target_level:
+            if value.target_level and ("attribute" in value.target_level):
                 pass
             elif set(value.attribute) == {"inner_content"}:
                 # Ensure innerHTML is targeted
-                target_level = list(
-                    filter(lambda e: "outerHTML" not in e, value.target_level.split())
-                )
-                if "innerHTML" not in value.target_level:
-                    target_level.insert(0, "innerHTML")
+                target_level = []
+                if value.target_level:
+                    target_level = list(
+                        filter(lambda e: "outerHTML" not in e, value.target_level.split())
+                    )
+                    if "innerHTML" not in value.target_level:
+                        target_level.insert(0, "innerHTML")
                 value.target_level = ' '.join([*target_level])
             else:
                 # Ensure outerHTML is targeted
-                target_level = list(
-                    filter(lambda e: "innerHTML" not in e, value.target_level.split())
-                )
-                if "outerHTML" not in value.target_level:
-                    target_level.insert(0, "outerHTML")
+                target_level = []
+                if value.target_level:
+                    target_level = list(
+                        filter(lambda e: "innerHTML" not in e, value.target_level.split())
+                    )
+                    if "outerHTML" not in value.target_level:
+                        target_level.insert(0, "outerHTML")
                 value.target_level = ' '.join([*target_level])
             if key not in self._triggers:
                 self._triggers[key] = []
@@ -301,8 +309,8 @@ class Page(Widget):
                         formatters = session_item.format_value
                         for attr_name in session_item.attribute:
                             attr_value = (
-                                formatters[attr_name](value)
-                                if attr_name in formatters else value
+                                formatters[attr_name](value)  # type: ignore
+                                if attr_name in formatters else value  # type: ignore
                             )
                             attributes[attr_name] = attr_value
                         # Update
@@ -327,8 +335,8 @@ class Page(Widget):
                     attributes = {}
                     getters = trigger.get_value
                     for attr_name in trigger.attribute:
-                        if attr_name in getters:
-                            attr_value = getters[attr_name](ovos_event)
+                        if attr_name in getters:  # type: ignore
+                            attr_value = getters[attr_name](ovos_event)  # type: ignore
                             attributes[attr_name] = attr_value
                     # Update
                     renderer.update_attributes(

@@ -2,7 +2,7 @@ from __future__ import annotations
 import shutil
 import os
 from typing import Any, Optional, Dict
-from pyhtmx import Div, Img, Input, Label, Ul, Li, A, Br, H1, P, Button
+from pyhtmx import Div, Img, Input, Label, Ul, Li, A, Br, H1, P, Button  # type: ignore
 from pyhtmx_gui.kit import Widget, WidgetType, SessionItem, Control, Page
 
 
@@ -62,6 +62,7 @@ class DateTimeWidget(Widget):
         self: DateTimeWidget,
         session_data: Optional[Dict[str, Any]] = None,
     ):
+        session_data = session_data or {}
         super().__init__(session_data=session_data)
 
         # Time text
@@ -547,8 +548,9 @@ class HomeScreen(Page):
         self.date_and_time = DateTimeWidget(session_data=session_data)
         self.weather = WeatherWidget(session_data=session_data)
         self.background = BackgroundContainer(session_data=session_data)
-        self.background.widget.add_child(self.weather.widget)
-        self.background.widget.add_child(self.date_and_time.widget)
+        if self.background.widget:
+            self.background.widget.add_child(self.weather.widget or Div())
+            self.background.widget.add_child(self.date_and_time.widget or Div())
         self.drawer = Drawer(session_data=session_data)
         self.bar = BottomBar(session_data=session_data)
         self.about_dialog = AboutDialog(session_data=session_data)
