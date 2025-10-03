@@ -202,13 +202,13 @@ class WeatherWidget(Widget):
 
     def weather_temperature(
         self: WeatherWidget,
-        value: Any = None,
+        _value: Any = None,
     ) -> str:
         weather_temp = self._session_data["weather_temp"]
-        """Formats the temperature with °F."""
+        """Formats the temperature."""
         if weather_temp is not None:
-            return f"{weather_temp}°F"
-        return '--.-°F'
+            return weather_temp
+        return " --.- "
 
 
 class BottomBar(Widget):

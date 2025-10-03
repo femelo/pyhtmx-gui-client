@@ -159,9 +159,12 @@ class GUIClient:
                 message.property,
             )
         elif message.type == MessageType.SESSION_LIST_INSERT:
-            if message.namespace is None or message.data is None or \
-               message.values is None:
-                logger.warning("Missing argument for message SESSION_LIST_INSERT")
+            if message.namespace is None or message.data is None:
+                missing_arguments = []
+                for arg in ["namespace", "data", "values"]:
+                    if getattr(message, arg) is None:
+                        missing_arguments.append(arg)
+                logger.warning(f"Missing arguments {missing_arguments} for message SESSION_LIST_INSERT")
                 return
             self.handle_session_list_insert(
                 message.namespace,
