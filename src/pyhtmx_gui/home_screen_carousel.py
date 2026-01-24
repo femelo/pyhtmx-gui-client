@@ -380,7 +380,7 @@ class HomeScreen(Page):
             page_manager.send_utterance_to_ovos(dom_event.target.value)
             # Reset text input value
             page_manager.update_attributes(
-                namespace="skill-ovos-homescreen.openvoiceos",
+                namespace="ovos-skill-homescreen.openvoiceos",
                 page_id="home_screen",
                 parameter="utterance-input",
                 attribute={"value": ""},
