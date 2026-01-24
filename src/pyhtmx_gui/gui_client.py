@@ -166,7 +166,7 @@ class GUIClient:
         data: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
         values: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
-        if namespace == "skill-ovos-homescreen.openvoiceos":
+        if namespace == "ovos-skill-homescreen.openvoiceos":
             # Force local home screen
             # TODO: change actual homescreen skill
             data = [
