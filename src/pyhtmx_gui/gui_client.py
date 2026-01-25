@@ -166,20 +166,25 @@ class GUIClient:
         data: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
         values: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
-        if namespace == "ovos-skill-homescreen.openvoiceos":
-            # Force local home screen
-            # TODO: change actual homescreen skill
-            data = [
-                {
-                    "url": os.path.join(CLIENT_DIR, "home_screen_carousel.py"),
-                    "page": "home_screen",
-                },
-            ]
+        # Ensure that data is a list
+        data_list = [data] if isinstance(data, dict) else (data or [])
 
-        data = [data] if isinstance(data, dict) else data
+# Transform incoming URLs to the py-htmx path
+        processed_data = []
+        for item in data_list:
+            if isinstance(item, dict) and "url" in item:
+                url = item["url"]
+                if isinstance(url, str):
+                    # Get the filename without the extension
+                    filename = os.path.basename(url).split('.')[0]
+                    
+                    # Use os.path.expanduser to convert '~' to the full home path
+                    raw_path = f"~/.cache/ovos_gui/{namespace}/py-htmx/{filename}.py"
+                    item["url"] = os.path.expanduser(raw_path)
+            processed_data.append(item)
 
         position = position or 0
-        page_args = values or data or []
+        page_args = values or processed_data or []
         session_data = self._session.get(namespace, {})
 
         self._gui_manager.insert_pages(
@@ -260,8 +265,6 @@ class GUIClient:
         namespace: str,
         property: str,
     ) -> None:
-        # NOTE: Session parameters are destroyed in the renderer upon
-        # destroying the associated page
         if (
             namespace in self._session and
             property in self._session[namespace]
@@ -302,11 +305,9 @@ class GUIClient:
             )
 
     def handle_session_list_update(self: GUIClient) -> None:
-        # TODO: Implement me
         pass
 
     def handle_session_list_move(self: GUIClient) -> None:
-        # TODO: Implement me
         pass
 
     def handle_session_list_remove(
@@ -329,7 +330,6 @@ class GUIClient:
             if property is not None and property in session_data:
                 del session_data[property]
 
-    # Send an event to OVOS-GUI
     def send_event(
         self: GUIClient,
         namespace: str,
@@ -345,7 +345,6 @@ class GUIClient:
             )
             self._ws.send(message.model_dump_json())
 
-    # Send an event to OVOS-GUI
     def send_focus_event(
         self: GUIClient,
         namespace: str,
