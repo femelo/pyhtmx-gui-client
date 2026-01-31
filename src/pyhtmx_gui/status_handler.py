@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Callable, Dict, List, Optional, Mapping, Union
+from typing import Any, Callable, cast, Dict, List, Optional, Mapping, Union
 from threading import Lock, Timer, Thread
 from enum import Enum
 import time
@@ -22,6 +22,8 @@ RESET_EVENT_MAP: Dict[StatusEvent, EventType] = {
     StatusEvent.SPINNER: EventType.UTTERANCE_END,
 }
 
+UNKNOWN_SKILL: str = "skill-ovos-fallback-unknown.openvoiceos"
+
 
 class StatusEventHandler:
     def __init__(
@@ -38,7 +40,7 @@ class StatusEventHandler:
         self._timeout: float = timeout
         self._timer_lock: Lock = Lock()
         self._timer: Optional[Timer] = None
-        self._timestamp: int = 0
+        self._timestamp: float = 0.0
         self._queue: Queue = Queue(maxsize=100)
         self._close: bool = False
         self._thread: Thread = Thread(target=self.handle_events, daemon=True)
@@ -50,7 +52,11 @@ class StatusEventHandler:
         self._thread.join()
 
     @property
-    def elapsed_time(self: StatusEventHandler) -> int:
+    def timeout(self: StatusEventHandler) -> float:
+        return self._timeout
+
+    @property
+    def elapsed_time(self: StatusEventHandler) -> float:
         return time.time() - self._timestamp
 
     @property
@@ -65,25 +71,25 @@ class StatusEventHandler:
         self: StatusEventHandler,
         event_name: EventType,
         event_data: Optional[Dict[str, Any]] = None,
+        timeout: Optional[float] = None,
         persistence: Optional[float] = None,
     ) -> None:
-        self._queue.put((event_name, event_data, persistence))
+        self._queue.put((event_name, event_data, timeout, persistence))
 
     def handle_events(self: StatusEventHandler) -> None:
         while not self._close:
             try:
-                event_name, event_data, persistence = self._queue.get(block=False)
-                if persistence:
-                    time.sleep(persistence)
+                event_name, event_data, timeout, persistence = self._queue.get(block=False)
                 self._handling_function(
                     ovos_event=event_name,
                     data=event_data,
                 )
-            except:
+                if timeout:
+                    self.reset_timer(timeout=timeout)
+                if persistence:
+                    time.sleep(persistence)
+            except Exception:
                 pass
-
-    def update_timestamp(self: StatusEventHandler) -> None:
-        self._timestamp = time.time()
 
     def reset_timer(
         self: StatusEventHandler,
@@ -98,14 +104,8 @@ class StatusEventHandler:
                 self.reset_status,
                 kwargs={"timeout": timeout},
             )
+            self._timestamp = time.time()
             self._timer.start()
-
-    def cancel_timer(self: StatusEventHandler) -> None:
-        with self._timer_lock:
-            if self._timer is not None:
-                self._timer.cancel()
-            self._timer = None
-
 
     def reset_status(
         self: StatusEventHandler,
@@ -113,14 +113,14 @@ class StatusEventHandler:
     ) -> None:
         timeout = timeout or self._timeout
         with self._timer_lock:
-            elapsed_time: int = self.elapsed_time
+            elapsed_time: float = self.elapsed_time
             if self._timestamp > 0 and elapsed_time > timeout:
-                logger.info(f"Resetting {self._status_event} after {elapsed_time} seconds")
+                logger.info(f"Resetting {self._status_event} after {elapsed_time:0.4f} seconds")
                 self._handling_function(
                     ovos_event=self._reset_event,
                     data=self._reset_data,
                 )
-                self._timestamp = 0
+                self._timestamp = 0.0
                 self._timer = None
                 self._is_handling = False
 
@@ -167,7 +167,6 @@ class StatusHandler:
 
         # If utterance is present, queue the event as quick as possible
         if utterance:
-            self._handlers[status_event].update_timestamp()
             formatted_utterance: str = format_utterance(utterance)
             data = {status_event: formatted_utterance}
             if status_event == StatusEvent.SPEECH:
@@ -180,10 +179,10 @@ class StatusHandler:
 
             self._handlers[status_event].queue_event(
                 event_name=event_name,
-                event_data=data,
+                event_data=cast(Dict[str, Any], data),
+                timeout=self._handlers[status_event].timeout,
                 persistence=persistence,
             )
-            self._handlers[status_event].reset_timer()
             return
 
         # No utterance, check for other events
@@ -199,10 +198,8 @@ class StatusHandler:
             EventType.AUDIO_OUTPUT_START,
             EventType.AUDIO_OUTPUT_END,
         ):
-            # Register timestamp to serve as reference after a timeout
-            self._handlers[StatusEvent.SPINNER].update_timestamp()
             # Verify if utterance is undetected
-            if skill_id == "skill-ovos-fallback-unknown.openvoiceos" or exception:
+            if skill_id == UNKNOWN_SKILL or exception:
                 event_name = EventType.UTTERANCE_UNDETECTED
             persistence = 0.0
 
