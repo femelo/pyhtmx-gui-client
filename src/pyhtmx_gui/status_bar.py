@@ -41,12 +41,12 @@ DOTS: List[HTMLTag] = [
 
 SPINNER: HTMLTag = HTMLTag(
     tag="svg",
-    inner_content=[
+    inner_content=[  # type: ignore
         PULSE_CIRCLE,
         BG_CIRCLE,
         HTMLTag(
             tag="g",
-            inner_content=DOTS,
+            inner_content=DOTS,  # type: ignore
             fill="white",
             _class="dots",
         )
@@ -188,7 +188,7 @@ class StatusBar(Page):
         value: Any = None,
         key: str = "utterance",
     ) -> str:
-        text: str = self._session_data.get(key)
+        text: str = self._session_data.get(key, '')
         return text[0].upper() + text[1:] if text else ''
 
     def get_speech_or_utterance_class(

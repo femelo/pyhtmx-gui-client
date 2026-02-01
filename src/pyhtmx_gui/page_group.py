@@ -102,12 +102,14 @@ class PageGroup(BaseModel):
         to_position: int,
     ) -> None:
         if isinstance(id, str):
-            from_position = self.get_page_id(id)
-            invalid_position = from_position is None
+            from_position = str(id)
+            invalid_position = from_position not in self._page_ids
+            if not invalid_position:
+                id = self._page_ids.index(from_position)
         else:
-            from_position = id
+            from_position = self.get_page_id(id)
             invalid_position = not validate_position(
-                from_position, self.num_pages - 1
+                id, self.num_pages - 1
             )
         if invalid_position:
             logger.warning(
@@ -118,7 +120,7 @@ class PageGroup(BaseModel):
         if not validate_position(to_position, self.num_pages):
             to_position = fix_position(to_position, self.num_pages)
         # Switch position
-        item = self._page_ids.pop(from_position)
+        item = self._page_ids.pop(id)  # type: ignore
         self._page_ids.insert(to_position, item)
 
     def deactivate_page(self: PageGroup) -> None:
@@ -151,13 +153,13 @@ class PageGroup(BaseModel):
     def get_active_page(self: PageGroup) -> Optional[Any]:
         if self._active_indexes:
             active_page_id = self.get_page_id(self._active_indexes[0])
-            return self.get_page(active_page_id)
+            return self.get_page(active_page_id)  # type: ignore
         return None
 
     def get_active_page_tag(self: PageGroup) -> Optional[HTMLTag]:
         if self._active_indexes:
             active_page_id = self.get_page_id(self._active_indexes[0])
-            return self.get_page_tag(active_page_id)
+            return self.get_page_tag(active_page_id)  # type: ignore
         return None
 
     def add_item(

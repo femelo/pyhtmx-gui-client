@@ -27,7 +27,7 @@ class Registrable(BaseModel):
 
 class SessionItem(Registrable):
     parameter: str
-    attribute: Union[str, Tuple[str], List[str]]
+    attribute: Union[str, Tuple[str, ...], List[str]]
     component: HTMLTag
     format_value: Union[Callable, Dict[str, Callable], None] = None
     target_level: Optional[str] = "innerHTML"

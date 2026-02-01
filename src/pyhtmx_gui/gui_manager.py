@@ -30,9 +30,9 @@ class GUIManager:
         namespace: Optional[str] = None,
     ) -> Optional[int]:
         namespace = namespace or self.get_active_namespace()
-        if not self.in_catalog(namespace):
+        if not self.in_catalog(namespace):  # type: ignore
             return None
-        return self._catalog[namespace].num_pages
+        return self._catalog[namespace].num_pages  # type: ignore
 
     def in_catalog(self: GUIManager, namespace: str) -> bool:
         return namespace in self._catalog
@@ -121,7 +121,7 @@ class GUIManager:
             token = token_hex(4)
             self._catalog[namespace].insert_page(
                 page_id=item.get("page", f"{prefix}_{token}"),
-                uri=item.get("url"),
+                uri=item.get("url", ""),
                 session_data=session_data,
                 position=position,
             )
@@ -171,18 +171,18 @@ class GUIManager:
         namespace: Optional[str] = None,
     ) -> Optional[int]:
         namespace = namespace or self.get_active_namespace()
-        if not self.in_catalog(namespace):
+        if not self.in_catalog(namespace):  # type: ignore
             return None
-        return self._catalog[namespace].get_active_page_index()
+        return self._catalog[namespace].get_active_page_index()  # type: ignore
 
     def get_active_page_id(
         self: GUIManager,
         namespace: Optional[str] = None,
     ) -> Optional[str]:
         namespace = namespace or self.get_active_namespace()
-        if not self.in_catalog(namespace):
+        if not self.in_catalog(namespace):  # type: ignore
             return None
-        return self._catalog[namespace].get_active_page_id()
+        return self._catalog[namespace].get_active_page_id()  # type: ignore
 
     def get_active_page(
         self: GUIManager,
@@ -355,6 +355,12 @@ class GUIManager:
     ) -> Any:
         namespace = self.get_active_namespace()
         page_id = self.get_active_page_id()
+        if namespace is None or page_id is None:
+            logger.warning(
+                "No active namespace or page. "
+                "No callback will be triggered."
+            )
+            return
         self._catalog[namespace].trigger_callback(
             page_id=page_id,
             context=context,
