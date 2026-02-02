@@ -6,8 +6,8 @@ import time
 from math import exp, log
 from queue import Queue
 from .logger import logger
-from .types import EventType
-from .utils import format_utterance
+from .types import EventType, StatusUtterance
+from .utils import calculate_duration, format_utterance
 
 
 class StatusEvent(str, Enum):
@@ -35,7 +35,7 @@ class StatusEventHandler:
         self._status_event: StatusEvent = status_event
         self._reset_event: EventType = RESET_EVENT_MAP[status_event]
         self._reset_data: Optional[Dict[str, Any]] = (
-            {status_event: ""} if status_event != StatusEvent.SPINNER else {})
+            {status_event: StatusUtterance()} if status_event != StatusEvent.SPINNER else {})
         self._handling_function: Callable = handling_function
         self._timeout: float = timeout
         self._timer_lock: Lock = Lock()
@@ -45,7 +45,6 @@ class StatusEventHandler:
         self._close: bool = False
         self._thread: Thread = Thread(target=self.handle_events, daemon=True)
         self._thread.start()
-        self._is_handling: bool = False
 
     def __del__(self: StatusEventHandler) -> None:
         self._close = True
@@ -58,14 +57,6 @@ class StatusEventHandler:
     @property
     def elapsed_time(self: StatusEventHandler) -> float:
         return time.time() - self._timestamp
-
-    @property
-    def is_handling(self: StatusEventHandler) -> bool:
-        return self._is_handling
-
-    @is_handling.setter
-    def is_handling(self: StatusEventHandler, value: bool) -> None:
-        self._is_handling = value
 
     def queue_event(
         self: StatusEventHandler,
@@ -156,26 +147,30 @@ class StatusHandler:
         # Collect utterance if any
         utterance: Optional[Union[str, List[str]]] = \
             event_data.get("utterance", None) or event_data.get("utterances", None)
+        if utterance is not None and event_name not in (
+            EventType.WAKEWORD,
+            EventType.UTTERANCE,
+            EventType.UTTERANCE_START,
+        ):
+            return
+        duration: Optional[float] = event_data.get("duration", None)
         # Collect skill_id if any
         skill_id: Optional[str] = event_data.get("skill_id", None)
         # Collect exception if any
         exception: Optional[str] = event_data.get("exception", None)
         # Set status event type
-        status_event: str = StatusEvent.SPEECH if event_name == EventType.SPEAK else StatusEvent.UTTERANCE
-        persistence: float = 1.0 if event_name == EventType.SPEAK else 0.5
+        status_event: str = StatusEvent.SPEECH if event_name == EventType.UTTERANCE_START else StatusEvent.UTTERANCE
+        persistence: float = 1.0 if event_name == EventType.UTTERANCE_START else 0.5
 
 
         # If utterance is present, queue the event as quick as possible
+        data: Optional[Dict[str, Any]] = None
         if utterance:
             formatted_utterance: str = format_utterance(utterance)
-            data = {status_event: formatted_utterance}
-            if status_event == StatusEvent.SPEECH:
-                if not self._handlers[status_event].is_handling:
-                    self._handlers[status_event].is_handling = True
-                else:
-                    persistence = 1.5 + 1.5 * (
-                        1.0 - exp(log(0.75) * len(formatted_utterance) / 10)
-                    )
+            data: Optional[Dict[str, Any]] = {status_event: StatusUtterance(text=formatted_utterance)}
+            duration = duration or calculate_duration(formatted_utterance)
+            data[status_event].duration = duration
+            persistence = duration
 
             self._handlers[status_event].queue_event(
                 event_name=event_name,
@@ -186,9 +181,6 @@ class StatusHandler:
             return
 
         # No utterance, check for other events
-        data = None
-
-        # Update timestamp
         if event_name in (
             EventType.WAKEWORD,
             EventType.SKILL_HANDLER_START,

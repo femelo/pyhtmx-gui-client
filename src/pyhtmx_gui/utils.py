@@ -8,6 +8,7 @@ from PIL import ImageFont
 from .kit import Page
 from .logger import logger
 from pyhtmx.html_tag import HTMLTag
+from math import exp, log
 
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -86,6 +87,10 @@ def validate_position(position: int, ub: int) -> bool:
 def fix_position(position: int, ub: int) -> int:
     logger.info("Position set to nearest bound.")
     return max(min(position, ub), 0)
+
+
+def calculate_duration(text: str) -> float:
+    return 2.0 * (1.0 - exp(log(0.75) * len(text) / 10))
 
 
 def calculate_text_width(
