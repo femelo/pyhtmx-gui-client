@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Any, Union, Optional, List, Dict
 from secrets import token_hex
 from pyhtmx.html_tag import HTMLTag
-from .types import PageItem, InputItem, OutputItem, CallbackContext
+from .types import PageItem, InputItem, OutputItem, CallbackContext, EventType, DOMEvent
 from .renderer import Renderer, global_renderer
 from .page_group import PageGroup
 from .utils import validate_position, fix_position
@@ -15,20 +15,24 @@ class GUIManager:
     def __init__(self: GUIManager) -> None:
         self._namespaces: List[str] = []
         self._catalog: Dict[str, PageGroup] = {}
+        self._gui_client: Any = None
         GUIManager.renderer.set_gui_manager(self)
 
     @property
     def num_namespaces(self: GUIManager) -> int:
         return len(self._namespaces)
 
+    def set_gui_client(self: GUIManager, gui_client: Any) -> None:
+        self._gui_client = gui_client
+
     def get_num_pages(
         self: GUIManager,
         namespace: Optional[str] = None,
     ) -> Optional[int]:
         namespace = namespace or self.get_active_namespace()
-        if not self.in_catalog(namespace):
+        if not self.in_catalog(namespace):  # type: ignore
             return None
-        return self._catalog[namespace].num_pages
+        return self._catalog[namespace].num_pages  # type: ignore
 
     def in_catalog(self: GUIManager, namespace: str) -> bool:
         return namespace in self._catalog
@@ -117,7 +121,7 @@ class GUIManager:
             token = token_hex(4)
             self._catalog[namespace].insert_page(
                 page_id=item.get("page", f"{prefix}_{token}"),
-                uri=item.get("url"),
+                uri=item.get("url", ""),
                 session_data=session_data,
                 position=position,
             )
@@ -138,7 +142,7 @@ class GUIManager:
             return
         # Remove pages
         for _ in range(items_number):
-            if position == self._catalog[namespace].active_index:
+            if position == self._catalog[namespace].get_active_page_index():
                 self.close(namespace, id=position)
             self._catalog[namespace].remove_page(position)
 
@@ -167,18 +171,18 @@ class GUIManager:
         namespace: Optional[str] = None,
     ) -> Optional[int]:
         namespace = namespace or self.get_active_namespace()
-        if not self.in_catalog(namespace):
+        if not self.in_catalog(namespace):  # type: ignore
             return None
-        return self._catalog[namespace].get_active_page_index()
+        return self._catalog[namespace].get_active_page_index()  # type: ignore
 
     def get_active_page_id(
         self: GUIManager,
         namespace: Optional[str] = None,
     ) -> Optional[str]:
         namespace = namespace or self.get_active_namespace()
-        if not self.in_catalog(namespace):
+        if not self.in_catalog(namespace):  # type: ignore
             return None
-        return self._catalog[namespace].get_active_page_id()
+        return self._catalog[namespace].get_active_page_id()  # type: ignore
 
     def get_active_page(
         self: GUIManager,
@@ -347,11 +351,32 @@ class GUIManager:
         self: GUIManager,
         context: CallbackContext,
         event_id: str,
+        event: Optional[DOMEvent] = None,
     ) -> Any:
         namespace = self.get_active_namespace()
         page_id = self.get_active_page_id()
+        if namespace is None or page_id is None:
+            logger.warning(
+                "No active namespace or page. "
+                "No callback will be triggered."
+            )
+            return
         self._catalog[namespace].trigger_callback(
             page_id=page_id,
             context=context,
             event_id=event_id,
+            event=event,
+        )
+
+    def send_event(
+        self: GUIManager,
+        namespace: str,
+        ovos_event: EventType,
+        data: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        data = data or {}
+        self._gui_client.send_event(
+            namespace=namespace,
+            event_name=ovos_event,
+            data=data,
         )

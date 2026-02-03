@@ -6,7 +6,7 @@ from queue import Queue
 from pyhtmx import Html, Div, Dialog
 from .logger import logger
 from .master import MASTER_DOCUMENT
-from .types import InteractionParameter, PageItem, PageNeighbor
+from .types import InteractionParameter, PageItem, PageNeighbor, EventType
 from .kit import Page
 from .status_bar import StatusBar
 from .page_manager import PageManager
@@ -22,7 +22,7 @@ class Renderer:
     def __init__(self: Renderer):
         self._clients = []
         self._gui_manager: Optional[Any] = None  # type: Optional[GUIManager]
-        self._last_shown: Tuple[str, str] = ()
+        self._last_shown: Tuple[str, str] = tuple()  # type: ignore
         self._queue: Queue = Queue()
         self._lock: Lock = Lock()
         self._root: Div = Div(
@@ -100,8 +100,8 @@ class Renderer:
         attribute: Dict[str, Any],
     ) -> None:
         page_manager: Optional[PageManager] = self.get_special_manager(
-            namespace,
-            page_id,
+            namespace,  # type: ignore
+            page_id,  # type: ignore
         )
         if not page_manager:
             logger.info(
@@ -150,10 +150,10 @@ class Renderer:
         attribute: Dict[str, Any],
     ) -> None:
         # If namespace was not provided, use active namespace
-        active_namespace = self._gui_manager.get_active_namespace()
+        active_namespace = self._gui_manager.get_active_namespace()  # type: ignore
         namespace = namespace or active_namespace
 
-        if self.is_special(namespace):
+        if self.is_special(namespace):  # type: ignore
             self.update_special_attributes(
                 namespace,
                 page_id,
@@ -162,7 +162,7 @@ class Renderer:
             )
             return
 
-        if not self._gui_manager.in_catalog(namespace):
+        if not self._gui_manager.in_catalog(namespace):  # type: ignore
             logger.info(
                 f"Namespace {namespace} not available in the catalog. "
                 "Parameter will not be updated."
@@ -170,9 +170,9 @@ class Renderer:
             return
 
         # If page was not provided, use active page
-        active_page_id = self._gui_manager.get_active_page_id()
+        active_page_id = self._gui_manager.get_active_page_id()  # type: ignore
         page_id = page_id or active_page_id
-        if not self._gui_manager.in_page_group(namespace, page_id):
+        if not self._gui_manager.in_page_group(namespace, page_id):  # type: ignore
             logger.info(
                 f"Page '{page_id}' not available for namespace '{namespace}'. "
                 "Parameter will not be updated."
@@ -180,7 +180,7 @@ class Renderer:
             return
 
         parameter_list: Optional[List[InteractionParameter]] = \
-            self._gui_manager.get_item(
+            self._gui_manager.get_item(  # type: ignore
                 namespace=namespace,
                 page_id=page_id,
                 item_type=PageItem.PARAMETER,
@@ -193,7 +193,7 @@ class Renderer:
             )
             return
 
-        route: Tuple[str, str] = (namespace, page_id)
+        route: Tuple[str, str] = (namespace, page_id)  # type: ignore
         for interaction_parameter in parameter_list:
             parameter_id = interaction_parameter.parameter_id
             component = interaction_parameter.target
@@ -230,20 +230,20 @@ class Renderer:
         dialog_id: str,
     ) -> None:
         # Get active namespace and page id
-        namespace = self._gui_manager.get_active_namespace()
+        namespace = self._gui_manager.get_active_namespace()  # type: ignore
         if not namespace:
             logger.info(
                 "No namespace active. Dialog will not open."
             )
             return
-        page_id = self._gui_manager.get_active_page_id()
+        page_id = self._gui_manager.get_active_page_id()  # type: ignore
         if not page_id:
             logger.info(
                 "No page active. Dialog will not open."
             )
             return
         # Retrieve dialog content
-        dialog_content = self._gui_manager.get_item(
+        dialog_content = self._gui_manager.get_item(  # type: ignore
             namespace=namespace,
             page_id=page_id,
             item_type=PageItem.DIALOG,
@@ -264,28 +264,28 @@ class Renderer:
         page_id: Optional[str] = None,
     ) -> None:
         # If namespace was not provided, use active namespace
-        active_namespace = self._gui_manager.get_active_namespace()
+        active_namespace = self._gui_manager.get_active_namespace()  # type: ignore
         namespace = namespace or active_namespace
-        if not self._gui_manager.in_catalog(namespace):
+        if not self._gui_manager.in_catalog(namespace):  # type: ignore
             logger.info(
                 f"Namespace {namespace} not available in the catalog. "
                 "Nothing to display."
             )
             return
         if namespace != active_namespace:
-            self._gui_manager.activate_namespace(namespace)
+            self._gui_manager.activate_namespace(namespace)  # type: ignore
 
         # If page was not provided, use active page
-        active_page_id = self._gui_manager.get_active_page_id()
+        active_page_id = self._gui_manager.get_active_page_id()  # type: ignore
         page_id = page_id or active_page_id
-        if not self._gui_manager.in_page_group(namespace, page_id):
+        if not self._gui_manager.in_page_group(namespace, page_id):  # type: ignore
             logger.info(
                 f"Page '{page_id}' not available for namespace '{namespace}'. "
                 "Nothing to display."
             )
             return
         if page_id != active_page_id:
-            self._gui_manager.activate_page(namespace, page_id)
+            self._gui_manager.activate_page(namespace, page_id)  # type: ignore
 
         # Queue for displaying
         self._queue.put((namespace, page_id))
@@ -310,21 +310,21 @@ class Renderer:
         neighbor: PageNeighbor,
     ) -> None:
         # Get active namespace and page id
-        namespace = self._gui_manager.get_active_namespace()
+        namespace = self._gui_manager.get_active_namespace()  # type: ignore
         if not namespace:
             logger.info(
                 f"No namespace active. "
                 f"{neighbor.title()} page will not be shown."
             )
             return
-        page_index = self._gui_manager.get_active_page_index()
+        page_index = self._gui_manager.get_active_page_index()  # type: ignore
         if page_index is None:
             logger.info(
                 "No page active. "
                 f"{neighbor.title()} page will not be shown."
             )
             return
-        num_pages = self._gui_manager.get_num_pages()
+        num_pages = self._gui_manager.get_num_pages()  # type: ignore
         if num_pages == 1:
             logger.info(
                 "Only one page available. "
@@ -334,10 +334,10 @@ class Renderer:
         # Get neighboring page index
         offset: int = 1 if neighbor == PageNeighbor.NEXT else -1
         n_page_index: int = (page_index + offset) % num_pages
-        page_id = self._gui_manager.get_active_page_id()
+        page_id = self._gui_manager.get_active_page_id()  # type: ignore
         # Activate neighboring page
-        self._gui_manager.activate_page(namespace, n_page_index)
-        n_page_id = self._gui_manager.get_active_page_id()
+        self._gui_manager.activate_page(namespace, n_page_index)  # type: ignore
+        n_page_id = self._gui_manager.get_active_page_id()  # type: ignore
         # Confirm deactivation of previous page
         if n_page_id != page_id:
             logger.info(
@@ -358,30 +358,30 @@ class Renderer:
         page_id: Optional[str] = None,
     ) -> None:
         # Close specified page by deactivating the namespace
-        active_namespace = self._gui_manager.get_active_namespace()
-        active_page_id = self._gui_manager.get_active_page_id()
+        active_namespace = self._gui_manager.get_active_namespace()  # type: ignore
+        active_page_id = self._gui_manager.get_active_page_id()  # type: ignore
         namespace = namespace or active_namespace
         page_id = page_id or active_page_id
 
-        if self._gui_manager.in_catalog(namespace):
+        if self._gui_manager.in_catalog(namespace):  # type: ignore
             # Deactivate namespace currently active
             if namespace == active_namespace:
-                self._gui_manager.deactivate_namespace()
+                self._gui_manager.deactivate_namespace()  # type: ignore
                 # New namespace to display
-                active_namespace = self._gui_manager.get_active_namespace()
+                active_namespace = self._gui_manager.get_active_namespace()  # type: ignore
         else:
             logger.info(
                 f"Namespace {namespace} not available in the catalog."
             )
 
-        if self._gui_manager.in_page_group(namespace, page_id):
+        if self._gui_manager.in_page_group(namespace, page_id):  # type: ignore
             # Report only if page is currently active
             if page_id == active_page_id:
                 logger.info(
                     f"Page deactivated: {namespace}::{page_id}"
                 )
             # New page to display (for new namespace)
-            active_page_id = self._gui_manager.get_active_page_id()
+            active_page_id = self._gui_manager.get_active_page_id()  # type: ignore
         else:
             logger.info(
                 f"Page '{page_id}' not available for namespace '{namespace}'."
@@ -401,25 +401,25 @@ class Renderer:
         page_id: Optional[str] = None,
     ) -> None:
         # Close specified page by deactivating only the page
-        active_namespace = self._gui_manager.get_active_namespace()
-        active_page_id = self._gui_manager.get_active_page_id()
+        active_namespace = self._gui_manager.get_active_namespace()  # type: ignore
+        active_page_id = self._gui_manager.get_active_page_id()  # type: ignore
         namespace = namespace or active_namespace
         page_id = page_id or active_page_id
 
-        if not self._gui_manager.in_catalog(namespace):
+        if not self._gui_manager.in_catalog(namespace):  # type: ignore
             logger.info(
                 f"Namespace {namespace} not available in the catalog."
             )
 
-        if self._gui_manager.in_page_group(namespace, page_id):
+        if self._gui_manager.in_page_group(namespace, page_id):  # type: ignore
             # Deactivate only if page is currenly active
             if page_id == active_page_id:
                 logger.info(
                     f"Page deactivated: {namespace}::{page_id}"
                 )
-                self._gui_manager.deactivate_page(namespace)
+                self._gui_manager.deactivate_page(namespace)  # type: ignore
                 # New page to display
-                active_page_id = self._gui_manager.get_active_page_id()
+                active_page_id = self._gui_manager.get_active_page_id()  # type: ignore
         else:
             logger.info(
                 f"Page '{page_id}' not available for namespace '{namespace}'."
@@ -438,6 +438,9 @@ class Renderer:
         ovos_event: str,
         data: Optional[Dict[str, Any]],
     ) -> None:
+        logger.info(
+            f"Queueing event: {ovos_event}, data: {data}"
+        )
         if data:
             data.update({"ovos_event": ovos_event})
             self._status.update_session_data(
@@ -459,7 +462,7 @@ class Renderer:
             return
         # Update
         self._last_shown = route
-        page_tag = self._gui_manager.get_active_page_tag(namespace)
+        page_tag = self._gui_manager.get_active_page_tag(namespace)  # type: ignore
         self._root.text = None
         _ = self._root.detach_children()
         self._root.add_child(page_tag)
@@ -475,7 +478,7 @@ class Renderer:
             return
         # Update
         self._last_shown = route
-        page_tag = self._gui_manager.get_active_page_tag(namespace)
+        page_tag = self._gui_manager.get_active_page_tag(namespace)  # type: ignore
         self._root.text = None
         _ = self._root.detach_children()
         self._root.add_child(page_tag)
@@ -507,6 +510,28 @@ class Renderer:
             msg = f"event: {event_id}\n{msg}"
         self.event_sender.send(msg)
 
+    def send_event_to_ovos(
+        self: Renderer,
+        namespace: str,
+        ovos_event: EventType,
+        data: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        data = data or {}
+        self._gui_manager.send_event(  # type: ignore
+            namespace=namespace,
+            ovos_event=ovos_event,
+            data=data,
+        )
+
+    def send_utterance_to_ovos(
+        self: Renderer,
+        utterance: str,
+    ) -> None:
+        self.send_event_to_ovos(
+            namespace="system",
+            ovos_event=EventType.UTTERANCE,
+            data={"utterance": utterance},
+        )
 
 # Instantiate global renderer
 global_renderer: Renderer = Renderer()

@@ -7,7 +7,7 @@ Before start editing, testing and debugging the code, install the provided packa
 First clone the repository:
 
 ```bash
-git clone https://github.com/femelo/pyhtmx-gui-client.git &&
+git clone --branch add-shell-bar https://github.com/femelo/pyhtmx-gui-client.git &&
 cd pyhtmx-gui-client
 ```
 
@@ -25,9 +25,19 @@ cd skill-pyhtmx-hello-world &&
 python3 -m pip install -e .
 ```
 
+## Install the pyhtmx library
+```bash
+python3 -m pip install pyhtmx-lib
+```
+## OVOS-gui pyhtmx support
+```bash
+pip uninstall ovos-gui
+pip install "git+https://github.com/femelo/ovos-gui.git@dev#egg=ovos_gui"
+```
+
 ## Starting the application
 
-For launching the GUI application, start it with the command line script as below.
+For launching the GUI application, start it with the command line script as below. It will automatically start the pyhtxm-gui client on http://localhost:8000. If preferred, change the network adress in `config.toml` (/pyhtmx_gui/config/config.toml)
 
 ```bash
 pyhtmx-gui

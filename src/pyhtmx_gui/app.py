@@ -2,9 +2,10 @@ from __future__ import annotations
 import os
 from typing import Iterator, Dict, Any, Optional
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from ovos_workshop.filesystem import FileSystemAccess
 from starlette.responses import Response, HTMLResponse, StreamingResponse
 from copy import deepcopy
 from time import time
@@ -12,17 +13,27 @@ from threading import Lock, Thread
 from secrets import token_hex
 from signal import signal, SIGINT, SIGTERM
 import uvicorn
+from urllib.parse import unquote
 from pyhtmx.html_tag import HTMLTag
 from .config import config_data
-from .types import CallbackContext
+from .types import DOMEvent, CallbackContext
 from .renderer import global_renderer
 from .logger import logger
 from .event_sender import global_sender
 from .gui_client import global_client, termination_event
 
 
-APP_DIR = os.path.abspath(os.path.dirname(__file__))
-ASSETS_DIR = os.path.join(APP_DIR, "assets")
+APP_DIR: str = os.path.abspath(os.path.dirname(__file__))
+ASSETS_DIR: str = os.path.join(APP_DIR, "assets")
+CACHE_DIR: str = os.path.abspath(os.path.expanduser(config_data["cache-dir"]))
+
+
+# Ensure cache directory is accessible
+if not os.path.exists(CACHE_DIR):
+    raise FileNotFoundError(
+        f"Cache directory does not exist: {CACHE_DIR}."
+        " Please set the 'cache-dir' correctly in the config file."
+    )
 
 
 @asynccontextmanager
@@ -38,6 +49,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
+app.mount("/cache", StaticFiles(directory=CACHE_DIR), name="cache")
+app.mount(
+    "/skills",
+    StaticFiles(directory=FileSystemAccess("skills").path),
+    name="skills",
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -62,7 +79,7 @@ signal(SIGINT, termination_handler)
 
 
 # TODO: move this ping check somewhere else
-sessions: Dict[str, int] = {}
+sessions: Dict[str, float] = {}
 session_lock = Lock()
 
 
@@ -102,23 +119,35 @@ async def updates() -> StreamingResponse:
 
 
 @app.get("/local-event/{event_id}")
-async def local_event(event_id: str) -> HTMLResponse:
+async def local_event(event_id: str, payload: str = Body(...)) -> HTMLResponse:
+    # Parse event
+    event: DOMEvent = DOMEvent(
+        event_id=event_id,
+        event_json=unquote(payload).replace('event=', '').replace('\n', ''),
+    )
     logger.debug(f"Local event triggered: {event_id}")
     # Run callback
     component: HTMLTag = global_client._gui_manager.trigger_callback(
         context=CallbackContext.LOCAL,
         event_id=event_id,
+        event=event,
     )
     return HTMLResponse(component.to_string())
 
 
 @app.post("/global-event/{event_id}")
-async def global_event(event_id: str) -> Response:
+async def global_event(event_id: str, payload: str = Body(...)) -> Response:
+    # Parse event
+    event: DOMEvent = DOMEvent(
+        event_id=event_id,
+        event_json=unquote(payload).replace('event=', '').replace('\n', ''),
+    )
     logger.debug(f"Global event triggered: {event_id}")
     # Run callback
     global_client._gui_manager.trigger_callback(
         context=CallbackContext.GLOBAL,
         event_id=event_id,
+        event=event,
     )
     return Response(status_code=204)
 

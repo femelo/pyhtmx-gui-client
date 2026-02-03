@@ -1,15 +1,17 @@
 from __future__ import annotations
 import os
 import gc
-from typing import Mapping, Dict, List, Optional, Union, Any
-from threading import Thread, Event, Timer, Lock
-from time import time, sleep
+from typing import Dict, List, Optional, Union, Any, cast
+from threading import Thread, Event
+from time import sleep
 import traceback
 from websocket import WebSocket, create_connection
 from .logger import logger
 from .config import config_data
 from .types import MessageType, EventType, Message
+# from .utils import format_utterance
 from .gui_manager import GUIManager
+from .status_handler import StatusHandler
 
 
 CLIENT_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -25,7 +27,7 @@ class GUIClient:
         "pyhtmx-gui-client",
     )
 
-    def __init__(self: GUIClient):
+    def __init__(self: GUIClient) -> None:
         self.server_url: str = config_data.get(
             "ovos-server-url",
             "ws://localhost:18181/gui",
@@ -34,11 +36,11 @@ class GUIClient:
         self._thread: Optional[Thread] = self.listen()
         self._active_skills: List[str] = []
         self._session: Dict[str, Any] = {}
-        self._timer_lock: Lock = Lock()
-        self._timer: Optional[Timer] = None
-        self._utterance_span: float = 5.0
-        self._utterance_time: int = 0
         self._gui_manager: GUIManager = GUIManager()
+        self._gui_manager.set_gui_client(self)
+        self._status_handler: StatusHandler = StatusHandler(
+            self._gui_manager.update_status
+        )
         self.announce()
 
     # Connect to OVOS-GUI WebSocket
@@ -69,7 +71,7 @@ class GUIClient:
     def deregister(self: GUIClient, client_id: str) -> None:
         self._gui_manager.renderer.deregister(client_id)
 
-    def listen(self: GUIClient) -> Thread:
+    def listen(self: GUIClient) -> Optional[Thread]:
         if self._ws:
             thread = Thread(target=self.receive_message, daemon=True)
             thread.start()
@@ -77,14 +79,14 @@ class GUIClient:
         else:
             return None
 
-    def close(self: GUIClient) -> Thread:
+    def close(self: GUIClient) -> None:
         if self._ws:
             sleep(0.1)
             self._ws.close()
         logger.info("Closed connection with ovos-gui websocket.")
 
     # Receive message from GUI web socket
-    def receive_message(self: GUIClient):
+    def receive_message(self: GUIClient) -> None:
         while not termination_event.is_set():
             try:
                 if self._ws:
@@ -100,6 +102,9 @@ class GUIClient:
     # General processing of GUI messages
     def process_message(self: GUIClient, message: Message) -> None:
         if message.type == MessageType.GUI_LIST_INSERT:
+            if message.namespace is None:
+                logger.warning("No namespace provided for message GUI_LIST_INSERT")
+                return
             self.handle_gui_list_insert(
                 message.namespace,
                 message.position,
@@ -107,6 +112,10 @@ class GUIClient:
                 message.values,
             )
         elif message.type == MessageType.GUI_LIST_MOVE:
+            if message.namespace is None or message.from_position is None or \
+               message.to_position is None or message.items_number is None:
+                logger.warning("Missing argument for message GUI_LIST_MOVE")
+                return
             self.handle_gui_list_move(
                 message.namespace,
                 message.from_position,
@@ -114,33 +123,54 @@ class GUIClient:
                 message.items_number,
             )
         elif message.type == MessageType.GUI_LIST_REMOVE:
+            if message.namespace is None or message.position is None or \
+               message.items_number is None:
+                logger.warning("Missing argument for message GUI_LIST_REMOVE")
+                return
             self.handle_gui_list_remove(
                 message.namespace,
                 message.position,
                 message.items_number,
             )
         elif message.type == MessageType.EVENT_TRIGGERED:
+            if message.namespace is None or message.event_name is None or \
+               message.data is None:
+                logger.warning("Missing argument for message EVENT_TRIGGERED")
+                return
             self.handle_event_triggered(
                 message.namespace,
                 message.event_name,
-                message.data,
+                message.data if isinstance(message.data, dict) else message.data[0],
             )
         elif message.type == MessageType.SESSION_SET:
+            if message.namespace is None or message.data is None:
+                logger.warning("Missing argument for message SESSION_SET")
+                return
             self.handle_session_set(
                 message.namespace,
-                message.data,
+                message.data if isinstance(message.data, dict) else message.data[0],
             )
         elif message.type == MessageType.SESSION_DELETE:
+            if message.namespace is None or message.property is None:
+                logger.warning("Missing argument for message SESSION_DELETE")
+                return
             self.handle_session_delete(
                 message.namespace,
                 message.property,
             )
         elif message.type == MessageType.SESSION_LIST_INSERT:
+            if message.namespace is None or message.data is None:
+                missing_arguments = []
+                for arg in ["namespace", "data", "values"]:
+                    if getattr(message, arg) is None:
+                        missing_arguments.append(arg)
+                logger.warning(f"Missing arguments {missing_arguments} for message SESSION_LIST_INSERT")
+                return
             self.handle_session_list_insert(
                 message.namespace,
                 message.position,
                 message.property,
-                message.data,
+                message.data if isinstance(message.data, dict) else message.data[0],
                 message.values,
             )
         elif message.type == MessageType.SESSION_LIST_UPDATE:
@@ -148,6 +178,10 @@ class GUIClient:
         elif message.type == MessageType.SESSION_LIST_MOVE:
             self.handle_session_list_move()
         elif message.type == MessageType.SESSION_LIST_REMOVE:
+            if message.namespace is None or message.position is None or \
+               message.items_number is None:
+                logger.warning("Missing argument for message SESSION_LIST_REMOVE")
+                return
             self.handle_session_list_remove(
                 message.namespace,
                 message.position,
@@ -164,17 +198,7 @@ class GUIClient:
         data: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
         values: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
-        if namespace == "skill-ovos-homescreen.openvoiceos":
-            # Force local home screen
-            # TODO: change actual homescreen skill
-            data = [
-                {
-                    "url": os.path.join(CLIENT_DIR, "home_screen_carousel.py"),
-                    "page": "home_screen",
-                },
-            ]
-
-        data = [data] if isinstance(data, dict) else data
+        data = [data] if isinstance(data, dict) else (data or [])
 
         position = position or 0
         page_args = values or data or []
@@ -190,14 +214,14 @@ class GUIClient:
     def handle_gui_list_move(
         self: GUIClient,
         namespace: str,
-        from_pos: int,
-        to_pos: int,
+        from_position: int,
+        to_position: int,
         items_number: int,
     ) -> None:
         self._gui_manager.move_pages(
             namespace=namespace,
-            from_pos=from_pos,
-            to_pos=to_pos,
+            from_position=from_position,
+            to_position=to_position,
             items_number=items_number,
         )
 
@@ -218,7 +242,7 @@ class GUIClient:
         self: GUIClient,
         namespace: str,
         event_name: str,
-        parameters: Mapping[str, Any],
+        parameters: Dict[str, Any],
      ) -> None:
         if event_name == EventType.PAGE_GAINED_FOCUS:
             # Page gained focus: display it
@@ -229,25 +253,10 @@ class GUIClient:
             )
         elif namespace == "system" and event_name in set(EventType):
             # Handle OVOS system event
-            utterance: Optional[str] = parameters.get("utterance", None)
-            if utterance:
-                with self._timer_lock:
-                    self._utterance_time = time()
-                data = {"utterance": utterance}
-            else:
-                data = None
-            # Update status
-            self._gui_manager.update_status(
-                ovos_event=event_name,
-                data=data,
+            self._status_handler.process_event(
+                event_name=cast(EventType, event_name),
+                event_data=parameters,
             )
-            if utterance:
-                if self._timer:
-                    self._timer.cancel()
-                # Reset utterance after a while
-                self._timer = Timer(self._utterance_span, self.reset_utterance)
-                self._timer.start()
-
         else:
             # Handle general event
             self._gui_manager.update_state(
@@ -258,7 +267,7 @@ class GUIClient:
     def handle_session_set(
         self: GUIClient,
         namespace: str,
-        session_data: Mapping[str, Any],
+        session_data: Dict[str, Any],
     ) -> None:
         if namespace not in self._session:
             self._session[namespace] = {}
@@ -287,16 +296,16 @@ class GUIClient:
         namespace: str,
         position: Optional[int],
         property: Optional[str],
-        data: Optional[Mapping[str, Any]],
-        values: Optional[List[Mapping[str, Any]]],
+        data: Optional[Dict[str, Any]],
+        values: Optional[List[Dict[str, Any]]],
     ) -> None:
         if namespace == "mycroft.system.active_skills":
-            skill = data[0].get("skill_id", None) if data else None
-            self._active_skills.insert(0, skill)
+            skill = data.get("skill_id", None) if data else None
+            self._active_skills.insert(0, cast(str, skill))
             if skill:
                 self._gui_manager.insert_namespace(
                     namespace=skill,
-                    position=position,
+                    position=position or 0,
                 )
         else:
             if namespace not in self._session:
@@ -307,7 +316,7 @@ class GUIClient:
                 session_data[property] = [
                     None for _ in range(position)
                 ]
-            for item in reversed(values):
+            for item in reversed(values or []):
                 session_data[property].insert(position, item)
             self._gui_manager.update_data(
                 namespace=namespace,
@@ -342,20 +351,21 @@ class GUIClient:
             if property is not None and property in session_data:
                 del session_data[property]
 
-    # Remove utterance
-    def reset_utterance(
+    # Send an event to OVOS-GUI
+    def send_event(
         self: GUIClient,
+        namespace: str,
+        event_name: EventType,
+        data: Dict[str, Any],
     ) -> None:
-        # Remove utterance if needed
-        with self._timer_lock:
-            elapsed_time: int = time() - self._utterance_time
-            if self._utterance_time > 0 and elapsed_time > self._utterance_span:
-                self._gui_manager.update_status(
-                    ovos_event=EventType.UTTERANCE,
-                    data={"utterance": ""},
-                )
-                self._utterance_time = 0
-                self._timer = None
+        if self._ws:
+            message = Message(
+                type=MessageType.EVENT_TRIGGERED,
+                namespace=namespace,
+                event_name=event_name,
+                data=data,
+            )
+            self._ws.send(message.model_dump_json())
 
     # Send an event to OVOS-GUI
     def send_focus_event(
@@ -363,14 +373,11 @@ class GUIClient:
         namespace: str,
         index: int
     ) -> None:
-        if self._ws:
-            message = Message(
-                type=MessageType.EVENT_TRIGGERED,
-                namespace=namespace,
-                event_name="page_gained_focus",
-                data={"number": index},
-            )
-            self._ws.send(message.model_dump_json())
+        self.send_event(
+            namespace=namespace,
+            event_name=EventType.PAGE_GAINED_FOCUS,
+            data={"number": index},
+        )
 
 
 global_client = GUIClient()

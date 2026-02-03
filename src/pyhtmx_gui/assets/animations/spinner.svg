@@ -1,0 +1,55 @@
+<svg version="1.1" id="L1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 100 100" enable-background="new 0 0 100 100" xml:space="preserve">
+    <circle fill="black" cx="50" cy="50" r="50"></circle>
+    <g fill="white">
+        <circle cx="20" cy="50" r="4">
+            <animateTransform
+                attributeName="transform"
+                dur="1.25s"
+                type="translate"
+                values="0 5 ; 0 -5; 0 5"
+                repeatCount="indefinite"
+                begin="0.2"
+            />
+        </circle>
+        <circle cx="35" cy="50" r="4">
+            <animateTransform
+                attributeName="transform"
+                dur="1.25s"
+                type="translate"
+                values="0 5 ; 0 -5; 0 5"
+                repeatCount="indefinite"
+                begin="0.4"
+            />
+        </circle>
+        <circle cx="50" cy="50" r="4">
+            <animateTransform
+                attributeName="transform"
+                dur="1.25s"
+                type="translate"
+                values="0 5 ; 0 -5; 0 5"
+                repeatCount="indefinite"
+                begin="0.6"
+            />
+        </circle>
+        <circle cx="65" cy="50" r="4">
+            <animateTransform
+                attributeName="transform"
+                dur="1.25s"
+                type="translate"
+                values="0 5 ; 0 -5; 0 5"
+                repeatCount="indefinite"
+                begin="0.8"
+            />
+        </circle>
+        <circle cx="80" cy="50" r="4">
+            <animateTransform
+                attributeName="transform"
+                dur="1.25s"
+                type="translate"
+                values="0 5 ; 0 -5; 0 5"
+                repeatCount="indefinite"
+                begin="1.0"
+            />
+        </circle>
+  </g>
+</svg>

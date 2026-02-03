@@ -281,7 +281,38 @@ This extension adds support for Server Sent Events to htmx.  See /www/extensions
     var swapSpec = api.getSwapSpecification(elt)
     var target = api.getTarget(elt)
 
-    let doSwap = () => api.swap(target, content, swapSpec)
+    console.log(`SSE swap: target = ${target.id}, swapSpec = ${JSON.stringify(swapSpec)}`);
+
+    // This block simplifies the swap by simply setting an attribute
+    let doSwap = null;
+    if (swapSpec.swapStyle.includes("attribute:")) {
+      let attrList = swapSpec.swapStyle.split(':')[1];
+      const attributes = {};
+      for (let attrName of attrList.split(',')) {
+        let attrValue = RegExp(`(?<=${attrName}=")[^\"\=]*(?=")`).exec(content);
+        if (attrValue != null) {
+          attributes[attrName] = attrValue[0];
+        }
+      }
+      if (Object.keys(attributes).length) {
+        doSwap = function() {
+          const element = document.getElementById(target.id);
+          if (element !== null) {
+            // If the target element is not null, set the attributes
+            for (const [attrName, attrValue] of Object.entries(attributes)) {
+              console.log(`Setting ${attrName}="${attrValue}" on ${target.id}`);
+              element.setAttribute(attrName, attrValue);
+            }
+          }
+        }
+      }
+    } else {
+      doSwap = function() {
+        api.swap(target, content, swapSpec)
+      }
+    }
+
+    // let doSwap = () => api.swap(target, content, swapSpec);
 
     let shouldTransition = htmx.config.globalViewTransitions
     if (swapSpec.hasOwnProperty('transition')) {

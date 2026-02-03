@@ -1,19 +1,6 @@
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
-dependencies = [
-    "colorlog>=6.8.0",
-    "fastapi>=0.110.0", 
-    "ovos-workshop>=2.4.0",
-    "pillow>=11.0.0",
-    "pydantic>=2.7.0",
-    "pyhtmx-lib>=0.1.0",
-    "tomli>=2.0.0",
-    "typer>=0.15.0",
-    "uvicorn>=0.24.0",
-    "websocket-client>=1.6.0",
-    "websockets>=12.0",
-]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -43,6 +30,19 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+]
+dependencies = [
+    "colorlog>=6.8.0",
+    "fastapi>=0.110.0", 
+    "ovos-workshop>=2.4.0",
+    "pillow>=11.0.0",
+    "pydantic>=2.7.0",
+    "pyhtmx-lib>=0.1.0",
+    "tomli>=2.0.0",
+    "typer>=0.15.0",
+    "uvicorn>=0.24.0",
+    "websocket-client>=1.6.0",
+    "websockets>=12.0",
 ]
 
 [project.scripts]

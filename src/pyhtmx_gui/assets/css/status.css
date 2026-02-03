@@ -1,0 +1,251 @@
+/* Status bar style */
+#speech, #utterance {
+    padding: 16px;
+    margin-top: 16px;
+    margin-left: 0px;
+    margin-right: 0px;
+    overflow: hidden; /* Ensures the content is not revealed until the animation */
+    line-height: 0;
+    /* letter-spacing: 0; */
+    text-overflow: hidden;
+    max-width: calc(100vw - 10vh - 16px); /* Prevents overflow beyond the viewport width minus spinner */
+    display: inline-block; /* Ensures the width is calculated based on content */
+    vertical-align: bottom; /* Aligns the text to the bottom */
+    white-space: nowrap; /* Keeps the content on a single line */
+}
+
+#speech {
+    font-family: "VT323";
+    animation:
+        anim-typing var(--speech-period, 0.5s) steps(round(up, 30 * var(--speech-period, 0.5s) / 1s), jump-none),
+        anim-blink-caret-blue .75s step-end infinite;
+    /* view-transition-name: speech-in; */
+}
+
+#utterance {
+    font-family: "Inter";
+    animation:
+        anim-typing var(--utterance-period, 0.5s) steps(round(up, 30 * var(--utterance-period, 0.5s) / 1s), jump-none),
+        anim-blink-caret-orange .75s step-end infinite;
+    /* view-transition-name: utterance-in; */
+}
+
+@keyframes slide-in {
+    from { margin-left: -25vw; }
+    to   { margin-left:   0vw; }
+}
+
+/* The typing effect */
+@keyframes anim-typing {
+    from { width:   0%; }
+}
+
+/* The blinking caret */
+@keyframes anim-blink-caret-orange {
+    to, from { border-right-color: transparent; }
+    50%      { border-right-color: orange; }
+}
+
+@keyframes anim-blink-caret-blue {
+    to, from { border-right-color: transparent; }
+    50%      { border-right-color: royalblue; }
+}
+
+/* ::view-transition-new(speech-in):only-child {
+    animation: anim-typing 1.5s steps(20, end), anim-blink-caret-blue .75s step-end infinite;
+}
+
+::view-transition-new(utterance-in):only-child {
+    animation: anim-typing 1.5s steps(20, end), anim-blink-caret-orange .75s step-end infinite;
+} */
+
+@keyframes anim-spinner-fade-in {
+    from { opacity: 0; visibility: visible; }
+    to   { opacity: 1; visibility: visible; }
+}
+
+@keyframes anim-spinner-fade-out {
+    from { opacity: 1; visibility: visible; }
+    to   { opacity: 0; visibility: visible; color: grey; }
+}
+
+@keyframes anim-spinner-from-normal {
+    from {
+        color: oklch(74% 0.16 232.661);
+    }
+}
+
+@keyframes anim-spinner-to-success {
+    to {
+        color: oklch(76% 0.177 163.223);
+    }
+}
+
+@keyframes anim-spinner-to-failure {
+    to {
+        color: oklch(71% 0.194 13.428);
+    }
+}
+
+@keyframes anim-spinner-to-cancelled {
+    to {
+        color: grey;
+    }
+}
+
+/* Spinner style */
+#spinner {
+    visibility: visible;
+    opacity: 1;
+    padding: 0;
+    width: 10vh;
+    height: 10vh;
+    position: "fixed";
+    z-index: 1001;
+    top: 0;
+    left: calc(100vw - 10vh);
+}
+
+::view-transition-new(spinner-fade-in):only-child {
+    animation: anim-spinner-fade-in 0.5s ease-in 0.0s;
+}
+
+#spinner.visible {
+    visibility: visible;
+    opacity: 1;
+    .bg-circle {
+        view-transition-name: spinner-fade-in;
+        color: oklch(74% 0.16 232.661);
+    }
+    .pulse-circle {
+        view-transition-name: spinner-fade-in;
+        color: oklch(74% 0.16 232.661);
+    }
+}
+
+
+::view-transition-old(spinner-success) {
+    animation: anim-spinner-from-visible 0.5s ease 0.0s;
+}
+
+::view-transition-new(spinner-success) {
+    animation: anim-spinner-to-success 0.5s ease 0.0s;
+}
+
+#spinner.success  {
+    .bg-circle {
+        view-transition-name: spinner-success;
+        color: oklch(76% 0.177 163.223);
+    }
+    .pulse-circle {
+        view-transition-name: spinner-success;
+        color: oklch(76% 0.177 163.223);
+    }
+}
+
+::view-transition-old(spinner-cancelled) {
+    animation: anim-spinner-from-visible 0.5s ease 0.0s;
+}
+
+::view-transition-new(spinner-cancelled) {
+    animation: anim-spinner-to-cancelled 0.5s ease 0.0s;
+}
+
+#spinner.cancelled  {
+    .bg-circle{
+        view-transition-name: spinner-cancelled;
+        color: grey;
+    }
+    .pulse-circle {
+        view-transition-name: spinner-cancelled;
+        color: grey;
+    }
+}
+
+::view-transition-old(spinner-failure) {
+    animation: anim-spinner-from-visible 0.5s ease 0.0s;
+}
+
+::view-transition-new(spinner-failure) {
+    animation: anim-spinner-to-failure 0.5s ease 0.0s;
+}
+
+#spinner.failure {
+    .bg-circle {
+        view-transition-name: spinner-failure;
+        color: oklch(71% 0.194 13.428);
+    }
+    .pulse-circle {
+        view-transition-name: spinner-failure;
+        color: oklch(71% 0.194 13.428);
+    }
+}
+
+::view-transition-new(spinner-fade-out) {
+    animation:  anim-spinner-from-visible 0.5s ease 0.0s ;
+}
+
+::view-transition-new(spinner-fade-out) {
+    animation:  anim-spinner-fade-out 0.5s ease-out 0.0s ;
+}
+
+#spinner.fade-out {
+    visibility: visible;
+    opacity: 0;
+    .bg-circle {
+        view-transition-name: spinner-fade-out;
+        color: grey;
+    }
+    .pulse-circle {
+        view-transition-name: spinner-fade-out;
+        color: grey;
+    }
+}
+
+@keyframes anim-spinner-dot-bounce {
+    25%  { transform: translateY(5px);  }
+    50%  { transform: translateY(0);    }
+    75%  { transform: translateY(-5px); }
+    100% { transform: translateY(0);    }
+}
+
+@keyframes anim-spinner-pulse {
+    0% {
+        opacity: 40%;
+        r: 50px;
+    }
+    25% {
+        opacity: 30%;
+        r: 60px;
+    }
+    100% {
+        opacity: 0;
+        r: 75px;
+    }
+}
+
+.spinner-dot {
+    animation: anim-spinner-dot-bounce 1.25s linear infinite;
+}
+
+.pulse-circle {
+    opacity: 40%;
+    animation: anim-spinner-pulse 2.0s ease-out infinite;
+}
+
+
+.dot-1 {
+    animation-delay: 0.0s;
+}
+.dot-2 {
+    animation-delay: 0.2s;
+}
+.dot-3 {
+    animation-delay: 0.4s;
+}
+.dot-4 {
+    animation-delay: 0.6s;
+}
+.dot-5 {
+    animation-delay: 0.8s;
+}
