@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Any, Optional, Dict
-from pyhtmx import Div, Button
+from pyhtmx import Div, Button  # type: ignore
 from pyhtmx_gui.kit import Widget, SessionItem, Control, Page
 
 
@@ -11,6 +11,7 @@ class HelloWorldWidget(Widget):
         self: HelloWorldWidget,
         session_data: Optional[Dict[str, Any]] = None,
     ):
+        session_data = session_data or {}
         super().__init__(
             name="hello-world-widget",
             session_data=session_data,

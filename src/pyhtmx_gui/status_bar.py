@@ -3,10 +3,9 @@ from typing import Any, Dict, List, Optional
 from functools import partial
 from pyhtmx.html_tag import HTMLTag
 from pyhtmx import Div
-from math import exp, log
 from pyhtmx_gui.kit import Page, SessionItem, Trigger
-from .types import EventType
-from .utils import calculate_text_width
+from .types import EventType, StatusUtterance
+from .utils import calculate_duration, calculate_text_width
 
 
 BG_CIRCLE = HTMLTag(
@@ -41,12 +40,12 @@ DOTS: List[HTMLTag] = [
 
 SPINNER: HTMLTag = HTMLTag(
     tag="svg",
-    inner_content=[
+    inner_content=[  # type: ignore
         PULSE_CIRCLE,
         BG_CIRCLE,
         HTMLTag(
             tag="g",
-            inner_content=DOTS,
+            inner_content=DOTS,  # type: ignore
             fill="white",
             _class="dots",
         )
@@ -77,7 +76,7 @@ class StatusBar(Page):
         )
         self._speech = Div(
             _id="speech",
-            _class=self.get_speech_or_utterance_class(key="speech"),
+            _class=self.get_speech_class(),
         )
         self.add_interaction(
             "speech",
@@ -90,17 +89,14 @@ class StatusBar(Page):
                         self.get_speech_or_utterance,
                         key="speech",
                     ),
-                    "class": partial(
-                        self.get_speech_or_utterance_class,
-                        key="speech",
-                    ),
+                    "class": self.get_speech_class,
                 },
                 target_level="outerHTML",
             ),
         )
         self._utterance = Div(
             _id="utterance",
-            _class=self.get_speech_or_utterance_class(key="utterance"),
+            _class=self.get_utterance_class(),
         )
         self.add_interaction(
             "utterance",
@@ -113,10 +109,7 @@ class StatusBar(Page):
                         self.get_speech_or_utterance,
                         key="utterance",
                     ),
-                    "class": partial(
-                        self.get_speech_or_utterance_class,
-                        key="utterance",
-                    ),
+                    "class": self.get_utterance_class,
                 },
                 target_level="outerHTML",
             ),
@@ -156,7 +149,10 @@ class StatusBar(Page):
             )
         self._widget = Div(
             [
-                Div([self._utterance, self._speech], _class="flex flex-col grow"),
+                Div(
+                    [self._utterance, self._speech],
+                    _class="flex flex-col grow w-[84%]",
+                ),
                 self._spinner,
             ],
             _id="status-bar",
@@ -188,32 +184,71 @@ class StatusBar(Page):
         value: Any = None,
         key: str = "utterance",
     ) -> str:
-        text: str = self._session_data.get(key)
-        return text[0].upper() + text[1:] if text else ''
+        text: str = self._session_data.get(key, StatusUtterance()).text
+        return text or ""
 
-    def get_speech_or_utterance_class(
+    def get_speech_class(
         self: StatusBar,
         value: Any = None,
-        key: str = "utterance",
     ) -> list[str]:
-        font_size: int = 24 if key == "utterance" else 32
-        guard: str = ' ' if key == "utterance" else ''
+        font_size: int = 32
+        guard: str = ''
         _class: list[str] = [
             f"text-[{font_size}px]",
-            "text-white" if key == "utterance" else "text-white",
-            "font-medium" if key == "utterance" else "font-normal",
+            "text-white",
+            "font-normal",
             "border-0",
         ]
-        if value:
+        value = value or StatusUtterance()
+        text: str = value.text
+        duration: Optional[float] = value.duration
+        if text:
+            text += guard
+            if duration is None:
+                duration = calculate_duration(text)
             width = calculate_text_width(
-                value[0].upper() + value[1:] + guard,
-                font_name="Inter-Regular.woff2" if key == "utterance" else "VT323-Regular.ttf",
+                text or "",
+                font_name="VT323-Regular.ttf",
                 font_size=font_size,
             ) + 8
-            period = 1.5 * (1.0 - exp(log(0.75) * len(value) / 10))
             _class.extend(
                 [
-                    f"{key}-period-{period:0.2f}",
+                    f"speech-period-{duration:0.2f}",
+                    f"w-[{width}px]",
+                    "border-r-8",
+                ]
+            )
+        else:
+            _class.extend(["no-text", "w-[0px]", "border-r-0"])
+        return _class
+
+    def get_utterance_class(
+        self: StatusBar,
+        value: Any = None,
+    ) -> list[str]:
+        font_size: int = 24
+        guard: str = ' '
+        _class: list[str] = [
+            f"text-[{font_size}px]",
+            "text-white",
+            "font-medium",
+            "border-0",
+        ]
+        value = value or StatusUtterance()
+        text: str = value.text
+        duration: Optional[float] = value.duration
+        if text:
+            text += guard
+            if duration is None:
+                duration = calculate_duration(text)
+            width = calculate_text_width(
+                text or "",
+                font_name="Inter-Regular.woff2",
+                font_size=font_size,
+            ) + 8
+            _class.extend(
+                [
+                    f"utterance-period-{duration:0.2f}",
                     f"w-[{width}px]",
                     "border-r-8",
                 ]

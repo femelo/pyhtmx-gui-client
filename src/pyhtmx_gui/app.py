@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from ovos_workshop.filesystem import FileSystemAccess
 from starlette.responses import Response, HTMLResponse, StreamingResponse
 from copy import deepcopy
 from time import time
@@ -49,6 +50,11 @@ app = FastAPI(lifespan=lifespan)
 
 app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
 app.mount("/cache", StaticFiles(directory=CACHE_DIR), name="cache")
+app.mount(
+    "/skills",
+    StaticFiles(directory=FileSystemAccess("skills").path),
+    name="skills",
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -73,7 +79,7 @@ signal(SIGINT, termination_handler)
 
 
 # TODO: move this ping check somewhere else
-sessions: Dict[str, int] = {}
+sessions: Dict[str, float] = {}
 session_lock = Lock()
 
 

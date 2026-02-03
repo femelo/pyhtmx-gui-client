@@ -1,12 +1,15 @@
 import os
-from typing import Optional, Union, Dict, List, Any
+from typing import Any, Dict, List, Optional, Tuple, Union
 import importlib
+import importlib.util
 import inspect
 import re
 from PIL import ImageFont
 from .kit import Page
 from .logger import logger
 from pyhtmx.html_tag import HTMLTag
+from math import exp, log
+from functools import partial
 
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -22,6 +25,8 @@ def build_page(
 ) -> Union[HTMLTag, Page]:
     # Load module
     spec = importlib.util.spec_from_file_location(module_name, file_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load {module_name} from file '{file_path}'")
     module = importlib.util.module_from_spec(spec)
     # sys.modules[module_name] = module
     spec.loader.exec_module(module)
@@ -85,6 +90,10 @@ def fix_position(position: int, ub: int) -> int:
     return max(min(position, ub), 0)
 
 
+def calculate_duration(text: str) -> float:
+    return 2.0 * (1.0 - exp(log(0.75) * len(text) / 10))
+
+
 def calculate_text_width(
     text: str,
     font_name: str = "helvetica",
@@ -111,8 +120,49 @@ def format_utterance(utterance: Union[str, List[str]]) -> str:
             )
         )
     formatted_utterance: str = DEC_DOT_REGEX.sub('.', ". ".join(utterance_sentences))
-    last_char: str = formatted_utterance[-1] if format_utterance else ''
-    if last_char not in list('.:,;?!-'):
+    if not formatted_utterance:
+        return ""
+    last_char: str = formatted_utterance[-1]
+    if last_char and last_char not in list('.:,;?!-'):
         formatted_utterance += '.'
-    formatted_utterance += ' '
-    return formatted_utterance
+    return formatted_utterance[0].upper() + formatted_utterance[1:]
+
+
+def split_utterance(utterance: str, max_length: Optional[int]) -> List[str]:
+    if not utterance:
+        return []
+    if max_length is None or len(utterance) <= max_length:
+        last_char = utterance[-1]
+        if last_char and last_char not in list('.:,;?!-'):
+            utterance += '.'
+        return [utterance + ' ']
+    split_groups: List[str] = []
+    length: int = 0
+    add_len: int = 0
+    word_group: str = ""
+    for word in utterance.split():
+        add_len = (1 if word_group else 0) + len(word)
+        if length + add_len <= max_length:
+            if word_group:
+                word_group += " "
+            word_group += word
+            length += add_len
+        else:
+            split_groups.append(word_group + ' ')
+            word_group = word
+            length = len(word)
+    if word_group:
+        last_char = word_group[-1]
+        if last_char and last_char not in list('.:,;?!-'):
+            word_group += '.'
+        split_groups.append(word_group + ' ')
+    return split_groups
+
+
+def generate_split_utterance(utterance: str, duration: float, max_length: Optional[int] = 60) -> List[Tuple[str, float]]:
+    utterance_sentences: List[str] = split_utterance(utterance, max_length=max_length)
+    utt_length = sum(len(s) for s in utterance_sentences)
+    utterance_durations: List[float] = list(
+        map(lambda x: duration * len(x) / utt_length, utterance_sentences)
+    )
+    return list(zip(utterance_sentences, utterance_durations))
