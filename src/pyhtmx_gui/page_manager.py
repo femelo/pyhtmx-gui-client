@@ -24,7 +24,7 @@ FILTER_REGEX: re.Pattern = re.compile(r'(?:\[)(.*)(?:\])')
 class PageRegistrationInterface:
     @staticmethod
     def register_interaction_parameter(
-        cls: PageManager,
+        cls: PageManager,  # type: ignore
         parameter: str,
         target: HTMLTag,
         target_level: Optional[str] = "innerHTML",
@@ -34,7 +34,7 @@ class PageRegistrationInterface:
         parameter_id = f"{parameter}-{_id}"
         attributes: Dict[str, str] = {
             "sse-swap": parameter_id,
-            "hx-swap": target_level,
+            "hx-swap": target_level,  # type: ignore
         }
         target.update_attributes(
             attributes=attributes,
@@ -54,12 +54,12 @@ class PageRegistrationInterface:
 
     @staticmethod
     def register_callback(
-        cls: PageManager,
+        cls: PageManager,  # type: ignore
         event: str,
         context: Union[str, CallbackContext],
         fn: Callable,
         source: HTMLTag,
-        target: Union[HTMLTag, str, None] = None,
+        target: Union[HTMLTag, str] = "root",
         target_level: str = "innerHTML",
     ) -> None:
         # Set root container if target was specified as "root"
@@ -71,7 +71,7 @@ class PageRegistrationInterface:
         event_id: str = '-'.join([*_event.split(), _id])
         if context == CallbackContext.LOCAL:
             # Add necessary attributes to elements for local action
-            if "id" not in target.attributes:
+            if isinstance(target, HTMLTag) and "id" not in target.attributes:
                 target_id = f"target-{_id}"
                 target.update_attributes(
                     attributes={
@@ -82,7 +82,7 @@ class PageRegistrationInterface:
                 attributes={
                     "hx-get": f"/local-event/{event_id}",
                     "hx-trigger": event,
-                    "hx-target": target.attributes["id"],
+                    "hx-target": target.attributes["id"],  # type: ignore
                     "hx-swap": target_level,
                     "hx-vals": "js:{event: stringify_event(event)}",
                 },
@@ -91,15 +91,15 @@ class PageRegistrationInterface:
         elif context == CallbackContext.GLOBAL:
             # Add necessary attributes to elements for global action
             if target:
-                event_ids = target.attributes.get("sse-swap", '')
-                event_ids = ",".join(filter(bool, (event_ids, event_id)))
-                target.update_attributes(
+                event_ids = target.attributes.get("sse-swap", '')  # type: ignore
+                event_ids = ",".join(filter(bool, (event_ids, event_id)))  # type: ignore
+                target.update_attributes(  # type: ignore
                     attributes={
                         "sse-swap": event_ids,
                     },
                 )
             events = source.attributes.get("hx-trigger", '')
-            events = ", ".join(filter(bool, (events, event)))
+            events = ", ".join(filter(bool, (events, event)))  # type: ignore
             source.update_attributes(
                 attributes={
                     # TODO: for multiple events, use hx_vals
@@ -114,12 +114,12 @@ class PageRegistrationInterface:
             return
         # Instantiate callback
         callback: Callback = Callback(
-            context=context,
+            context=context,  # type: ignore
             event_name=event,
             event_id=event_id,
             fn=fn,
             source=source,
-            target=target,
+            target=target,  # type: ignore
             target_level=target_level,
         )
         # Register callback
@@ -131,7 +131,7 @@ class PageRegistrationInterface:
 
     @staticmethod
     def register_dialog(
-        cls: PageManager,
+        cls: PageManager,  # type: ignore
         dialog_id: str,
         dialog_content: HTMLTag,
     ) -> None:
@@ -165,7 +165,7 @@ class PageManager:
         self._global_callbacks: Dict[str, Callback] = {}
         self._local_callbacks: Dict[str, Callback] = {}
         self._page: Optional[Union[Page, HTMLTag]] = None
-        self._item_map: Dict[PageItem, OutputItem] = {}
+        self._item_map: Dict[PageItem, Dict[str, OutputItem]] = {}  # type: ignore
         self.model_post_init()
 
     @property
@@ -173,13 +173,13 @@ class PageManager:
         return self._page
 
     @property
-    def page_tag(self: PageManager) -> HTMLTag:
+    def page_tag(self: PageManager) -> Optional[HTMLTag]:
         if isinstance(self._page, HTMLTag):
             return self._page
         elif isinstance(self._page, Page):
             return self._page.page
         else:
-            pass
+            return None
 
     def __getattr__(self: PageManager, name: str) -> Any:
         # Borrow methods from page registration interface and renderer
@@ -188,7 +188,7 @@ class PageManager:
         if hasattr(self.renderer, name):
             return getattr(self.renderer, name)
         else:
-            return self[name]
+            return getattr(self, name)
 
     def model_post_init(self: PageManager, context: Any = None) -> None:
         self.set_item_map()
@@ -198,7 +198,7 @@ class PageManager:
 
     def set_route(self: PageManager) -> None:
         if hasattr(self._page, "_route"):
-            self.route = self._page.route
+            self.route = self._page.route  # type: ignore
         else:
             self.route = f"/{self.page_id}"
 
@@ -219,7 +219,7 @@ class PageManager:
                 "Nothing to setup."
             )
             return
-        if hasattr(self._page, "set_up"):
+        if isinstance(self._page, Page) and hasattr(self._page, "set_up"):
             self._page.set_up(page_manager=self)
 
     def set_item_map(self: PageManager) -> None:
@@ -244,7 +244,7 @@ class PageManager:
         if item_type == PageItem.PARAMETER:
             if key not in item:
                 item[key] = []
-            item[key].append(value)
+            item[key].append(value)  # type: ignore
         else:
             item[key] = value
 
@@ -265,13 +265,13 @@ class PageManager:
             )
         else:
             pass
-        return value
+        return value  # type: ignore
 
     def update_data(
         self: PageManager,
         session_data: Dict[str, Any],
     ) -> None:
-        if hasattr(self._page, "update_session_data"):
+        if isinstance(self._page, Page) and hasattr(self._page, "update_session_data"):
             self._page.update_session_data(
                 session_data=session_data,
                 renderer=self.renderer,
@@ -281,7 +281,7 @@ class PageManager:
         self: PageManager,
         ovos_event: str,
     ) -> None:
-        if hasattr(self._page, "update_trigger_state"):
+        if isinstance(self._page, Page) and hasattr(self._page, "update_trigger_state"):
             self._page.update_trigger_state(
                 ovos_event=ovos_event,
                 renderer=self.renderer,

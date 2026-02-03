@@ -36,6 +36,7 @@ class EventType(str, Enum):
     RECORD_BEGIN = "recognizer_loop:record_begin"
     RECORD_END = "recognizer_loop:record_end"
     UTTERANCE = "recognizer_loop:utterance"
+    UTTERANCE_START = "recognizer_loop:utterance_start"
     UTTERANCE_HANDLED = "ovos.utterance.handled"
     UTTERANCE_CANCELLED = "ovos.utterance.cancelled"
     # NOTE: This is a dummy event for internal use
@@ -107,6 +108,12 @@ class InteractionParameter(BaseModel):
     parameter_name: str
     parameter_id: str
     target: HTMLTag
+
+
+class StatusUtterance(BaseModel):
+    model_config = ConfigDict(strict=False)
+    text: str = ""
+    duration: Optional[float] = None
 
 
 InputItem = TypeVar(

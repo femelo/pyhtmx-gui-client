@@ -40,7 +40,7 @@ async def root() -> HTMLResponse:
     global page
     document: HTMLTag = DUMMY_DOCUMENT
     root_div = document.find_element_by_id(_id="root")
-    root_div.add_child(page)
+    root_div.add_child(page)  # type: ignore
     return HTMLResponse(document.to_string())
 
 
@@ -53,7 +53,7 @@ def main(file_path: str, session_data: Optional[str] = None) -> None:
         file_path,
         session_data=json.loads(session_data) if session_data else {},
     )
-    page = page_object.page
+    page = page_object.page  # type: ignore
     uvicorn.run(
         app,
         host="127.0.0.1",

@@ -3,17 +3,21 @@
     padding: 16px;
     margin-top: 16px;
     margin-left: 0px;
+    margin-right: 0px;
     overflow: hidden; /* Ensures the content is not revealed until the animation */
     line-height: 0;
     /* letter-spacing: 0; */
-    /* text-overflow: ellipsis; */
+    text-overflow: hidden;
+    max-width: calc(100vw - 10vh - 16px); /* Prevents overflow beyond the viewport width minus spinner */
+    display: inline-block; /* Ensures the width is calculated based on content */
+    vertical-align: bottom; /* Aligns the text to the bottom */
     white-space: nowrap; /* Keeps the content on a single line */
 }
 
 #speech {
     font-family: "VT323";
     animation:
-        anim-typing var(--speech-period, 0.5s) steps(50, end),
+        anim-typing var(--speech-period, 0.5s) steps(round(up, 30 * var(--speech-period, 0.5s) / 1s), jump-none),
         anim-blink-caret-blue .75s step-end infinite;
     /* view-transition-name: speech-in; */
 }
@@ -21,7 +25,7 @@
 #utterance {
     font-family: "Inter";
     animation:
-        anim-typing var(--utterance-period, 0.5s) steps(50, end),
+        anim-typing var(--utterance-period, 0.5s) steps(round(up, 30 * var(--utterance-period, 0.5s) / 1s), jump-none),
         anim-blink-caret-orange .75s step-end infinite;
     /* view-transition-name: utterance-in; */
 }
@@ -67,19 +71,19 @@
 
 @keyframes anim-spinner-from-normal {
     from {
-        color: blue;
+        color: oklch(74% 0.16 232.661);
     }
 }
 
 @keyframes anim-spinner-to-success {
     to {
-        color: green;
+        color: oklch(76% 0.177 163.223);
     }
 }
 
 @keyframes anim-spinner-to-failure {
     to {
-        color: red;
+        color: oklch(71% 0.194 13.428);
     }
 }
 
@@ -93,10 +97,13 @@
 #spinner {
     visibility: visible;
     opacity: 1;
-    padding: 16px;
-    margin-left: auto;
-    width: 15vh;
-    height: 15vh;
+    padding: 0;
+    width: 10vh;
+    height: 10vh;
+    position: "fixed";
+    z-index: 1001;
+    top: 0;
+    left: calc(100vw - 10vh);
 }
 
 ::view-transition-new(spinner-fade-in):only-child {
@@ -108,11 +115,11 @@
     opacity: 1;
     .bg-circle {
         view-transition-name: spinner-fade-in;
-        color: blue;
+        color: oklch(74% 0.16 232.661);
     }
     .pulse-circle {
         view-transition-name: spinner-fade-in;
-        color: blue;
+        color: oklch(74% 0.16 232.661);
     }
 }
 
@@ -128,11 +135,11 @@
 #spinner.success  {
     .bg-circle {
         view-transition-name: spinner-success;
-        color: green;
+        color: oklch(76% 0.177 163.223);
     }
     .pulse-circle {
         view-transition-name: spinner-success;
-        color: green;
+        color: oklch(76% 0.177 163.223);
     }
 }
 
@@ -166,11 +173,11 @@
 #spinner.failure {
     .bg-circle {
         view-transition-name: spinner-failure;
-        color: red;
+        color: oklch(71% 0.194 13.428);
     }
     .pulse-circle {
         view-transition-name: spinner-failure;
-        color: red;
+        color: oklch(71% 0.194 13.428);
     }
 }
 

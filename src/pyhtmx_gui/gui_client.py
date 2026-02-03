@@ -198,17 +198,7 @@ class GUIClient:
         data: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
         values: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
-        if namespace == "skill-ovos-homescreen.openvoiceos":
-            # Force local home screen
-            # TODO: change actual homescreen skill
-            data = [
-                {
-                    "url": os.path.join(CLIENT_DIR, "home_screen_carousel.py"),
-                    "page": "home_screen",
-                },
-            ]
-
-        data = [data] if isinstance(data, dict) else data
+        data = [data] if isinstance(data, dict) else (data or [])
 
         position = position or 0
         page_args = values or data or []
