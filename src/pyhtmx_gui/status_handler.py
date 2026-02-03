@@ -186,7 +186,7 @@ class StatusHandler:
                 data: Optional[Dict[str, Any]] = {
                     status_event: StatusUtterance(
                         text=split_utterance,
-                        duration=max(split_duration - 0.50, split_duration),
+                        duration=max(split_duration - 0.25, split_duration),
                     ),
                 }
                 persistence = split_duration

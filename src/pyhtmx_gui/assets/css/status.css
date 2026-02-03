@@ -17,7 +17,7 @@
 #speech {
     font-family: "VT323";
     animation:
-        anim-typing var(--speech-period, 0.5s) steps(50, end),
+        anim-typing var(--speech-period, 0.5s) steps(round(up, 30 * var(--speech-period, 0.5s) / 1s), jump-none),
         anim-blink-caret-blue .75s step-end infinite;
     /* view-transition-name: speech-in; */
 }
@@ -25,7 +25,7 @@
 #utterance {
     font-family: "Inter";
     animation:
-        anim-typing var(--utterance-period, 0.5s) steps(50, end),
+        anim-typing var(--utterance-period, 0.5s) steps(round(up, 30 * var(--utterance-period, 0.5s) / 1s), jump-none),
         anim-blink-caret-orange .75s step-end infinite;
     /* view-transition-name: utterance-in; */
 }
