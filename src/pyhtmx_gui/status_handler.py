@@ -3,11 +3,10 @@ from typing import Any, Callable, cast, Dict, List, Optional, Mapping, Union
 from threading import Lock, Timer, Thread
 from enum import Enum
 import time
-from math import exp, log
 from queue import Queue
 from .logger import logger
 from .types import EventType, StatusUtterance
-from .utils import calculate_duration, format_utterance
+from .utils import calculate_duration, format_utterance, generate_split_utterance
 
 
 class StatusEvent(str, Enum):
@@ -153,7 +152,7 @@ class StatusHandler:
             EventType.UTTERANCE_START,
         ):
             return
-        duration: Optional[float] = event_data.get("duration", None)
+        duration: Optional[float] = event_data.get("duration", None) or event_data.get("sound_duration", None)
         # Collect skill_id if any
         skill_id: Optional[str] = event_data.get("skill_id", None)
         # Collect exception if any
@@ -166,18 +165,20 @@ class StatusHandler:
         # If utterance is present, queue the event as quick as possible
         data: Optional[Dict[str, Any]] = None
         if utterance:
-            formatted_utterance: str = format_utterance(utterance)
-            data: Optional[Dict[str, Any]] = {status_event: StatusUtterance(text=formatted_utterance)}
+            formatted_utterance = format_utterance(utterance)
             duration = duration or calculate_duration(formatted_utterance)
-            data[status_event].duration = duration
-            persistence = duration
+            for split_utterance, split_duration in generate_split_utterance(formatted_utterance, duration):
+                data: Optional[Dict[str, Any]] = {
+                    status_event: StatusUtterance(text=split_utterance, duration=max(split_duration - 0.50, split_duration)),
+                }
+                persistence = split_duration
 
-            self._handlers[status_event].queue_event(
-                event_name=event_name,
-                event_data=cast(Dict[str, Any], data),
-                timeout=self._handlers[status_event].timeout,
-                persistence=persistence,
-            )
+                self._handlers[status_event].queue_event(
+                    event_name=event_name,
+                    event_data=cast(Dict[str, Any], data),
+                    timeout=self._handlers[status_event].timeout,
+                    persistence=persistence,
+                )
             if event_name != EventType.WAKEWORD:
                 return
 

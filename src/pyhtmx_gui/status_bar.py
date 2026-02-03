@@ -185,7 +185,7 @@ class StatusBar(Page):
         key: str = "utterance",
     ) -> str:
         text: str = self._session_data.get(key, StatusUtterance()).text
-        return text[0].upper() + text[1:] if text else ""
+        return text or ""
 
     def get_speech_class(
         self: StatusBar,
@@ -207,7 +207,7 @@ class StatusBar(Page):
             if duration is None:
                 duration = calculate_duration(text)
             width = calculate_text_width(
-                text[0].upper() + text[1:] if text else "",
+                text or "",
                 font_name="VT323-Regular.ttf",
                 font_size=font_size,
             ) + 8
@@ -242,7 +242,7 @@ class StatusBar(Page):
             if duration is None:
                 duration = calculate_duration(text)
             width = calculate_text_width(
-                text[0].upper() + text[1:],
+                text or "",
                 font_name="Inter-Regular.woff2",
                 font_size=font_size,
             ) + 8
