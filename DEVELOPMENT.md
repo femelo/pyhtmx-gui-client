@@ -7,7 +7,7 @@ Before start editing, testing and debugging the code, install the provided packa
 First clone the repository:
 
 ```bash
-git clone --branch add-shell-bar https://github.com/femelo/pyhtmx-gui-client.git &&
+git clone https://github.com/femelo/pyhtmx-gui-client.git &&
 cd pyhtmx-gui-client
 ```
 
@@ -29,10 +29,10 @@ python3 -m pip install -e .
 ```bash
 python3 -m pip install pyhtmx-lib
 ```
-## OVOS-gui pyhtmx support
+## PyHTMX GUI development metapackage
 ```bash
-pip uninstall ovos-gui
-pip install "git+https://github.com/femelo/ovos-gui.git@dev#egg=ovos_gui"
+pip uninstall ovos-gui ovos-audio ovos-dinkum-listener ovos-skill-homescreen ovos-plugin-common-play ovos-skill-date-time ovos-skill-weather
+pip install git+https://github.com/femelo/ovos-pyhtmx-gui-metapackage.git
 ```
 
 ## Starting the application
