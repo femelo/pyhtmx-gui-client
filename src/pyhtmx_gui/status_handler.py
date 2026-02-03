@@ -178,7 +178,8 @@ class StatusHandler:
                 timeout=self._handlers[status_event].timeout,
                 persistence=persistence,
             )
-            return
+            if event_name != EventType.WAKEWORD:
+                return
 
         # No utterance, check for other events
         if event_name in (
@@ -196,7 +197,7 @@ class StatusHandler:
             persistence = 0.0
 
         if event_name in (
-            EventType.WAKEWORD,
+            # EventType.WAKEWORD,
             # EventType.RECORD_BEGIN,
             # EventType.RECORD_END,
             # EventType.UTTERANCE,

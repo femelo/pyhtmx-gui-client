@@ -149,7 +149,10 @@ class StatusBar(Page):
             )
         self._widget = Div(
             [
-                Div([self._utterance, self._speech], _class="flex flex-col grow"),
+                Div(
+                    [self._utterance, self._speech],
+                    _class="flex flex-col grow w-[84%]",
+                ),
                 self._spinner,
             ],
             _id="status-bar",
