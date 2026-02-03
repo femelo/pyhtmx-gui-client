@@ -34,7 +34,10 @@ class StatusEventHandler:
         self._status_event: StatusEvent = status_event
         self._reset_event: EventType = RESET_EVENT_MAP[status_event]
         self._reset_data: Optional[Dict[str, Any]] = (
-            {status_event: StatusUtterance()} if status_event != StatusEvent.SPINNER else {})
+            {status_event: StatusUtterance()}
+            if status_event != StatusEvent.SPINNER
+            else {}
+        )
         self._handling_function: Callable = handling_function
         self._timeout: float = timeout
         self._timer_lock: Lock = Lock()
@@ -69,7 +72,9 @@ class StatusEventHandler:
     def handle_events(self: StatusEventHandler) -> None:
         while not self._close:
             try:
-                event_name, event_data, timeout, persistence = self._queue.get(block=False)
+                event_name, event_data, timeout, persistence = self._queue.get(
+                    block=False
+                )
                 self._handling_function(
                     ovos_event=event_name,
                     data=event_data,
@@ -105,7 +110,9 @@ class StatusEventHandler:
         with self._timer_lock:
             elapsed_time: float = self.elapsed_time
             if self._timestamp > 0 and elapsed_time > timeout:
-                logger.info(f"Resetting {self._status_event} after {elapsed_time:0.4f} seconds")
+                logger.info(
+                    f"Resetting {self._status_event} after {elapsed_time:0.4f} seconds"
+                )
                 self._handling_function(
                     ovos_event=self._reset_event,
                     data=self._reset_data,
@@ -144,32 +151,43 @@ class StatusHandler:
         event_data: Mapping[str, Any],
     ) -> None:
         # Collect utterance if any
-        utterance: Optional[Union[str, List[str]]] = \
-            event_data.get("utterance", None) or event_data.get("utterances", None)
+        utterance: Optional[Union[str, List[str]]] = event_data.get(
+            "utterance", None
+        ) or event_data.get("utterances", None)
         if utterance is not None and event_name not in (
             EventType.WAKEWORD,
             EventType.UTTERANCE,
             EventType.UTTERANCE_START,
         ):
             return
-        duration: Optional[float] = event_data.get("duration", None) or event_data.get("sound_duration", None)
+        duration: Optional[float] = event_data.get("duration", None) or event_data.get(
+            "sound_duration", None
+        )
         # Collect skill_id if any
         skill_id: Optional[str] = event_data.get("skill_id", None)
         # Collect exception if any
         exception: Optional[str] = event_data.get("exception", None)
         # Set status event type
-        status_event: str = StatusEvent.SPEECH if event_name == EventType.UTTERANCE_START else StatusEvent.UTTERANCE
+        status_event: str = (
+            StatusEvent.SPEECH
+            if event_name == EventType.UTTERANCE_START
+            else StatusEvent.UTTERANCE
+        )
         persistence: float = 1.0 if event_name == EventType.UTTERANCE_START else 0.5
-
 
         # If utterance is present, queue the event as quick as possible
         data: Optional[Dict[str, Any]] = None
         if utterance:
             formatted_utterance = format_utterance(utterance)
             duration = duration or calculate_duration(formatted_utterance)
-            for split_utterance, split_duration in generate_split_utterance(formatted_utterance, duration):
+            for split_utterance, split_duration in generate_split_utterance(
+                formatted_utterance, duration
+            ):
                 data: Optional[Dict[str, Any]] = {
-                    status_event: StatusUtterance(text=split_utterance, duration=max(split_duration - 0.50, split_duration)),
+                    status_event: StatusUtterance(
+                        text=split_utterance,
+                        duration=max(split_duration - 0.50, split_duration),
+                    ),
                 }
                 persistence = split_duration
 
@@ -225,11 +243,17 @@ class StatusHandler:
         timeout: float = 0.0
         if event_name == EventType.WAKEWORD:
             timeout = 20.0
-        elif event_name in (EventType.SKILL_HANDLER_START, EventType.AUDIO_OUTPUT_START):
+        elif event_name in (
+            EventType.SKILL_HANDLER_START,
+            EventType.AUDIO_OUTPUT_START,
+        ):
             timeout = 60.0
         elif event_name == EventType.AUDIO_OUTPUT_END:
             timeout = 10.0
-        elif event_name in (EventType.SKILL_HANDLER_COMPLETE, EventType.UTTERANCE_HANDLED):
+        elif event_name in (
+            EventType.SKILL_HANDLER_COMPLETE,
+            EventType.UTTERANCE_HANDLED,
+        ):
             timeout = 8.0
         elif event_name == EventType.UTTERANCE_CANCELLED:
             timeout = 5.0
