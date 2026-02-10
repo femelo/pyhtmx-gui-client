@@ -203,6 +203,7 @@ class StatusBar(Page):
         text: str = value.text
         duration: Optional[float] = value.duration
         if text:
+            length: int = len(text)
             text += guard
             if duration is None:
                 duration = calculate_duration(text)
@@ -213,7 +214,7 @@ class StatusBar(Page):
             ) + 8
             _class.extend(
                 [
-                    f"speech-period-{duration:0.2f}",
+                    f"speech-props-{duration:0.2f}-{length:d}",
                     f"w-[{width}px]",
                     "border-r-8",
                 ]
@@ -238,6 +239,7 @@ class StatusBar(Page):
         text: str = value.text
         duration: Optional[float] = value.duration
         if text:
+            length: int = len(text)
             text += guard
             if duration is None:
                 duration = calculate_duration(text)
@@ -248,7 +250,7 @@ class StatusBar(Page):
             ) + 8
             _class.extend(
                 [
-                    f"utterance-period-{duration:0.2f}",
+                    f"utterance-props-{duration:0.2f}-{length:d}",
                     f"w-[{width}px]",
                     "border-r-8",
                 ]

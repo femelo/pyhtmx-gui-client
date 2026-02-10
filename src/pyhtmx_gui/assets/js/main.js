@@ -53,23 +53,37 @@ function set_animation(event) {
     if (classes_match != null) {
         classes_list = classes_match[0].split(' ');
         match = classes_list.filter(
-            (c) => c.includes("speech-period") || c.includes("utterance-period") || c.includes("no-text"),
+            (c) => c.includes("speech-props") || c.includes("utterance-props") || c.includes("no-text"),
         ).pop();
         if (match != null) {
-            if (match.includes("speech-period")) {
-                const value = match.split('-').pop();
-                console.log(`Setting --speech-period = ${value}s`)
+            if (match.includes("speech-props")) {
+                const parts = match.split('-');
+                const period = parts[2];
+                const length = parts[3];
+                console.log(`Setting --speech-period = ${period}s`);
+                console.log(`Setting --speech-length = ${length}`);
                 document.documentElement.style.setProperty(
                     "--speech-period",
-                    `${value}s`,
+                    `${period}s`,
+                );
+                document.documentElement.style.setProperty(
+                    "--speech-length",
+                    length,
                 );
                 show_tabs();
-            } else if (match.includes("utterance-period")) {
-                const value = match.split('-').pop();
-                console.log(`Setting --utterance-period = ${value}s`)
+            } else if (match.includes("utterance-props")) {
+                const parts = match.split('-');
+                const period = parts[2];
+                const length = parts[3];
+                console.log(`Setting --utterance-period = ${period}s`);
+                console.log(`Setting --utterance-length = ${length}`);
                 document.documentElement.style.setProperty(
                     "--utterance-period",
-                    `${value}s`,
+                    `${period}s`,
+                );
+                document.documentElement.style.setProperty(
+                    "--utterance-length",
+                    length,
                 );
                 show_tabs();
             } else {
