@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 from functools import partial
 from pyhtmx.html_tag import HTMLTag
-from pyhtmx import Div
+from pyhtmx import Div  # type: ignore
 from pyhtmx_gui.kit import Page, SessionItem, Trigger
 from .types import EventType, StatusUtterance
 from .utils import calculate_duration, calculate_text_width

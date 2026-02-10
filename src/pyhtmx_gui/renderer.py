@@ -3,7 +3,7 @@ from typing import Optional, List, Tuple, Set, Dict, Any
 from copy import deepcopy
 from threading import Lock
 from queue import Queue
-from pyhtmx import Html, Div, Dialog
+from pyhtmx import Html, Div, Dialog  # type: ignore
 from .logger import logger
 from .master import MASTER_DOCUMENT
 from .types import InteractionParameter, PageItem, PageNeighbor, EventType
