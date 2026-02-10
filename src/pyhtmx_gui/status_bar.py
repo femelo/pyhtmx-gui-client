@@ -63,7 +63,7 @@ SPINNER: HTMLTag = HTMLTag(
 
 
 class StatusBar(Page):
-    _parameters = ("ovos_event", "utterance")
+    _parameters = ("ovos_event", "utterance", "speech")
     _is_page = False
 
     def __init__(
