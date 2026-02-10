@@ -12,6 +12,7 @@ pyhtmx_gui = [
   "assets/icons/*.svg",
   "assets/images/*.jpg",
   "assets/animations/*.json",
+  "assets/fonts/*.ttf",
   "assets/fonts/*.woff2",
   "config/*.toml"
 ]
