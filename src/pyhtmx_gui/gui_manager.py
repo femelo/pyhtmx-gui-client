@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 from typing import Any, Union, Optional, List, Dict
 from secrets import token_hex
 from pyhtmx.html_tag import HTMLTag
@@ -7,6 +8,9 @@ from .renderer import Renderer, global_renderer
 from .page_group import PageGroup
 from .utils import validate_position, fix_position
 from .logger import logger
+
+
+CLIENT_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class GUIManager:
@@ -119,9 +123,17 @@ class GUIManager:
         prefix = namespace.replace('.', '_')
         for item in reversed(page_args):
             token = token_hex(4)
+            url = item.get("url", "")
+            if not url:
+                url = os.path.join(CLIENT_DIR, "not_implemented_page.py")
+                session_data.update(
+                    {
+                        "namespace": namespace.split(".")[0],
+                    }
+                )
             self._catalog[namespace].insert_page(
                 page_id=item.get("page", f"{prefix}_{token}"),
-                uri=item.get("url", ""),
+                uri=url,
                 session_data=session_data,
                 position=position,
             )
